@@ -11,15 +11,15 @@ const buttonVariants = cva(
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
         destructive: 'bg-destructive text-white hover:bg-destructive/90',
-        outline: 'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground',
+        outline: 'border bg-background shadow-xs hover:bg-accent',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+        link: 'text-body3 hover:underline',
       },
       size: {
         default: 'px-4 py-2 gap-2 has-[>svg]:px-3',
         xs: "h-10.5 w-[123px] gap-1 rounded-md [&_svg:not([class*='size-'])]:size-4.5",
-        sm: "h-12 w-[387px] gap-1.5 rounded-md [&_svg:not([class*='size-'])]:size-4.5",
+        sm: "h-12 w-[347px] gap-1.5 rounded-md [&_svg:not([class*='size-'])]:size-4.5",
         md: "h-12 w-[500px] gap-2.5 rounded-md [&_svg:not([class*='size-'])]:size-4.5",
         icon: 'size-12',
         'icon-xs': "size-10.5 rounded-md [&_svg:not([class*='size-'])]:size-4.5",
