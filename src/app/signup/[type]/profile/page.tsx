@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { useSignupStore } from '@/store/signup-store';
 
@@ -14,49 +15,41 @@ function CorporateProfileForm() {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <label className="text-body1 text-[var(--text-primary)]">기업명</label>
+      <FormField label="기업명">
         <Input
           type="text"
           value={(profile.companyName as string) ?? ''}
           onChange={(e) => setProfile({ companyName: e.target.value })}
           placeholder="기업명을 입력하세요"
-          className="text-body2 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)]"
         />
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-2">
-        <label className="text-body1 text-[var(--text-primary)]">사업자등록번호</label>
+      <FormField label="사업자등록번호">
         <Input
           type="text"
           value={(profile.businessNumber as string) ?? ''}
           onChange={(e) => setProfile({ businessNumber: e.target.value })}
           placeholder="000-00-00000"
-          className="text-body2 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)]"
         />
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-2">
-        <label className="text-body1 text-[var(--text-primary)]">담당자명</label>
+      <FormField label="담당자명">
         <Input
           type="text"
           value={(profile.managerName as string) ?? ''}
           onChange={(e) => setProfile({ managerName: e.target.value })}
           placeholder="담당자 이름을 입력하세요"
-          className="text-body2 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)]"
         />
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-2">
-        <label className="text-body1 text-[var(--text-primary)]">연락처</label>
+      <FormField label="연락처">
         <Input
           type="tel"
           value={(profile.phone as string) ?? ''}
           onChange={(e) => setProfile({ phone: e.target.value })}
           placeholder="010-0000-0000"
-          className="text-body2 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)]"
         />
-      </div>
+      </FormField>
     </div>
   );
 }
@@ -68,27 +61,23 @@ function IndividualProfileForm() {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <label className="text-body1 text-[var(--text-primary)]">이름</label>
+      <FormField label="이름">
         <Input
           type="text"
           value={(profile.name as string) ?? ''}
           onChange={(e) => setProfile({ name: e.target.value })}
           placeholder="이름을 입력하세요"
-          className="text-body2 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)]"
         />
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-2">
-        <label className="text-body1 text-[var(--text-primary)]">연락처</label>
+      <FormField label="연락처">
         <Input
           type="tel"
           value={(profile.phone as string) ?? ''}
           onChange={(e) => setProfile({ phone: e.target.value })}
           placeholder="010-0000-0000"
-          className="text-body2 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)]"
         />
-      </div>
+      </FormField>
     </div>
   );
 }
@@ -127,10 +116,10 @@ export default function ProfilePage() {
       <div className="flex flex-col gap-8">
         {/* 타이틀 */}
         <div className="flex flex-col gap-2">
-          <h1 className="text-h2 text-[var(--text-secondary)]">
+          <h1 className="text-h2 text-text-secondary">
             {isCorporate ? '기업 정보를 입력해주세요.' : '기본 정보를 입력해주세요.'}
           </h1>
-          <p className="text-body2 text-[var(--text-tertiary)]">
+          <p className="text-body2 text-text-tertiary">
             {isCorporate
               ? '3단계 : 기업 인증을 위한 정보를 입력해주세요.'
               : '3단계 : 프로필에 표시될 기본 정보를 입력해주세요.'}
@@ -148,22 +137,12 @@ export default function ProfilePage() {
           variant="outline"
           size="xs"
           onClick={handleBack}
-          className="gap-1 border-[var(--border-default)]"
+          className="border-border-default gap-1"
         >
           <ArrowLeft size={16} />
           이전 단계
         </Button>
-        <Button
-          type="button"
-          size="xs"
-          disabled={!isFormValid}
-          onClick={handleSubmit}
-          className={
-            isFormValid
-              ? ''
-              : 'bg-[var(--primary-200)] text-[var(--text-tertiary)] hover:bg-[var(--primary-200)] disabled:opacity-100'
-          }
-        >
+        <Button type="button" size="xs" disabled={!isFormValid} onClick={handleSubmit}>
           완료
         </Button>
       </div>

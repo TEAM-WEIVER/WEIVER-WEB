@@ -26,11 +26,11 @@ export default function SignupLayout({ children }: { children: React.ReactNode }
   }, [type, setType]);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-secondary)]">
+    <div className="bg-bg-secondary min-h-screen">
       <Header />
 
       <main className="flex justify-center px-4 pt-[34px] pb-20">
-        <div className="rounded-[20px] border border-[var(--border-light)] bg-[var(--bg-primary)] p-11">
+        <div className="border-border-light bg-bg-primary rounded-[20px] border p-11">
           {children}
         </div>
       </main>

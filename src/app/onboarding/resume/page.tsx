@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, ArrowRight, Image as ImageIcon, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { formControlClass, nativeSelectClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FormStepHeader } from '@/components/common/form-step-header';
@@ -24,10 +25,10 @@ function SectionTitle({ title, required }: { title: string; required?: boolean }
   return (
     <div className="flex items-center gap-2">
       <div className="flex items-center gap-3">
-        <div className="h-7 w-1 bg-[var(--primary-700)]" />
-        <h2 className="text-h3 text-[var(--text-primary)]">{title}</h2>
+        <div className="bg-primary-700 h-7 w-1" />
+        <h2 className="text-h3 text-text-primary">{title}</h2>
       </div>
-      {required && <span className="text-h3 text-[var(--error)]">*</span>}
+      {required && <span className="text-h3 text-error">*</span>}
     </div>
   );
 }
@@ -39,7 +40,7 @@ function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-button1 flex items-center gap-1 rounded-md border border-[var(--border-default)] bg-[var(--bg-primary)] px-2 py-1.5 text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
+      className="text-button1 border-border-default bg-bg-primary text-text-primary hover:bg-bg-tertiary flex items-center gap-1 rounded-md border px-2 py-1.5 transition-colors"
     >
       <Plus size={20} />
       {label}
@@ -54,7 +55,7 @@ function RemoveButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="absolute top-3 right-3 rounded-full p-1 text-[var(--text-disabled)] transition-colors hover:bg-[var(--primary-200)] hover:text-[var(--text-tertiary)]"
+      className="text-text-disabled hover:bg-primary-200 hover:text-text-tertiary absolute top-3 right-3 rounded-full p-1 transition-colors"
     >
       <X size={18} />
     </button>
@@ -63,11 +64,9 @@ function RemoveButton({ onClick }: { onClick: () => void }) {
 
 /* ─── 필드 입력 ─── */
 
-const fieldInputClass =
-  'text-body2 h-12 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3 shadow-none placeholder:text-[var(--text-disabled)]';
+const fieldInputClass = formControlClass;
 
-const dropdownClass =
-  'text-body2 h-12 w-full appearance-none rounded-lg border border-[var(--border-default)] bg-[var(--bg-primary)] px-5 py-3 text-[var(--text-primary)] outline-none';
+const dropdownClass = nativeSelectClass;
 
 /* ─── 메인 페이지 ─── */
 
@@ -133,7 +132,7 @@ export default function ResumePage() {
     <div>
       <FormStepHeader totalSteps={TOTAL_STEPS} currentStep={stepNumber} title={stepTitle} />
 
-      <div className="rounded-b-[20px] border border-[var(--border-light)] bg-[var(--bg-primary)] p-11">
+      <div className="border-border-light bg-bg-primary rounded-b-[20px] border p-11">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-11">
           <div className="flex flex-col gap-[34px]">
             {/* ── 개인 정보 ── */}
@@ -142,13 +141,11 @@ export default function ResumePage() {
 
               <div className="flex items-center gap-[34px]">
                 {/* 증명사진 */}
-                <label className="flex h-[186px] w-[140px] shrink-0 cursor-pointer flex-col items-center justify-center gap-3.5 rounded-[10px] border border-[var(--border-light)] bg-[var(--bg-tertiary)] transition-colors hover:bg-[var(--primary-200)]">
-                  <ImageIcon size={24} className="text-[var(--text-tertiary)]" />
+                <label className="border-border-light bg-bg-tertiary hover:bg-primary-200 flex h-[186px] w-[140px] shrink-0 cursor-pointer flex-col items-center justify-center gap-3.5 rounded-[10px] border transition-colors">
+                  <ImageIcon size={24} className="text-text-tertiary" />
                   <div className="flex flex-col items-center gap-1 text-center">
-                    <span className="text-body2 text-[var(--text-tertiary)]">증명사진 업로드</span>
-                    <span className="text-caption text-[var(--text-disabled)]">
-                      JPG, PNG 2MB 이하
-                    </span>
+                    <span className="text-body2 text-text-tertiary">증명사진 업로드</span>
+                    <span className="text-caption text-text-disabled">JPG, PNG 2MB 이하</span>
                   </div>
                   <input type="file" accept="image/jpeg,image/png" className="hidden" />
                 </label>
@@ -156,7 +153,7 @@ export default function ResumePage() {
                 {/* 필드 그리드 */}
                 <div className="flex flex-1 flex-wrap gap-x-6 gap-y-2.5">
                   <div className="flex w-[388px] flex-col gap-2">
-                    <Label className="text-[var(--text-secondary)]">이름</Label>
+                    <Label className="text-text-secondary">이름</Label>
                     <Input
                       {...register('name')}
                       placeholder="본명을 입력해주세요."
@@ -164,7 +161,7 @@ export default function ResumePage() {
                     />
                   </div>
                   <div className="flex flex-1 flex-col gap-2">
-                    <Label className="text-[var(--text-secondary)]">이메일</Label>
+                    <Label className="text-text-secondary">이메일</Label>
                     <Input
                       {...register('email')}
                       placeholder="personal@gmail.com"
@@ -173,7 +170,7 @@ export default function ResumePage() {
                     />
                   </div>
                   <div className="flex w-[388px] flex-col gap-2">
-                    <Label className="text-[var(--text-secondary)]">전화번호</Label>
+                    <Label className="text-text-secondary">전화번호</Label>
                     <Input
                       {...register('phone')}
                       placeholder="숫자만 입력해주세요."
@@ -181,7 +178,7 @@ export default function ResumePage() {
                     />
                   </div>
                   <div className="flex flex-1 flex-col gap-2">
-                    <Label className="text-[var(--text-secondary)]">주소</Label>
+                    <Label className="text-text-secondary">주소</Label>
                     <Input
                       {...register('address')}
                       placeholder="살고주지를 입력해주세요."
@@ -215,14 +212,14 @@ export default function ResumePage() {
               {education.fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="relative flex flex-col gap-2 rounded-[10px] bg-[var(--bg-tertiary)] p-6"
+                  className="bg-bg-tertiary relative flex flex-col gap-2 rounded-[10px] p-6"
                 >
                   {education.fields.length > 1 && (
                     <RemoveButton onClick={() => education.remove(index)} />
                   )}
                   <div className="flex gap-3.5">
                     <div className="flex w-[164px] flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">학력구분</Label>
+                      <Label className="text-text-secondary">학력구분</Label>
                       <select {...register(`education.${index}.type`)} className={dropdownClass}>
                         <option value="">학력구분</option>
                         <option value="고등학교">고등학교</option>
@@ -233,7 +230,7 @@ export default function ResumePage() {
                       </select>
                     </div>
                     <div className="flex flex-1 flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">학교명</Label>
+                      <Label className="text-text-secondary">학교명</Label>
                       <Input
                         {...register(`education.${index}.school`)}
                         placeholder="학교명을 입력해주세요."
@@ -241,7 +238,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex flex-1 flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">전공명</Label>
+                      <Label className="text-text-secondary">전공명</Label>
                       <Input
                         {...register(`education.${index}.major`)}
                         placeholder="전공명을 입력해주세요."
@@ -251,7 +248,7 @@ export default function ResumePage() {
                   </div>
                   <div className="flex gap-3.5">
                     <div className="flex flex-1 flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">학점</Label>
+                      <Label className="text-text-secondary">학점</Label>
                       <Input
                         {...register(`education.${index}.gpa`)}
                         placeholder="평점/4.5"
@@ -259,7 +256,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex flex-1 flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">입학년월</Label>
+                      <Label className="text-text-secondary">입학년월</Label>
                       <Input
                         {...register(`education.${index}.enrollmentDate`)}
                         placeholder="YYYY.MM"
@@ -267,7 +264,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex flex-1 flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">졸업년월</Label>
+                      <Label className="text-text-secondary">졸업년월</Label>
                       <Input
                         {...register(`education.${index}.graduationDate`)}
                         placeholder="YYYY.MM"
@@ -275,7 +272,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex flex-1 flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">졸업상태</Label>
+                      <Label className="text-text-secondary">졸업상태</Label>
                       <select {...register(`education.${index}.status`)} className={dropdownClass}>
                         <option value="">졸업상태</option>
                         <option value="재학중">재학중</option>
@@ -303,14 +300,14 @@ export default function ResumePage() {
               {certifications.fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="relative flex flex-col gap-2 rounded-[10px] bg-[var(--bg-tertiary)] p-6"
+                  className="bg-bg-tertiary relative flex flex-col gap-2 rounded-[10px] p-6"
                 >
                   {certifications.fields.length > 1 && (
                     <RemoveButton onClick={() => certifications.remove(index)} />
                   )}
                   <div className="flex gap-3.5">
                     <div className="flex w-[388px] flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">취득일</Label>
+                      <Label className="text-text-secondary">취득일</Label>
                       <Input
                         {...register(`certifications.${index}.acquiredDate`)}
                         placeholder="YYYY.MM.DD"
@@ -318,7 +315,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex flex-1 flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">자격증명</Label>
+                      <Label className="text-text-secondary">자격증명</Label>
                       <Input
                         {...register(`certifications.${index}.name`)}
                         placeholder="자격증명을 정확하게 입력해주세요."
@@ -326,7 +323,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex w-[388px] flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">발행처</Label>
+                      <Label className="text-text-secondary">발행처</Label>
                       <Input
                         {...register(`certifications.${index}.issuer`)}
                         placeholder="발행처를 입력해주세요."
@@ -351,14 +348,14 @@ export default function ResumePage() {
               {awards.fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="relative flex flex-col gap-2 rounded-[10px] bg-[var(--bg-tertiary)] p-6"
+                  className="bg-bg-tertiary relative flex flex-col gap-2 rounded-[10px] p-6"
                 >
                   {awards.fields.length > 1 && (
                     <RemoveButton onClick={() => awards.remove(index)} />
                   )}
                   <div className="flex gap-3.5">
                     <div className="flex w-[388px] flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">수상일</Label>
+                      <Label className="text-text-secondary">수상일</Label>
                       <Input
                         {...register(`awards.${index}.date`)}
                         placeholder="YYYY.MM.DD"
@@ -366,7 +363,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex flex-1 flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">수상명</Label>
+                      <Label className="text-text-secondary">수상명</Label>
                       <Input
                         {...register(`awards.${index}.name`)}
                         placeholder="수상명을 정확하게 입력해주세요."
@@ -374,7 +371,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex w-[388px] flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">발행처</Label>
+                      <Label className="text-text-secondary">발행처</Label>
                       <Input
                         {...register(`awards.${index}.issuer`)}
                         placeholder="발행처를 입력해주세요."
@@ -408,14 +405,14 @@ export default function ResumePage() {
               {careers.fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="relative flex flex-col gap-2 rounded-[10px] bg-[var(--bg-tertiary)] p-6"
+                  className="bg-bg-tertiary relative flex flex-col gap-2 rounded-[10px] p-6"
                 >
                   {careers.fields.length > 1 && (
                     <RemoveButton onClick={() => careers.remove(index)} />
                   )}
                   <div className="flex gap-3.5">
                     <div className="flex flex-1 flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">경력명</Label>
+                      <Label className="text-text-secondary">경력명</Label>
                       <Input
                         {...register(`careers.${index}.company`)}
                         placeholder="경력명을 입력해주세요."
@@ -423,7 +420,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex w-[140px] flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">입사일</Label>
+                      <Label className="text-text-secondary">입사일</Label>
                       <Input
                         {...register(`careers.${index}.startDate`)}
                         placeholder="YYYY.MM.DD"
@@ -431,7 +428,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex w-[140px] flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">퇴사일</Label>
+                      <Label className="text-text-secondary">퇴사일</Label>
                       <Input
                         {...register(`careers.${index}.endDate`)}
                         placeholder="YYYY.MM.DD"
@@ -439,7 +436,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex w-[221px] flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">경력형태</Label>
+                      <Label className="text-text-secondary">경력형태</Label>
                       <select {...register(`careers.${index}.type`)} className={dropdownClass}>
                         <option value="">경력형태</option>
                         <option value="정규직">정규직</option>
@@ -452,7 +449,7 @@ export default function ResumePage() {
                   </div>
                   <div className="flex gap-3.5">
                     <div className="flex w-[388px] flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">직급</Label>
+                      <Label className="text-text-secondary">직급</Label>
                       <Input
                         {...register(`careers.${index}.position`)}
                         placeholder="직급을 입력해주세요."
@@ -460,7 +457,7 @@ export default function ResumePage() {
                       />
                     </div>
                     <div className="flex flex-1 flex-col gap-2">
-                      <Label className="text-[var(--text-secondary)]">담당업무</Label>
+                      <Label className="text-text-secondary">담당업무</Label>
                       <Input
                         {...register(`careers.${index}.duty`)}
                         placeholder="담당업무를 한 줄정도로 적어주세요."
@@ -480,20 +477,11 @@ export default function ResumePage() {
               variant="outline"
               size="xs"
               onClick={handleSkip}
-              className="border-[var(--error)] text-[var(--error)] hover:bg-[var(--error)]/5"
+              className="border-error text-error hover:bg-error/5"
             >
               나중에 작성
             </Button>
-            <Button
-              type="submit"
-              size="xs"
-              disabled={!isValid}
-              className={
-                isValid
-                  ? ''
-                  : 'bg-[var(--primary-200)] text-[var(--text-tertiary)] hover:bg-[var(--primary-200)] disabled:opacity-100'
-              }
-            >
+            <Button type="submit" size="xs" disabled={!isValid}>
               다음
               <ArrowRight size={20} />
             </Button>

@@ -28,14 +28,14 @@ export default function CompletePage() {
   return (
     <div className="flex flex-col items-center gap-8 py-8">
       {/* 아이콘 */}
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--primary-100)]">
-        <CircleCheckBig size={32} className="text-[var(--primary-700)]" />
+      <div className="bg-primary-100 flex h-16 w-16 items-center justify-center rounded-full">
+        <CircleCheckBig size={32} className="text-primary-700" />
       </div>
 
       {/* 타이틀 */}
       <div className="flex flex-col items-center gap-3.5">
-        <h1 className="text-h2 text-[var(--text-secondary)]">회원가입이 완료되었습니다!</h1>
-        <p className="text-body2 text-center text-[var(--text-tertiary)]">
+        <h1 className="text-h2 text-text-secondary">회원가입이 완료되었습니다!</h1>
+        <p className="text-body2 text-text-tertiary text-center">
           {isCorporate
             ? '기업 회원으로 가입이 완료되었습니다.\nAI 채용 서비스를 시작해보세요.'
             : '개인 회원으로 가입이 완료되었습니다.\n나에게 맞는 공고를 찾아보세요.'}

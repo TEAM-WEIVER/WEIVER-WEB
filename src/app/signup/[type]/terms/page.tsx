@@ -9,7 +9,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '@/components/common/confirm-modal';
 import { useSignupStore } from '@/store/signup-store';
-import { getNextStep, getPrevStep, getStepNumber } from '@/lib/signup-flow';
+import { getPrevStep, getStepNumber } from '@/lib/signup-flow';
 import type { SignupType } from '@/store/signup-store';
 import { corporateTermsSchema, individualTermsSchema } from '@/schemas/signup';
 import type { CorporateTermsData, IndividualTermsData } from '@/schemas/signup';
@@ -123,9 +123,7 @@ function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => voi
     <button type="button" onClick={onChange} className="flex shrink-0 cursor-pointer">
       <span
         className={`flex h-[22px] w-[22px] items-center justify-center rounded border transition-colors ${
-          checked
-            ? 'border-[var(--primary-700)] bg-[var(--primary-700)]'
-            : 'border-[var(--border-default)] bg-white'
+          checked ? 'border-primary-700 bg-primary-700' : 'border-border-default bg-white'
         }`}
       >
         {checked && (
@@ -165,21 +163,21 @@ function TermSection({
     <div className="flex flex-col gap-3.5">
       {/* 제목 */}
       <div className="flex items-center gap-1.5">
-        <h3 className="text-h4 text-[var(--text-primary)]">{item.title}</h3>
-        {item.required && <span className="text-body2 text-[var(--error)]">*</span>}
+        <h3 className="text-h4 text-text-primary">{item.title}</h3>
+        {item.required && <span className="text-body2 text-error">*</span>}
       </div>
 
       {/* 약관 본문 */}
-      <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-primary)] px-5 py-3.5">
+      <div className="border-border-default bg-bg-primary rounded-lg border px-5 py-3.5">
         <div className="h-[124px] overflow-y-auto">
           <p className="text-body2 whitespace-pre-line text-black">{item.content}</p>
         </div>
       </div>
 
       {/* 동의 체크박스 */}
-      <div className="flex items-center gap-2.5 rounded-lg bg-[var(--bg-tertiary)] px-5 py-3">
+      <div className="bg-bg-tertiary flex items-center gap-2.5 rounded-lg px-5 py-3">
         <Checkbox checked={checked} onChange={onToggle} />
-        <span className="text-body2 text-[var(--text-secondary)]">{item.agreeLabel}</span>
+        <span className="text-body2 text-text-secondary">{item.agreeLabel}</span>
       </div>
     </div>
   );
@@ -236,7 +234,6 @@ export default function TermsPage() {
 
   const type = params.type as SignupType;
   const stepNumber = getStepNumber(type, 'terms');
-  const nextStep = getNextStep(type, 'terms');
   const prevStep = getPrevStep(type, 'terms');
 
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -272,21 +269,19 @@ export default function TermsPage() {
       <div className="flex flex-col gap-8">
         {/* 타이틀 */}
         <div className="flex flex-col gap-2">
-          <h1 className="text-h2 text-[var(--text-secondary)]">약관에 동의해주세요</h1>
-          <p className="text-body2 text-[var(--text-tertiary)]">
+          <h1 className="text-h2 text-text-secondary">약관에 동의해주세요</h1>
+          <p className="text-body2 text-text-tertiary">
             {stepNumber}단계 : 정보 수집 및 이용에 대한 약관에 동의해주세요.
           </p>
         </div>
 
         {/* 모두 동의 */}
-        <div className="flex flex-col gap-2 rounded-lg bg-[var(--bg-tertiary)] px-5 py-3">
+        <div className="bg-bg-tertiary flex flex-col gap-2 rounded-lg px-5 py-3">
           <div className="flex items-center gap-2.5">
             <Checkbox checked={allChecked} onChange={handleToggleAll} />
-            <span className="text-body2 font-medium text-[var(--text-secondary)]">
-              모두 동의합니다.
-            </span>
+            <span className="text-body2 text-text-secondary font-medium">모두 동의합니다.</span>
           </div>
-          <p className="text-body3 pl-8 text-[var(--text-tertiary)]">
+          <p className="text-body3 text-text-tertiary pl-8">
             서비스 이용약관, 개인정보 처리방침, {isCorporate ? '기업회원' : '개인회원'} 이용약관,
             마케팅 정보 수신 동의에 대해 모두 동의합니다.
             <br />각 사항에 대한 동의 여부를 개별적으로 선택할 수 있으며, 선택 동의 사항에 대한
@@ -312,21 +307,12 @@ export default function TermsPage() {
           variant="outline"
           size="xs"
           onClick={handleBack}
-          className="gap-1 border-[var(--border-default)]"
+          className="border-border-default gap-1"
         >
           <ArrowLeft size={16} />
           이전 단계
         </Button>
-        <Button
-          type="submit"
-          size="xs"
-          disabled={!isValid}
-          className={
-            isValid
-              ? ''
-              : 'bg-[var(--primary-200)] text-[var(--text-tertiary)] hover:bg-[var(--primary-200)] disabled:opacity-100'
-          }
-        >
+        <Button type="submit" size="xs" disabled={!isValid}>
           다음 단계
         </Button>
       </div>

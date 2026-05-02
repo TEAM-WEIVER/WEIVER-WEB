@@ -5,15 +5,20 @@ import { Slot } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center h-12 gap-2 whitespace-nowrap rounded-md text-button1 transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+  "inline-flex items-center justify-center h-12 gap-2 whitespace-nowrap rounded-md text-button1 transition-all disabled:pointer-events-none disabled:opacity-100 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        destructive: 'bg-destructive text-white hover:bg-destructive/90',
-        outline: 'border bg-background shadow-xs hover:bg-accent',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
+        default:
+          'bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-primary-200 disabled:text-text-tertiary disabled:hover:bg-primary-200',
+        destructive:
+          'bg-destructive text-white hover:bg-destructive/90 disabled:bg-primary-200 disabled:text-text-tertiary disabled:hover:bg-primary-200',
+        outline:
+          'border bg-background shadow-xs hover:bg-accent disabled:text-text-disabled disabled:hover:bg-background',
+        secondary:
+          'bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:bg-primary-200 disabled:text-text-tertiary disabled:hover:bg-primary-200',
+        ghost:
+          'hover:bg-accent hover:text-accent-foreground disabled:text-text-disabled disabled:hover:bg-transparent',
         link: 'text-body3 hover:underline',
       },
       size: {

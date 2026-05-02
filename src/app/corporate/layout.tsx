@@ -16,10 +16,10 @@ function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-[240px] shrink-0 flex-col border-r border-[var(--border-light)] bg-[var(--bg-primary)]">
+    <aside className="border-border-light bg-bg-primary flex h-screen w-[240px] shrink-0 flex-col border-r">
       {/* 로고 */}
       <div className="flex h-16 items-center px-6">
-        <Link href="/corporate/dashboard" className="text-h3 text-[var(--primary-700)]">
+        <Link href="/corporate/dashboard" className="text-h3 text-primary-700">
           PIUDA
         </Link>
       </div>
@@ -36,8 +36,8 @@ function Sidebar() {
               href={item.href}
               className={`text-body2 flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${
                 isActive
-                  ? 'bg-[var(--bg-tertiary)] text-[var(--primary-700)]'
-                  : 'text-[var(--text-tertiary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)]'
+                  ? 'bg-bg-tertiary text-primary-700'
+                  : 'text-text-tertiary hover:bg-bg-secondary hover:text-text-secondary'
               }`}
             >
               <Icon size={20} />
@@ -48,10 +48,10 @@ function Sidebar() {
       </nav>
 
       {/* 하단 로그아웃 */}
-      <div className="border-t border-[var(--border-light)] px-3 py-4">
+      <div className="border-border-light border-t px-3 py-4">
         <button
           type="button"
-          className="text-body2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)]"
+          className="text-body2 text-text-tertiary hover:bg-bg-secondary hover:text-text-secondary flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-colors"
         >
           <LogOut size={20} />
           로그아웃
@@ -63,13 +63,13 @@ function Sidebar() {
 
 export default function CorporateLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-[var(--bg-secondary)]">
+    <div className="bg-bg-secondary flex min-h-screen">
       <Sidebar />
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-end border-b border-[var(--border-light)] bg-[var(--bg-primary)] px-8">
+        <header className="border-border-light bg-bg-primary flex h-16 items-center justify-end border-b px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--bg-tertiary)]">
-              <span className="text-caption text-[var(--text-tertiary)]">P</span>
+            <div className="bg-bg-tertiary flex h-9 w-9 items-center justify-center rounded-full">
+              <span className="text-caption text-text-tertiary">P</span>
             </div>
           </div>
         </header>

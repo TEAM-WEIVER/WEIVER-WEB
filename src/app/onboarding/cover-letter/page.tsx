@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { formTextareaClass } from '@/components/ui/form-field';
 import { Textarea } from '@/components/ui/textarea';
 import { FormStepHeader } from '@/components/common/form-step-header';
 import {
@@ -86,12 +87,12 @@ export default function CoverLetterPage() {
     <div>
       <FormStepHeader totalSteps={TOTAL_STEPS} currentStep={stepNumber} title={stepTitle} />
 
-      <div className="rounded-b-[20px] border border-[var(--border-light)] bg-[var(--bg-primary)] p-11">
+      <div className="border-border-light bg-bg-primary rounded-b-[20px] border p-11">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-11">
           <div className="flex flex-col gap-[34px]">
             {/* 안내 문구 */}
-            <div className="rounded-lg bg-[var(--bg-tertiary)] px-5 py-3">
-              <p className="text-body2 text-[var(--text-tertiary)]">
+            <div className="bg-bg-tertiary rounded-lg px-5 py-3">
+              <p className="text-body2 text-text-tertiary">
                 문항에 알맞는 내용으로 자기소개서를 작성해주세요. 모든 기업은 공통적인 자기소개서
                 문항을 사용합니다.
               </p>
@@ -107,12 +108,12 @@ export default function CoverLetterPage() {
                 return (
                   <div key={q.number} className="flex flex-col gap-2">
                     <div className="flex items-end justify-between">
-                      <p className="text-body1 text-[var(--text-secondary)]">
+                      <p className="text-body1 text-text-secondary">
                         {q.number}. {q.text}
                       </p>
                       <p
                         className={`text-caption shrink-0 pl-4 text-right ${
-                          isOverLimit ? 'text-[var(--error)]' : 'text-[var(--text-tertiary)]'
+                          isOverLimit ? 'text-error' : 'text-text-tertiary'
                         }`}
                       >
                         {currentLength}/{q.maxLength}
@@ -121,10 +122,10 @@ export default function CoverLetterPage() {
                     <Textarea
                       {...register(q.field)}
                       placeholder="내용을 입력해주세요."
-                      className={`text-body2 min-h-[180px] resize-none rounded-lg bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)] ${
+                      className={`${formTextareaClass} min-h-[180px] resize-none ${
                         isOverLimit
-                          ? 'border-[var(--error)] focus-visible:border-[var(--error)] focus-visible:ring-[var(--error)]/20'
-                          : 'border-[var(--border-light)]'
+                          ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                          : ''
                       }`}
                     />
                   </div>
@@ -146,20 +147,11 @@ export default function CoverLetterPage() {
                 variant="outline"
                 size="xs"
                 onClick={handleSkip}
-                className="border-[var(--error)] text-[var(--error)] hover:bg-[var(--error)]/5"
+                className="border-error text-error hover:bg-error/5"
               >
                 나중에 작성
               </Button>
-              <Button
-                type="submit"
-                size="xs"
-                disabled={!isValid}
-                className={
-                  isValid
-                    ? ''
-                    : 'bg-[var(--primary-200)] text-[var(--text-tertiary)] hover:bg-[var(--primary-200)] disabled:opacity-100'
-                }
-              >
+              <Button type="submit" size="xs" disabled={!isValid}>
                 다음
                 <ArrowRight size={20} />
               </Button>

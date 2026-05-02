@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight, Image as ImageIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { formControlClass, formTextareaClass, nativeSelectClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { getNextStep, getPrevStep, getStepNumber } from '@/lib/signup-flow';
@@ -17,10 +18,10 @@ import { companyInfoSchema, type CompanyInfoData } from '@/schemas/signup';
 function SectionTitle({ title, description }: { title: string; description?: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className={`w-1 bg-[var(--primary-700)] ${description ? 'h-12' : 'h-7'}`} />
+      <div className={`bg-primary-700 w-1 ${description ? 'h-12' : 'h-7'}`} />
       <div className="flex flex-col gap-1">
-        <h2 className="text-h3 text-[var(--text-primary)]">{title}</h2>
-        {description && <p className="text-caption text-[var(--text-tertiary)]">{description}</p>}
+        <h2 className="text-h3 text-text-primary">{title}</h2>
+        {description && <p className="text-caption text-text-tertiary">{description}</p>}
       </div>
     </div>
   );
@@ -29,7 +30,7 @@ function SectionTitle({ title, description }: { title: string; description?: str
 /* ─── 필드 라벨 ─── */
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-h4 text-[var(--text-secondary)]">{children}</p>;
+  return <p className="text-h4 text-text-secondary">{children}</p>;
 }
 
 /* ─── 업무 방식 선택 버튼 ─── */
@@ -47,10 +48,10 @@ function WorkStyleChoice({
     <button
       type="button"
       onClick={onClick}
-      className={`text-body2 flex h-12 items-center justify-center rounded-lg border px-4 py-3.5 text-center text-[var(--text-primary)] transition-colors ${
+      className={`text-body2 text-text-primary flex h-12 items-center justify-center rounded-lg border px-4 py-3.5 text-center transition-colors ${
         selected
-          ? 'border-[var(--success)] bg-[#f4fffe]'
-          : 'border-[var(--border-default)] bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)]'
+          ? 'border-success bg-[#f4fffe]'
+          : 'border-border-default bg-bg-primary hover:bg-bg-tertiary'
       }`}
     >
       {label}
@@ -85,11 +86,8 @@ const WORK_STYLE_CATEGORIES = [
 
 /* ─── 공통 스타일 ─── */
 
-const fieldInputClass =
-  'text-body2 h-12 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3 shadow-none placeholder:text-[var(--text-disabled)]';
-
-const dropdownClass =
-  'text-body2 h-12 w-[388px] appearance-none rounded-lg border border-[var(--border-default)] bg-[var(--bg-primary)] px-5 py-3 text-[var(--text-primary)] outline-none';
+const fieldInputClass = formControlClass;
+const dropdownClass = `${nativeSelectClass} w-[388px]`;
 
 /* ─── 메인 페이지 ─── */
 
@@ -149,8 +147,8 @@ export default function CompanyInfoPage() {
       <div className="flex flex-col gap-[34px]">
         {/* ── 타이틀 ── */}
         <div className="flex flex-col gap-2">
-          <h1 className="text-h2 text-[var(--text-secondary)]">기업 정보를 입력해주세요</h1>
-          <p className="text-body2 text-[var(--text-tertiary)]">
+          <h1 className="text-h2 text-text-secondary">기업 정보를 입력해주세요</h1>
+          <p className="text-body2 text-text-tertiary">
             {stepNumber}단계 : 기본 정보 및 문화, 업무 방식에 대해서 작성해주세요.
           </p>
         </div>
@@ -161,11 +159,11 @@ export default function CompanyInfoPage() {
 
           <div className="flex items-center gap-6">
             {/* 기업 로고 */}
-            <label className="flex h-[140px] w-[140px] shrink-0 cursor-pointer flex-col items-center justify-center gap-3.5 rounded-[10px] border border-[var(--border-light)] bg-[var(--bg-tertiary)] transition-colors hover:bg-[var(--primary-200)]">
-              <ImageIcon size={24} className="text-[var(--text-tertiary)]" />
+            <label className="border-border-light bg-bg-tertiary hover:bg-primary-200 flex h-[140px] w-[140px] shrink-0 cursor-pointer flex-col items-center justify-center gap-3.5 rounded-lg border transition-colors">
+              <ImageIcon size={24} className="text-text-tertiary" />
               <div className="flex flex-col items-center gap-1 text-center">
-                <span className="text-body2 text-[var(--text-tertiary)]">기업로고 업로드</span>
-                <span className="text-caption text-[var(--text-disabled)]">JPG, PNG 2MB 이하</span>
+                <span className="text-body2 text-text-tertiary">기업로고 업로드</span>
+                <span className="text-caption text-text-disabled">JPG, PNG 2MB 이하</span>
               </div>
               <input type="file" accept="image/jpeg,image/png" className="hidden" />
             </label>
@@ -260,7 +258,7 @@ export default function CompanyInfoPage() {
                 <FieldLabel>기업 문화 및 방향성</FieldLabel>
                 <p
                   className={`text-caption text-right ${
-                    cultureOverLimit ? 'text-[var(--error)]' : 'text-[var(--text-tertiary)]'
+                    cultureOverLimit ? 'text-error' : 'text-text-tertiary'
                   }`}
                 >
                   {cultureValue.length}/300
@@ -269,10 +267,10 @@ export default function CompanyInfoPage() {
               <Textarea
                 {...register('culture')}
                 placeholder={`명확한 키워드가 포함되도록 2~3줄 정도로 작성해주세요.\ne.g. 우리는 사회적 가치를 추구합니다.`}
-                className={`text-body2 min-h-[120px] resize-none rounded-lg bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)] ${
+                className={`${formTextareaClass} min-h-[120px] resize-none ${
                   cultureOverLimit
-                    ? 'border-[var(--error)] focus-visible:border-[var(--error)] focus-visible:ring-[var(--error)]/20'
-                    : 'border-[var(--border-light)]'
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
                 }`}
               />
             </div>
@@ -281,7 +279,7 @@ export default function CompanyInfoPage() {
             <div className="flex flex-col gap-3.5">
               <div className="flex flex-col gap-1">
                 <FieldLabel>업무 방식</FieldLabel>
-                <p className="text-caption text-[var(--text-tertiary)]">
+                <p className="text-caption text-text-tertiary">
                   각 항목 당 하나의 스타일을 선택해주세요.
                 </p>
               </div>
@@ -292,9 +290,9 @@ export default function CompanyInfoPage() {
                   {WORK_STYLE_CATEGORIES.map((cat) => (
                     <div
                       key={cat.label}
-                      className="flex h-[22px] items-center justify-center rounded bg-[var(--bg-tertiary)]"
+                      className="bg-bg-tertiary flex h-[22px] items-center justify-center rounded"
                     >
-                      <span className="text-caption text-center text-[var(--text-tertiary)]">
+                      <span className="text-caption text-text-tertiary text-center">
                         {cat.label}
                       </span>
                     </div>
@@ -332,7 +330,7 @@ export default function CompanyInfoPage() {
               <div className="flex justify-end">
                 <p
                   className={`text-caption text-right ${
-                    workStyleNoteOverLimit ? 'text-[var(--error)]' : 'text-[var(--text-tertiary)]'
+                    workStyleNoteOverLimit ? 'text-error' : 'text-text-tertiary'
                   }`}
                 >
                   {workStyleNoteValue.length}/80
@@ -343,7 +341,7 @@ export default function CompanyInfoPage() {
                 placeholder="업무 방식에 대해 추가로 설명하고 싶은게 있나요?"
                 className={`${fieldInputClass} ${
                   workStyleNoteOverLimit
-                    ? 'border-[var(--error)] focus-visible:border-[var(--error)] focus-visible:ring-[var(--error)]/20'
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
                     : ''
                 }`}
               />
@@ -358,16 +356,7 @@ export default function CompanyInfoPage() {
           <ArrowLeft size={20} />
           이전 단계
         </Button>
-        <Button
-          type="submit"
-          size="xs"
-          disabled={!isValid}
-          className={
-            isValid
-              ? ''
-              : 'bg-[var(--primary-200)] text-[var(--text-tertiary)] hover:bg-[var(--primary-200)] disabled:opacity-100'
-          }
-        >
+        <Button type="submit" size="xs" disabled={!isValid}>
           다음 단계
           <ArrowRight size={20} />
         </Button>

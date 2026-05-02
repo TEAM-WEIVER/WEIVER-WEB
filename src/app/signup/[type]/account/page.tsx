@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, ArrowRight, CircleCheck } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { FieldError, FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSignupStore } from '@/store/signup-store';
@@ -41,11 +42,8 @@ function PasswordRules({ password }: { password: string }) {
 function PasswordRuleItem({ passed, label }: { passed: boolean; label: string }) {
   return (
     <div className="flex items-center gap-1.5">
-      <CircleCheck
-        size={18}
-        className={passed ? 'text-[var(--error)]' : 'text-[var(--text-disabled)]'}
-      />
-      <span className="text-caption text-[var(--text-primary)]">{label}</span>
+      <CircleCheck size={18} className={passed ? 'text-error' : 'text-text-disabled'} />
+      <span className="text-caption text-text-primary">{label}</span>
     </div>
   );
 }
@@ -113,8 +111,8 @@ function CorporateAccountForm() {
       <div className="flex flex-col gap-[34px]">
         {/* 타이틀 */}
         <div className="flex flex-col gap-2">
-          <h1 className="text-h2 text-[var(--text-secondary)]">계정을 생성하세요</h1>
-          <p className="text-body2 text-[var(--text-tertiary)]">
+          <h1 className="text-h2 text-text-secondary">계정을 생성하세요</h1>
+          <p className="text-body2 text-text-tertiary">
             {stepNumber}단계 : 계정 정보를 입력해주세요.
           </p>
         </div>
@@ -124,39 +122,33 @@ function CorporateAccountForm() {
           {/* 이메일 인증 그룹 */}
           <div className="flex flex-col gap-3.5">
             {/* 이메일 */}
-            <div className="flex flex-col gap-2">
-              <Label className="text-[var(--text-primary)]">기업 이메일을 입력해주세요.</Label>
+            <FormField label="기업 이메일을 입력해주세요." error={errors.email?.message}>
               <div className="flex gap-2">
                 <Input
                   type="email"
                   {...register('email')}
                   placeholder="work@company.co.kr"
                   disabled={isEmailVerified}
-                  className="text-body2 flex-1 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)]"
+                  className="flex-1"
                 />
-                <button
+                <Button
                   type="button"
                   onClick={handleSendVerification}
                   disabled={isEmailVerified}
-                  className="text-button1 h-12 w-24 shrink-0 rounded-[10px] bg-[var(--primary-700)] text-white transition-colors hover:bg-[var(--primary-800)] disabled:bg-[var(--primary-400)] disabled:text-white"
+                  className="w-24 shrink-0 rounded-lg"
                 >
                   인증하기
-                </button>
+                </Button>
               </div>
-              {errors.email && (
-                <p className="text-caption text-[var(--error)]">{errors.email.message}</p>
-              )}
-            </div>
+            </FormField>
 
             {/* 인증 코드 */}
             {isCodeSent && (
               <div className="flex flex-col gap-2">
                 <div className="flex items-end justify-between">
-                  <Label className="text-[var(--text-primary)]">인증 코드를 입력해주세요.</Label>
+                  <Label className="text-text-primary">인증 코드를 입력해주세요.</Label>
                   {timer.isRunning && (
-                    <span className="text-caption text-[var(--error)]">
-                      {timer.formatted} 제한시간
-                    </span>
+                    <span className="text-caption text-error">{timer.formatted} 제한시간</span>
                   )}
                 </div>
                 <div className="flex gap-2">
@@ -168,24 +160,24 @@ function CorporateAccountForm() {
                     onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="숫자 6자리"
                     disabled={isEmailVerified}
-                    className="text-body2 flex-1 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)]"
+                    className="flex-1"
                   />
                   {!isEmailVerified && (
-                    <button
+                    <Button
                       type="button"
                       onClick={handleVerifyCode}
                       disabled={verificationCode.length !== 6 || !timer.isRunning}
-                      className="text-button1 h-12 w-24 shrink-0 rounded-[10px] bg-[var(--primary-700)] text-white transition-colors hover:bg-[var(--primary-800)] disabled:bg-[var(--primary-400)] disabled:text-white"
+                      className="w-24 shrink-0 rounded-lg"
                     >
                       확인
-                    </button>
+                    </Button>
                   )}
                 </div>
                 {isEmailVerified && (
-                  <p className="text-caption text-[var(--success)]">이메일이 인증되었습니다.</p>
+                  <p className="text-caption text-success">이메일이 인증되었습니다.</p>
                 )}
                 {!timer.isRunning && !isEmailVerified && isCodeSent && timer.seconds === 0 && (
-                  <p className="text-caption text-[var(--error)]">
+                  <p className="text-caption text-error">
                     인증 시간이 만료되었습니다. 다시 인증해주세요.
                   </p>
                 )}
@@ -198,18 +190,18 @@ function CorporateAccountForm() {
             {/* 비밀번호 + 규칙 */}
             <div className="flex flex-col gap-2">
               <div className="flex flex-col gap-2">
-                <Label className="text-[var(--text-primary)]">비밀번호를 입력해주세요.</Label>
+                <Label className="text-text-primary">비밀번호를 입력해주세요.</Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     {...register('password')}
                     placeholder="영문, 숫자, 특수문자 조합 6-14자"
-                    className="text-body2 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 pr-14 shadow-none placeholder:text-[var(--text-disabled)]"
+                    className="pr-14"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer text-[var(--text-disabled)] transition-colors hover:text-[var(--text-tertiary)]"
+                    className="text-text-disabled hover:text-text-tertiary absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer transition-colors"
                   >
                     {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
                   </button>
@@ -220,55 +212,41 @@ function CorporateAccountForm() {
 
             {/* 비밀번호 확인 */}
             <div className="flex flex-col gap-2">
-              <Label className="text-[var(--text-primary)]">비밀번호를 확인해주세요.</Label>
+              <Label className="text-text-primary">비밀번호를 확인해주세요.</Label>
               <div className="relative">
                 <Input
                   type={showPasswordConfirm ? 'text' : 'password'}
                   {...register('passwordConfirm')}
                   placeholder="위에서 입력한 비밀번호를 입력해주세요."
-                  className="text-body2 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 pr-14 shadow-none placeholder:text-[var(--text-disabled)]"
+                  className="pr-14"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                  className="absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer text-[var(--text-disabled)] transition-colors hover:text-[var(--text-tertiary)]"
+                  className="text-text-disabled hover:text-text-tertiary absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer transition-colors"
                 >
                   {showPasswordConfirm ? <EyeOff size={22} /> : <Eye size={22} />}
                 </button>
               </div>
-              {errors.passwordConfirm && (
-                <p className="text-caption text-[var(--error)]">{errors.passwordConfirm.message}</p>
-              )}
+              {errors.passwordConfirm && <FieldError>{errors.passwordConfirm.message}</FieldError>}
             </div>
           </div>
 
           {/* 회사명 */}
           <div className="flex flex-col gap-2">
-            <Label className="text-[var(--text-primary)]">회사명을 입력해주세요.</Label>
+            <Label className="text-text-primary">회사명을 입력해주세요.</Label>
             <Input
               type="text"
               {...register('companyName')}
               placeholder="회사명을 정확하게 입력해주세요."
-              className="text-body2 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)]"
             />
-            {errors.companyName && (
-              <p className="text-caption text-[var(--error)]">{errors.companyName.message}</p>
-            )}
+            {errors.companyName && <FieldError>{errors.companyName.message}</FieldError>}
           </div>
         </div>
       </div>
 
       {/* 하단 버튼 */}
-      <Button
-        type="submit"
-        size="md"
-        disabled={!canSubmit}
-        className={
-          canSubmit
-            ? ''
-            : 'bg-[var(--primary-200)] text-[var(--text-tertiary)] hover:bg-[var(--primary-200)] disabled:opacity-100'
-        }
-      >
+      <Button type="submit" size="md" disabled={!canSubmit}>
         기업 정보 입력하기
         <ArrowRight size={20} />
       </Button>
@@ -338,8 +316,8 @@ function IndividualAccountForm() {
       <div className="flex flex-col gap-[34px]">
         {/* 타이틀 */}
         <div className="flex flex-col gap-2">
-          <h1 className="text-h2 text-[var(--text-secondary)]">계정을 생성하세요</h1>
-          <p className="text-body2 text-[var(--text-tertiary)]">
+          <h1 className="text-h2 text-text-secondary">계정을 생성하세요</h1>
+          <p className="text-body2 text-text-tertiary">
             {stepNumber}단계 : 계정 정보를 입력해주세요.
           </p>
         </div>
@@ -349,39 +327,33 @@ function IndividualAccountForm() {
           {/* 이메일 인증 그룹 */}
           <div className="flex flex-col gap-3.5">
             {/* 이메일 */}
-            <div className="flex flex-col gap-2">
-              <Label className="text-[var(--text-primary)]">이메일을 입력해주세요.</Label>
+            <FormField label="이메일을 입력해주세요." error={errors.email?.message}>
               <div className="flex gap-2">
                 <Input
                   type="email"
                   {...register('email')}
                   placeholder="personal@gmail.com"
                   disabled={isEmailVerified}
-                  className="text-body2 flex-1 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)]"
+                  className="flex-1"
                 />
-                <button
+                <Button
                   type="button"
                   onClick={handleSendVerification}
                   disabled={isEmailVerified}
-                  className="text-button1 h-12 w-24 shrink-0 rounded-[10px] bg-[var(--primary-700)] text-white transition-colors hover:bg-[var(--primary-800)] disabled:bg-[var(--primary-400)] disabled:text-white"
+                  className="w-24 shrink-0 rounded-lg"
                 >
                   인증하기
-                </button>
+                </Button>
               </div>
-              {errors.email && (
-                <p className="text-caption text-[var(--error)]">{errors.email.message}</p>
-              )}
-            </div>
+            </FormField>
 
             {/* 인증 코드 */}
             {isCodeSent && (
               <div className="flex flex-col gap-2">
                 <div className="flex items-end justify-between">
-                  <Label className="text-[var(--text-primary)]">인증 코드를 입력해주세요.</Label>
+                  <Label className="text-text-primary">인증 코드를 입력해주세요.</Label>
                   {timer.isRunning && (
-                    <span className="text-caption text-[var(--error)]">
-                      {timer.formatted} 제한시간
-                    </span>
+                    <span className="text-caption text-error">{timer.formatted} 제한시간</span>
                   )}
                 </div>
                 <div className="flex gap-2">
@@ -393,24 +365,24 @@ function IndividualAccountForm() {
                     onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="숫자 6자리"
                     disabled={isEmailVerified}
-                    className="text-body2 flex-1 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 shadow-none placeholder:text-[var(--text-disabled)]"
+                    className="flex-1"
                   />
                   {!isEmailVerified && (
-                    <button
+                    <Button
                       type="button"
                       onClick={handleVerifyCode}
                       disabled={verificationCode.length !== 6 || !timer.isRunning}
-                      className="text-button1 h-12 w-24 shrink-0 rounded-[10px] bg-[var(--primary-700)] text-white transition-colors hover:bg-[var(--primary-800)] disabled:bg-[var(--primary-400)] disabled:text-white"
+                      className="w-24 shrink-0 rounded-lg"
                     >
                       확인
-                    </button>
+                    </Button>
                   )}
                 </div>
                 {isEmailVerified && (
-                  <p className="text-caption text-[var(--success)]">이메일이 인증되었습니다.</p>
+                  <p className="text-caption text-success">이메일이 인증되었습니다.</p>
                 )}
                 {!timer.isRunning && !isEmailVerified && isCodeSent && timer.seconds === 0 && (
-                  <p className="text-caption text-[var(--error)]">
+                  <p className="text-caption text-error">
                     인증 시간이 만료되었습니다. 다시 인증해주세요.
                   </p>
                 )}
@@ -423,18 +395,18 @@ function IndividualAccountForm() {
             {/* 비밀번호 + 규칙 */}
             <div className="flex flex-col gap-2">
               <div className="flex flex-col gap-2">
-                <Label className="text-[var(--text-primary)]">비밀번호를 입력해주세요.</Label>
+                <Label className="text-text-primary">비밀번호를 입력해주세요.</Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     {...register('password')}
                     placeholder="영문, 숫자, 특수문자 조합 6-14자"
-                    className="text-body2 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 pr-14 shadow-none placeholder:text-[var(--text-disabled)]"
+                    className="pr-14"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer text-[var(--text-disabled)] transition-colors hover:text-[var(--text-tertiary)]"
+                    className="text-text-disabled hover:text-text-tertiary absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer transition-colors"
                   >
                     {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
                   </button>
@@ -445,41 +417,30 @@ function IndividualAccountForm() {
 
             {/* 비밀번호 확인 */}
             <div className="flex flex-col gap-2">
-              <Label className="text-[var(--text-primary)]">비밀번호를 확인해주세요.</Label>
+              <Label className="text-text-primary">비밀번호를 확인해주세요.</Label>
               <div className="relative">
                 <Input
                   type={showPasswordConfirm ? 'text' : 'password'}
                   {...register('passwordConfirm')}
                   placeholder="위에서 입력한 비밀번호를 입력해주세요."
-                  className="text-body2 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3.5 pr-14 shadow-none placeholder:text-[var(--text-disabled)]"
+                  className="pr-14"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                  className="absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer text-[var(--text-disabled)] transition-colors hover:text-[var(--text-tertiary)]"
+                  className="text-text-disabled hover:text-text-tertiary absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer transition-colors"
                 >
                   {showPasswordConfirm ? <EyeOff size={22} /> : <Eye size={22} />}
                 </button>
               </div>
-              {errors.passwordConfirm && (
-                <p className="text-caption text-[var(--error)]">{errors.passwordConfirm.message}</p>
-              )}
+              {errors.passwordConfirm && <FieldError>{errors.passwordConfirm.message}</FieldError>}
             </div>
           </div>
         </div>
       </div>
 
       {/* 하단 버튼 */}
-      <Button
-        type="submit"
-        size="md"
-        disabled={!canSubmit}
-        className={
-          canSubmit
-            ? ''
-            : 'bg-[var(--primary-200)] text-[var(--text-tertiary)] hover:bg-[var(--primary-200)] disabled:opacity-100'
-        }
-      >
+      <Button type="submit" size="md" disabled={!canSubmit}>
         다음 단계
         <ArrowRight size={20} />
       </Button>

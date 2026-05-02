@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, CloudUpload, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { formControlClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { FormStepHeader } from '@/components/common/form-step-header';
 import {
@@ -20,16 +21,15 @@ import { portfolioSchema, type PortfolioData } from '@/schemas/onboarding';
 
 const CURRENT_STEP = 'portfolio' as const;
 
-const fieldInputClass =
-  'text-body2 h-12 rounded-lg border-[var(--border-light)] bg-[var(--bg-secondary)] px-5 py-3 shadow-none placeholder:text-[var(--text-disabled)]';
+const fieldInputClass = formControlClass;
 
 /* ─── 섹션 제목 ─── */
 
 function SectionTitle({ title }: { title: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="h-7 w-1 bg-[var(--primary-700)]" />
-      <h2 className="text-h3 text-[var(--text-primary)]">{title}</h2>
+      <div className="bg-primary-700 h-7 w-1" />
+      <h2 className="text-h3 text-text-primary">{title}</h2>
     </div>
   );
 }
@@ -173,7 +173,7 @@ export default function PortfolioPage() {
     <div>
       <FormStepHeader totalSteps={TOTAL_STEPS} currentStep={stepNumber} title={stepTitle} />
 
-      <div className="rounded-b-[20px] border border-[var(--border-light)] bg-[var(--bg-primary)] p-11">
+      <div className="border-border-light bg-bg-primary rounded-b-[20px] border p-11">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-11">
           <div className="flex flex-col gap-[34px]">
             {/* ── 포트폴리오 파일 업로드 ── */}
@@ -190,16 +190,16 @@ export default function PortfolioPage() {
                 />
 
                 {uploadedFile ? (
-                  <div className="flex items-center justify-between rounded-[10px] border border-[var(--border-light)] bg-[var(--bg-primary)] px-6 py-3.5">
+                  <div className="border-border-light bg-bg-primary flex items-center justify-between rounded-lg border px-6 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="flex size-10 shrink-0 items-center justify-center">
                         <PdfFileIcon />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-body2 truncate text-[var(--text-secondary)]">
+                        <span className="text-body2 text-text-secondary truncate">
                           {uploadedFile.name}
                         </span>
-                        <span className="text-caption text-[var(--text-disabled)]">
+                        <span className="text-caption text-text-disabled">
                           {formatFileSize(uploadedFile.size)}
                         </span>
                       </div>
@@ -207,7 +207,7 @@ export default function PortfolioPage() {
                     <button
                       type="button"
                       onClick={removeFile}
-                      className="shrink-0 p-1 text-[var(--border-default)] transition-colors hover:text-[var(--error)]"
+                      className="text-border-default hover:text-error shrink-0 p-1 transition-colors"
                     >
                       <Trash2 size={24} />
                     </button>
@@ -219,18 +219,18 @@ export default function PortfolioPage() {
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
-                    className={`flex w-full cursor-pointer flex-col items-center justify-center gap-3.5 rounded-[10px] border border-dashed px-10 py-12 transition-colors ${
+                    className={`flex w-full cursor-pointer flex-col items-center justify-center gap-3.5 rounded-lg border border-dashed px-10 py-12 transition-colors ${
                       isDragging
-                        ? 'border-[var(--primary-700)] bg-[var(--primary-200)]'
-                        : 'border-[var(--border-default)] bg-[var(--bg-tertiary)]'
+                        ? 'border-primary-700 bg-primary-200'
+                        : 'border-border-default bg-bg-tertiary'
                     }`}
                   >
-                    <CloudUpload size={24} className="text-[var(--icon-muted)]" />
+                    <CloudUpload size={24} className="text-icon-muted" />
                     <div className="flex flex-col items-center gap-1.5">
-                      <p className="text-body1 text-[var(--text-secondary)]">
+                      <p className="text-body1 text-text-secondary">
                         클릭하거나 파일을 드래그하여 업로드하세요
                       </p>
-                      <p className="text-body3 text-[var(--text-disabled)]">
+                      <p className="text-body3 text-text-disabled">
                         PDF 파일만 업로드 가능 (최대 1TB)
                       </p>
                     </div>
@@ -248,7 +248,7 @@ export default function PortfolioPage() {
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5">
                     <GithubIcon />
-                    <span className="text-body1 text-[var(--text-secondary)]">Github</span>
+                    <span className="text-body1 text-text-secondary">Github</span>
                   </div>
                   <Input
                     {...register('githubUrl')}
@@ -261,7 +261,7 @@ export default function PortfolioPage() {
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5">
                     <NotionIcon />
-                    <span className="text-body1 text-[var(--text-secondary)]">Notion</span>
+                    <span className="text-body1 text-text-secondary">Notion</span>
                   </div>
                   <Input
                     {...register('notionUrl')}
@@ -272,7 +272,7 @@ export default function PortfolioPage() {
 
                 {/* 기타 */}
                 <div className="flex flex-col gap-2">
-                  <span className="text-body1 text-[var(--text-secondary)]">기타 개인 사이트</span>
+                  <span className="text-body1 text-text-secondary">기타 개인 사이트</span>
                   <Input
                     {...register('otherUrl')}
                     placeholder="https://..."
@@ -283,13 +283,13 @@ export default function PortfolioPage() {
             </div>
 
             {/* ── 동의 체크박스 ── */}
-            <label className="flex cursor-pointer items-center gap-2.5 rounded-lg bg-[var(--bg-tertiary)] px-5 py-3">
+            <label className="bg-bg-tertiary flex cursor-pointer items-center gap-2.5 rounded-lg px-5 py-3">
               <input
                 type="checkbox"
                 {...register('agreement')}
-                className="h-[22px] w-[22px] shrink-0 cursor-pointer appearance-none rounded border border-[var(--border-default)] bg-[var(--bg-primary)] checked:border-[var(--primary-700)] checked:bg-[var(--primary-700)] checked:bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M20%206L9%2017l-5-5%22%2F%3E%3C%2Fsvg%3E')] checked:bg-center checked:bg-no-repeat"
+                className="border-border-default bg-bg-primary checked:border-primary-700 checked:bg-primary-700 h-[22px] w-[22px] shrink-0 cursor-pointer appearance-none rounded border checked:bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M20%206L9%2017l-5-5%22%2F%3E%3C%2Fsvg%3E')] checked:bg-center checked:bg-no-repeat"
               />
-              <span className="text-body2 text-[var(--text-secondary)]">
+              <span className="text-body2 text-text-secondary">
                 제공한 정보가 정확함을 확인하며, 채용 절차를 위해 개인정보가 활용되는 것에
                 동의합니다.
               </span>
@@ -309,20 +309,11 @@ export default function PortfolioPage() {
                 variant="outline"
                 size="xs"
                 onClick={handleSkip}
-                className="border-[var(--error)] text-[var(--error)] hover:bg-[var(--error)]/5"
+                className="border-error text-error hover:bg-error/5"
               >
                 나중에 작성
               </Button>
-              <Button
-                type="submit"
-                size="xs"
-                disabled={!isValid}
-                className={
-                  isValid
-                    ? ''
-                    : 'bg-[var(--primary-200)] text-[var(--text-tertiary)] hover:bg-[var(--primary-200)] disabled:opacity-100'
-                }
-              >
+              <Button type="submit" size="xs" disabled={!isValid}>
                 제출
               </Button>
             </div>
