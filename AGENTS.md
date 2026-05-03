@@ -41,6 +41,8 @@ Vitest is configured through Storybook’s test addon with Playwright Chromium i
 
 Recent history uses short type prefixes such as `feat`, `fix`, `refactor`, `cicd`, and occasional `temp`. Prefer concise messages like `feat: add signup terms flow` or `fix: correct button story state`.
 
+When asked to recommend a commit message, answer with a concise Korean message using the existing prefix style, for example `docs: 이슈 기반 git flow 가이드 추가`. Include 2-3 alternatives only when useful.
+
 Start work from an issue. Create or link the issue first, then create a branch that includes the issue number and purpose, for example `feat/123-signup-flow` or `fix/124-button-story`. Keep each branch scoped to one issue.
 
 Pull requests should link the issue with `Closes #123` or `Refs #123`, include a short summary, affected routes/components, verification commands, and screenshots or Storybook links for visual changes. Call out any known follow-up work.
