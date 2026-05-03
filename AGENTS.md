@@ -37,11 +37,13 @@ Use `PascalCase` for React components, `camelCase` for variables/functions, and 
 
 Vitest is configured through Storybook’s test addon with Playwright Chromium in headless mode. Prefer adding or updating `*.stories.tsx` for reusable UI components so interaction and accessibility checks can run through Storybook-based tests. Run `pnpm build-storybook` and `pnpm lint:check` before opening larger UI changes.
 
-## Commit & Pull Request Guidelines
+## Issue, Branch, Commit & Pull Request Guidelines
 
 Recent history uses short type prefixes such as `feat`, `fix`, `refactor`, `cicd`, and occasional `temp`. Prefer concise messages like `feat: add signup terms flow` or `fix: correct button story state`.
 
-Pull requests should include a short summary, affected routes/components, verification commands, and screenshots or Storybook links for visual changes. Link related issues when available and call out any known follow-up work.
+Start work from an issue. Create or link the issue first, then create a branch that includes the issue number and purpose, for example `feat/123-signup-flow` or `fix/124-button-story`. Keep each branch scoped to one issue.
+
+Pull requests should link the issue with `Closes #123` or `Refs #123`, include a short summary, affected routes/components, verification commands, and screenshots or Storybook links for visual changes. Call out any known follow-up work.
 
 ## Security & Configuration Tips
 
