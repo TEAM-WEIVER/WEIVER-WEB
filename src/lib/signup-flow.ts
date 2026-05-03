@@ -1,8 +1,8 @@
 import type { SignupType } from '@/store/signup-store';
 
 const SIGNUP_FLOWS: Record<SignupType, string[]> = {
-  corporate: ['account', 'company-info', 'terms'],
-  individual: ['account', 'terms'],
+  corporate: ['account', 'company-info', 'terms', 'complete'],
+  individual: ['account', 'terms', 'complete'],
 };
 
 export function getSignupFlow(type: SignupType) {

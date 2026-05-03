@@ -1,36 +1,36 @@
-'use client';
-
-import { useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import type { ReactNode } from 'react';
+import { notFound } from 'next/navigation';
 
 import { Header } from '@/components/common/header';
-import { useSignupStore } from '@/store/signup-store';
 import type { SignupType } from '@/store/signup-store';
+import { SignupTypeSync } from '@/app/signup/[type]/signup-type-sync';
 
-const VALID_TYPES: readonly string[] = ['corporate', 'individual'];
+const VALID_TYPES = ['corporate', 'individual'] as const;
 
-export default function SignupLayout({ children }: { children: React.ReactNode }) {
-  const params = useParams<{ type: string }>();
-  const setType = useSignupStore((state) => state.setType);
+function isSignupType(type: string): type is SignupType {
+  return VALID_TYPES.includes(type as SignupType);
+}
 
-  const type = params.type;
+export default async function SignupLayout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ type: string }>;
+}) {
+  const { type } = await params;
 
-  // type 유효성 검사
-  if (!VALID_TYPES.includes(type)) {
-    throw new Error(`Invalid signup type: ${type}`);
+  if (!isSignupType(type)) {
+    notFound();
   }
-
-  // store에 type 동기화
-  useEffect(() => {
-    setType(type as SignupType);
-  }, [type, setType]);
 
   return (
     <div className="bg-bg-secondary min-h-screen">
+      <SignupTypeSync type={type} />
       <Header />
 
       <main className="flex justify-center px-4 pt-[34px] pb-20">
-        <div className="border-border-light bg-bg-primary rounded-[20px] border p-11">
+        <div className="border-border-light bg-bg-primary w-full max-w-[1062px] rounded-[20px] border p-6 md:p-11">
           {children}
         </div>
       </main>

@@ -1,19 +1,22 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight, Image as ImageIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { formControlClass, formTextareaClass, nativeSelectClass } from '@/components/ui/form-field';
+import {
+  FieldError,
+  formControlClass,
+  formTextareaClass,
+  nativeSelectClass,
+} from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { getNextStep, getPrevStep, getStepNumber } from '@/lib/signup-flow';
-import type { SignupType } from '@/store/signup-store';
 import { companyInfoSchema, type CompanyInfoData } from '@/schemas/signup';
-
-/* ─── 섹션 제목 ─── */
+import { useSignupStore, type SignupType } from '@/store/signup-store';
 
 function SectionTitle({ title, description }: { title: string; description?: string }) {
   return (
@@ -21,19 +24,15 @@ function SectionTitle({ title, description }: { title: string; description?: str
       <div className={`bg-primary-700 w-1 ${description ? 'h-12' : 'h-7'}`} />
       <div className="flex flex-col gap-1">
         <h2 className="text-h3 text-text-primary">{title}</h2>
-        {description && <p className="text-caption text-text-tertiary">{description}</p>}
+        {description ? <p className="text-caption text-text-tertiary">{description}</p> : null}
       </div>
     </div>
   );
 }
 
-/* ─── 필드 라벨 ─── */
-
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-h4 text-text-secondary">{children}</p>;
 }
-
-/* ─── 업무 방식 선택 버튼 ─── */
 
 function WorkStyleChoice({
   selected,
@@ -47,8 +46,9 @@ function WorkStyleChoice({
   return (
     <button
       type="button"
+      aria-pressed={selected}
       onClick={onClick}
-      className={`text-body2 text-text-primary flex h-12 items-center justify-center rounded-lg border px-4 py-3.5 text-center transition-colors ${
+      className={`text-body2 text-text-primary flex min-h-12 items-center justify-center rounded-lg border px-4 py-3.5 text-center transition-colors ${
         selected
           ? 'border-success bg-[#f4fffe]'
           : 'border-border-default bg-bg-primary hover:bg-bg-tertiary'
@@ -58,8 +58,6 @@ function WorkStyleChoice({
     </button>
   );
 }
-
-/* ─── 업무 방식 데이터 ─── */
 
 const WORK_STYLE_CATEGORIES = [
   {
@@ -84,17 +82,15 @@ const WORK_STYLE_CATEGORIES = [
   },
 ];
 
-/* ─── 공통 스타일 ─── */
-
 const fieldInputClass = formControlClass;
-const dropdownClass = `${nativeSelectClass} w-[388px]`;
-
-/* ─── 메인 페이지 ─── */
+const dropdownClass = `${nativeSelectClass} w-full`;
 
 export default function CompanyInfoPage() {
   const params = useParams<{ type: string }>();
   const router = useRouter();
   const type = params.type as SignupType;
+  const savedCompanyInfo = useSignupStore((state) => state.companyInfo);
+  const setCompanyInfo = useSignupStore((state) => state.setCompanyInfo);
 
   const stepNumber = getStepNumber(type, 'company-info');
   const nextStep = getNextStep(type, 'company-info');
@@ -103,38 +99,21 @@ export default function CompanyInfoPage() {
   const {
     register,
     handleSubmit,
-    watch,
     control,
-    formState: { isValid },
+    formState: { errors, isValid },
   } = useForm<CompanyInfoData>({
     resolver: zodResolver(companyInfoSchema),
-    defaultValues: {
-      companyType: '',
-      employeeCount: '',
-      ceoName: '',
-      foundedYear: '',
-      averageRevenue: '',
-      website: '',
-      companyAddress: '',
-      culture: '',
-      workSpeed: '',
-      decisionMaking: '',
-      roleDefinition: '',
-      operationStyle: '',
-      workStyleNote: '',
-    },
+    defaultValues: savedCompanyInfo,
     mode: 'onChange',
   });
 
-  const cultureValue = watch('culture') ?? '';
+  const cultureValue = useWatch({ control, name: 'culture' }) ?? '';
+  const workStyleNoteValue = useWatch({ control, name: 'workStyleNote' }) ?? '';
   const cultureOverLimit = cultureValue.length > 300;
-
-  const workStyleNoteValue = watch('workStyleNote') ?? '';
   const workStyleNoteOverLimit = workStyleNoteValue.length > 80;
 
   const onSubmit = (data: CompanyInfoData) => {
-    // TODO: API 연동
-    console.log(data);
+    setCompanyInfo(data);
     if (nextStep) router.push(`/signup/${type}/${nextStep}`);
   };
 
@@ -143,9 +122,11 @@ export default function CompanyInfoPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex w-[974px] flex-col gap-11">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="mx-auto flex w-full max-w-[974px] flex-col gap-11"
+    >
       <div className="flex flex-col gap-[34px]">
-        {/* ── 타이틀 ── */}
         <div className="flex flex-col gap-2">
           <h1 className="text-h2 text-text-secondary">기업 정보를 입력해주세요</h1>
           <p className="text-body2 text-text-tertiary">
@@ -153,12 +134,10 @@ export default function CompanyInfoPage() {
           </p>
         </div>
 
-        {/* ── 기본 정보 ── */}
         <div className="flex flex-col gap-6">
           <SectionTitle title="기본 정보" />
 
-          <div className="flex items-center gap-6">
-            {/* 기업 로고 */}
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
             <label className="border-border-light bg-bg-tertiary hover:bg-primary-200 flex h-[140px] w-[140px] shrink-0 cursor-pointer flex-col items-center justify-center gap-3.5 rounded-lg border transition-colors">
               <ImageIcon size={24} className="text-text-tertiary" />
               <div className="flex flex-col items-center gap-1 text-center">
@@ -168,10 +147,9 @@ export default function CompanyInfoPage() {
               <input type="file" accept="image/jpeg,image/png" className="hidden" />
             </label>
 
-            {/* 필드 그리드 */}
-            <div className="flex flex-col gap-3.5">
-              <div className="flex gap-[34px]">
-                <div className="flex flex-col gap-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-3.5">
+              <div className="grid gap-3.5 md:grid-cols-2 lg:gap-[34px]">
+                <div className="flex min-w-0 flex-col gap-2">
                   <FieldLabel>기업 형태</FieldLabel>
                   <select {...register('companyType')} className={dropdownClass}>
                     <option value="">기업 형태를 선택해주세요</option>
@@ -182,58 +160,58 @@ export default function CompanyInfoPage() {
                     <option value="공기업">공기업</option>
                     <option value="외국계">외국계</option>
                   </select>
+                  <FieldError>{errors.companyType?.message}</FieldError>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex min-w-0 flex-col gap-2">
                   <FieldLabel>사원수</FieldLabel>
                   <Input
                     {...register('employeeCount')}
                     placeholder="숫자만 입력"
-                    className={`${fieldInputClass} w-[388px]`}
+                    className={fieldInputClass}
                   />
+                  <FieldError>{errors.employeeCount?.message}</FieldError>
                 </div>
               </div>
-              <div className="flex gap-[34px]">
-                <div className="flex flex-col gap-2">
+              <div className="grid gap-3.5 md:grid-cols-2 lg:gap-[34px]">
+                <div className="flex min-w-0 flex-col gap-2">
                   <FieldLabel>대표명</FieldLabel>
                   <Input
                     {...register('ceoName')}
                     placeholder="영어, 한글 최대 10자 입력 가능"
-                    className={`${fieldInputClass} w-[388px]`}
+                    className={fieldInputClass}
                   />
+                  <FieldError>{errors.ceoName?.message}</FieldError>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex min-w-0 flex-col gap-2">
                   <FieldLabel>설립연도</FieldLabel>
                   <Input
                     {...register('foundedYear')}
                     placeholder="e.g. 2003 (숫자만 입력)"
-                    className={`${fieldInputClass} w-[388px]`}
+                    className={fieldInputClass}
                   />
+                  <FieldError>{errors.foundedYear?.message}</FieldError>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 평균매출액 / 웹사이트 */}
-          <div className="flex gap-3.5">
-            <div className="flex flex-col gap-2">
+          <div className="grid gap-3.5 md:grid-cols-2">
+            <div className="flex min-w-0 flex-col gap-2">
               <FieldLabel>평균매출액</FieldLabel>
               <Input
                 {...register('averageRevenue')}
                 placeholder="숫자만 입력"
-                className={`${fieldInputClass} w-[388px]`}
+                className={fieldInputClass}
               />
+              <FieldError>{errors.averageRevenue?.message}</FieldError>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex min-w-0 flex-col gap-2">
               <FieldLabel>웹사이트</FieldLabel>
-              <Input
-                {...register('website')}
-                placeholder="URL 입력"
-                className={`${fieldInputClass} w-[388px]`}
-              />
+              <Input {...register('website')} placeholder="URL 입력" className={fieldInputClass} />
+              <FieldError>{errors.website?.message}</FieldError>
             </div>
           </div>
 
-          {/* 회사 주소 */}
           <div className="flex flex-col gap-2">
             <FieldLabel>회사 주소</FieldLabel>
             <Input
@@ -241,17 +219,16 @@ export default function CompanyInfoPage() {
               placeholder="주소를 정확하게 입력해주세요."
               className={fieldInputClass}
             />
+            <FieldError>{errors.companyAddress?.message}</FieldError>
           </div>
         </div>
 
-        {/* ── AI 인사이트 ── */}
         <div className="flex flex-col gap-6">
           <SectionTitle
             title="AI 인사이트"
             description="AI 분석을 위해 회사에 대한 문화와 업무 방식을 알려주세요."
           />
 
-          {/* 기업 문화 및 방향성 */}
           <div className="flex flex-col gap-3.5">
             <div className="flex flex-col gap-2">
               <div className="flex items-end justify-between">
@@ -273,9 +250,9 @@ export default function CompanyInfoPage() {
                     : ''
                 }`}
               />
+              <FieldError>{errors.culture?.message}</FieldError>
             </div>
 
-            {/* 업무 방식 */}
             <div className="flex flex-col gap-3.5">
               <div className="flex flex-col gap-1">
                 <FieldLabel>업무 방식</FieldLabel>
@@ -284,13 +261,12 @@ export default function CompanyInfoPage() {
                 </p>
               </div>
 
-              {/* 카테고리 헤더 */}
               <div className="flex flex-col gap-2">
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {WORK_STYLE_CATEGORIES.map((cat) => (
                     <div
                       key={cat.label}
-                      className="bg-bg-tertiary flex h-[22px] items-center justify-center rounded"
+                      className="bg-bg-tertiary flex min-h-[22px] items-center justify-center rounded px-2"
                     >
                       <span className="text-caption text-text-tertiary text-center">
                         {cat.label}
@@ -299,9 +275,8 @@ export default function CompanyInfoPage() {
                   ))}
                 </div>
 
-                {/* 선택 버튼 그리드 */}
                 {[0, 1].map((rowIdx) => (
-                  <div key={rowIdx} className="grid grid-cols-4 gap-3">
+                  <div key={rowIdx} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {WORK_STYLE_CATEGORIES.map((cat) => (
                       <Controller
                         key={`${cat.field}-${rowIdx}`}
@@ -325,7 +300,6 @@ export default function CompanyInfoPage() {
               </div>
             </div>
 
-            {/* 업무 방식 추가 설명 */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-end">
                 <p
@@ -345,13 +319,13 @@ export default function CompanyInfoPage() {
                     : ''
                 }`}
               />
+              <FieldError>{errors.workStyleNote?.message}</FieldError>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── 하단 버튼 ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <Button type="button" variant="outline" size="xs" onClick={handleBack}>
           <ArrowLeft size={20} />
           이전 단계

@@ -12,6 +12,9 @@ export function useTimer(initialSeconds: number) {
     const tick = () => {
       const diff = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
       setRemaining(diff);
+      if (diff === 0) {
+        setEndTime(null);
+      }
     };
 
     tick();
@@ -24,7 +27,12 @@ export function useTimer(initialSeconds: number) {
     setRemaining(initialSeconds);
   }, [initialSeconds]);
 
+  const reset = useCallback(() => {
+    setEndTime(null);
+    setRemaining(0);
+  }, []);
+
   const formatted = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
 
-  return { seconds: remaining, formatted, isRunning, start };
+  return { seconds: remaining, formatted, isRunning, start, reset };
 }

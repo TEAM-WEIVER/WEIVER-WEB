@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+const requiredString = (message: string) => z.string().trim().min(1, message);
+const numericString = (message: string) => z.string().trim().regex(/^\d+$/, message);
+
 /* ─── 약관 동의 ─── */
 
 export const corporateTermsSchema = z.object({
@@ -66,13 +69,25 @@ export type IndividualAccountData = z.infer<typeof individualAccountSchema>;
 /* ─── 기업 정보 (기업 회원 2단계) ─── */
 
 export const companyInfoSchema = z.object({
-  companyType: z.string().optional(),
-  employeeCount: z.string().optional(),
-  ceoName: z.string().optional(),
-  foundedYear: z.string().optional(),
-  averageRevenue: z.string().optional(),
-  website: z.string().optional(),
-  companyAddress: z.string().optional(),
+  companyType: requiredString('기업 형태를 선택해주세요.'),
+  employeeCount: numericString('사원수는 숫자만 입력해주세요.'),
+  ceoName: requiredString('대표명을 입력해주세요.').max(10, '대표명은 10자 이하여야 합니다.'),
+  foundedYear: numericString('설립연도는 숫자만 입력해주세요.').length(
+    4,
+    '설립연도는 4자리로 입력해주세요.',
+  ),
+  averageRevenue: z
+    .string()
+    .trim()
+    .refine((value) => value === '' || /^\d+$/.test(value), '평균매출액은 숫자만 입력해주세요.'),
+  website: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === '' || /^https?:\/\/.+/.test(value),
+      '웹사이트는 http:// 또는 https://로 시작해야 합니다.',
+    ),
+  companyAddress: requiredString('회사 주소를 입력해주세요.'),
   culture: z.string().max(300, '300자를 초과할 수 없습니다.').optional(),
   workSpeed: z.string().optional(),
   decisionMaking: z.string().optional(),
