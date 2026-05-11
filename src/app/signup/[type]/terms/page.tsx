@@ -1,15 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { ConfirmModal } from '@/components/common/confirm-modal';
 import { useSignupStore } from '@/store/signup-store';
 import { getPrevStep, getStepNumber } from '@/lib/signup-flow';
+import { completeSignup } from '@/lib/signup-api';
 import { CORPORATE_TERMS, INDIVIDUAL_TERMS, type TermItem } from '@/lib/signup-terms';
 import type { SignupType } from '@/store/signup-store';
 import { corporateTermsSchema, individualTermsSchema } from '@/schemas/signup';
@@ -96,6 +95,8 @@ export default function TermsPage() {
   const router = useRouter();
   const setTerms = useSignupStore((state) => state.setTerms);
   const savedTerms = useSignupStore((state) => state.terms);
+  const account = useSignupStore((state) => state.account);
+  const companyInfo = useSignupStore((state) => state.companyInfo);
 
   const isCorporate = params.type === 'corporate';
   const termItems = isCorporate ? CORPORATE_TERMS : INDIVIDUAL_TERMS;
@@ -110,7 +111,7 @@ export default function TermsPage() {
     setValue,
     control,
     handleSubmit,
-    formState: { isValid },
+    formState: { isSubmitting, isValid },
   } = useForm<CorporateTermsData | IndividualTermsData>({
     resolver: zodResolver(schema),
     defaultValues,
@@ -150,16 +151,15 @@ export default function TermsPage() {
   const stepNumber = getStepNumber(type, 'terms');
   const prevStep = getPrevStep(type, 'terms');
 
-  const [showCompleteModal, setShowCompleteModal] = useState(false);
-
-  const onSubmit = (data: Record<string, boolean>) => {
+  const onSubmit = async (data: Record<string, boolean>) => {
     setTerms(data);
-    setShowCompleteModal(true);
-  };
-
-  const handleModalConfirm = () => {
-    setShowCompleteModal(false);
-    router.push(`/signup/${type}/complete`);
+    await completeSignup({
+      type,
+      account,
+      terms: data,
+      companyInfo: isCorporate ? companyInfo : undefined,
+    });
+    router.push(isCorporate ? '/corporate/dashboard' : '/onboarding/resume');
   };
 
   const handleBack = () => {
@@ -222,22 +222,10 @@ export default function TermsPage() {
           <ArrowLeft size={16} />
           이전 단계
         </Button>
-        <Button type="submit" size="xs" disabled={!isValid}>
-          다음 단계
+        <Button type="submit" size="xs" disabled={!isValid || isSubmitting}>
+          {isSubmitting ? '처리 중' : '다음 단계'}
         </Button>
       </div>
-
-      <ConfirmModal
-        open={showCompleteModal}
-        title="회원가입이 완료되었습니다!"
-        description={
-          isCorporate
-            ? '공고를 추가하고 딱 맞는 지원자를 매칭받아보세요.'
-            : '서류를 작성하고 딱 맞는 기업을 매칭받아보세요.\n(개인정보 외에는 이후에 작성이 가능합니다.)'
-        }
-        buttonText="완료하기"
-        onConfirm={handleModalConfirm}
-      />
     </form>
   );
 }
