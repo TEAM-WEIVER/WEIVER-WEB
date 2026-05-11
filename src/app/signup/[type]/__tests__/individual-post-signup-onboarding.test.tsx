@@ -78,4 +78,41 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     });
     expect(navigationMock.push).toHaveBeenCalledWith('/onboarding/resume');
   });
+
+  it('계정 정보가 없으면 회원가입 완료 요청을 보내지 않는다', async () => {
+    const user = userEvent.setup();
+    useSignupStore.getState().reset();
+
+    render(<TermsPage />);
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    await user.click(checkboxes[1]);
+    await user.click(checkboxes[2]);
+    await user.click(checkboxes[3]);
+    await user.click(screen.getByRole('button', { name: '다음 단계' }));
+
+    expect(
+      await screen.findByText('계정 정보가 없습니다. 계정 입력 단계부터 다시 진행해주세요.'),
+    ).toBeInTheDocument();
+    expect(completeSignup).not.toHaveBeenCalled();
+    expect(navigationMock.push).not.toHaveBeenCalled();
+  });
+
+  it('회원가입 완료 요청이 실패하면 오류를 표시하고 이력서 작성으로 이동하지 않는다', async () => {
+    const user = userEvent.setup();
+    vi.mocked(completeSignup).mockRejectedValue(new Error('signup failed'));
+
+    render(<TermsPage />);
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    await user.click(checkboxes[1]);
+    await user.click(checkboxes[2]);
+    await user.click(checkboxes[3]);
+    await user.click(screen.getByRole('button', { name: '다음 단계' }));
+
+    expect(
+      await screen.findByText('회원가입 처리에 실패했습니다. 잠시 후 다시 시도해주세요.'),
+    ).toBeInTheDocument();
+    expect(navigationMock.push).not.toHaveBeenCalled();
+  });
 });

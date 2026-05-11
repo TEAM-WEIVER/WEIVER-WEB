@@ -11,6 +11,6 @@ interface CompleteSignupPayload {
 }
 
 export async function completeSignup(payload: CompleteSignupPayload): Promise<void> {
-  // TODO: 실제 회원가입 API 연동 시 서버가 Set-Cookie로 httpOnly 인증 쿠키를 설정하도록 교체합니다.
   void payload;
+  throw new Error('회원가입 API가 아직 연결되지 않았습니다.');
 }

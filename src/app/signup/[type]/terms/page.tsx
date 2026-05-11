@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -150,16 +151,28 @@ export default function TermsPage() {
   const type = params.type as SignupType;
   const stepNumber = getStepNumber(type, 'terms');
   const prevStep = getPrevStep(type, 'terms');
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const onSubmit = async (data: Record<string, boolean>) => {
-    setTerms(data);
-    await completeSignup({
-      type,
-      account,
-      terms: data,
-      companyInfo: isCorporate ? companyInfo : undefined,
-    });
-    router.push(isCorporate ? '/corporate/dashboard' : '/onboarding/resume');
+    setSubmitError(null);
+
+    if (!account.email.trim()) {
+      setSubmitError('계정 정보가 없습니다. 계정 입력 단계부터 다시 진행해주세요.');
+      return;
+    }
+
+    try {
+      await completeSignup({
+        type,
+        account,
+        terms: data,
+        companyInfo: isCorporate ? companyInfo : undefined,
+      });
+      setTerms(data);
+      router.push(isCorporate ? '/corporate/dashboard' : '/onboarding/resume');
+    } catch {
+      setSubmitError('회원가입 처리에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
   };
 
   const handleBack = () => {
@@ -226,6 +239,7 @@ export default function TermsPage() {
           {isSubmitting ? '처리 중' : '다음 단계'}
         </Button>
       </div>
+      {submitError ? <p className="text-caption text-error text-right">{submitError}</p> : null}
     </form>
   );
 }
