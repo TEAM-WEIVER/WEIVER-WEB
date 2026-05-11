@@ -45,7 +45,9 @@ When asked to recommend a commit message, answer with a concise Korean message u
 
 Start work from an issue. Create or link the issue first, then create a branch that includes the issue number and purpose, for example `feat/123-signup-flow` or `fix/124-button-story`. Keep each branch scoped to one issue.
 
-Pull requests should link the issue with `Closes #123` or `Refs #123`, include a short summary, affected routes/components, verification commands, and screenshots or Storybook links for visual changes. Call out any known follow-up work.
+Keep issue and PR descriptions brief and practical. Prefer plain bullet lists over long checklists unless completion tracking is useful. For issues, write only the task, background, scope, completion criteria, and references that help implementation.
+
+Pull requests should link the issue with `Closes #123` or `Refs #123`, include a short summary, main changes, verification commands, and screenshots or Storybook links only for visual changes. Call out known follow-up work only when it affects review or release decisions.
 
 ## Security & Configuration Tips
 
