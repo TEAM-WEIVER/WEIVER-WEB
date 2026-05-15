@@ -4,6 +4,7 @@ export type SignupType = 'corporate' | 'individual';
 
 export interface SignupAccount {
   email: string;
+  signupToken?: string;
   companyName?: string;
 }
 

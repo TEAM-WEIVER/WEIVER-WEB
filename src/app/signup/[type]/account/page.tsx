@@ -11,6 +11,11 @@ import { FieldError, FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTimer } from '@/hooks/use-timer';
+import {
+  initApplicantSignup,
+  sendApplicantVerificationEmail,
+  verifyApplicantEmail,
+} from '@/lib/signup-api';
 import { getNextStep, getStepNumber } from '@/lib/signup-flow';
 import {
   corporateAccountSchema,
@@ -21,6 +26,8 @@ import {
 import { useSignupStore, type SignupType } from '@/store/signup-store';
 
 type AccountFormData = CorporateAccountData | IndividualAccountData;
+
+const TEMP_VERIFICATION_TOKEN = '123e4567-e89b-12d3-a456-426614174000';
 
 interface AccountFormConfig {
   schema: typeof corporateAccountSchema | typeof individualAccountSchema;
@@ -72,28 +79,65 @@ function PasswordRuleItem({ passed, label }: { passed: boolean; label: string })
   );
 }
 
-function useEmailVerification(email: string) {
+function useEmailVerification(email: string, type: SignupType) {
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
   const [sentEmail, setSentEmail] = useState<string | null>(null);
+  const [verificationToken, setVerificationToken] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
   const timer = useTimer(300);
 
   const isEmailVerified = email !== '' && verifiedEmail === email;
   const isCodeSent = email !== '' && sentEmail === email;
 
-  const sendVerification = () => {
-    // TODO: 실제 이메일 인증 API 연동
-    setSentEmail(email);
-    setVerifiedEmail(null);
-    setVerificationCode('');
-    timer.start();
+  const sendVerification = async () => {
+    if (!email || isSending) return;
+
+    setIsSending(true);
+    setSendError(null);
+    setVerifyError(null);
+
+    try {
+      if (type === 'individual') {
+        await sendApplicantVerificationEmail(email);
+      }
+
+      setSentEmail(email);
+      setVerifiedEmail(null);
+      setVerificationToken('');
+      setVerificationCode('');
+      timer.start();
+    } catch {
+      setSendError('인증번호 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  const verifyCode = () => {
-    // TODO: 실제 인증 코드 검증 API 연동
-    if (verificationCode.length !== 6 || !timer.isRunning) return;
-    setVerifiedEmail(email);
-    timer.reset();
+  const verifyCode = async () => {
+    if (verificationCode.length !== 6 || !timer.isRunning || isVerifying) return;
+
+    setIsVerifying(true);
+    setVerifyError(null);
+
+    try {
+      if (type === 'individual') {
+        const response = await verifyApplicantEmail({ email, code: verificationCode });
+        setVerificationToken(response.data.verificationToken);
+      } else {
+        setVerificationToken(TEMP_VERIFICATION_TOKEN);
+      }
+
+      setVerifiedEmail(email);
+      timer.reset();
+    } catch {
+      setVerifyError('인증번호 확인에 실패했습니다. 다시 확인해주세요.');
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const updateVerificationCode = (value: string) => {
@@ -102,6 +146,11 @@ function useEmailVerification(email: string) {
 
   return {
     isEmailVerified,
+    isSending,
+    isVerifying,
+    sendError,
+    verifyError,
+    verificationToken,
     verificationCode,
     isCodeSent,
     timer,
@@ -121,12 +170,13 @@ export default function AccountPage() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors, isValid },
+    formState: { errors, isSubmitting, isValid },
   } = useForm<AccountFormData>({
     resolver: zodResolver(config.schema),
     defaultValues: {
@@ -140,20 +190,38 @@ export default function AccountPage() {
 
   const watchedEmail = useWatch({ control, name: 'email' }) ?? '';
   const watchedPassword = useWatch({ control, name: 'password' }) ?? '';
-  const verification = useEmailVerification(watchedEmail);
+  const verification = useEmailVerification(watchedEmail, type);
 
   const stepNumber = getStepNumber(type, 'account');
   const nextStep = getNextStep(type, 'account');
   const canSubmit = isValid && verification.isEmailVerified;
 
-  const onSubmit = (data: AccountFormData) => {
+  const onSubmit = async (data: AccountFormData) => {
     if (!verification.isEmailVerified) return;
 
-    const { email } = data;
-    const companyName = 'companyName' in data ? data.companyName : undefined;
-    setAccount({ email, companyName });
+    setSubmitError(null);
 
-    if (nextStep) router.push(`/signup/${type}/${nextStep}`);
+    const { email, password, passwordConfirm } = data;
+    const companyName = 'companyName' in data ? data.companyName : undefined;
+
+    try {
+      if (type === 'individual') {
+        const response = await initApplicantSignup({
+          email,
+          password,
+          passwordConfirm,
+          verificationToken: verification.verificationToken,
+        });
+
+        setAccount({ email, signupToken: response.data.signupToken, companyName });
+      } else {
+        setAccount({ email, companyName });
+      }
+
+      if (nextStep) router.push(`/signup/${type}/${nextStep}`);
+    } catch {
+      setSubmitError('회원가입 계정 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
   };
 
   return (
@@ -182,14 +250,17 @@ export default function AccountPage() {
                 />
                 <Button
                   type="button"
-                  onClick={verification.sendVerification}
-                  disabled={verification.isEmailVerified || !watchedEmail}
+                  onClick={() => void verification.sendVerification()}
+                  disabled={verification.isEmailVerified || !watchedEmail || verification.isSending}
                   className="w-full rounded-lg sm:w-24"
                 >
-                  인증하기
+                  {verification.isSending ? '전송 중' : '인증하기'}
                 </Button>
               </div>
             </FormField>
+            {verification.sendError ? (
+              <p className="text-caption text-error">{verification.sendError}</p>
+            ) : null}
 
             {verification.isCodeSent ? (
               <div className="flex flex-col gap-2">
@@ -215,16 +286,21 @@ export default function AccountPage() {
                   {!verification.isEmailVerified ? (
                     <Button
                       type="button"
-                      onClick={verification.verifyCode}
+                      onClick={() => void verification.verifyCode()}
                       disabled={
-                        verification.verificationCode.length !== 6 || !verification.timer.isRunning
+                        verification.verificationCode.length !== 6 ||
+                        !verification.timer.isRunning ||
+                        verification.isVerifying
                       }
                       className="w-full rounded-lg sm:w-24"
                     >
-                      확인
+                      {verification.isVerifying ? '확인 중' : '확인'}
                     </Button>
                   ) : null}
                 </div>
+                {verification.verifyError ? (
+                  <p className="text-caption text-error">{verification.verifyError}</p>
+                ) : null}
                 {verification.isEmailVerified ? (
                   <p className="text-caption text-success">이메일이 인증되었습니다.</p>
                 ) : null}
@@ -306,10 +382,11 @@ export default function AccountPage() {
         </div>
       </div>
 
-      <Button type="submit" size="md" disabled={!canSubmit} className="w-full">
-        {config.submitLabel}
+      <Button type="submit" size="md" disabled={!canSubmit || isSubmitting} className="w-full">
+        {isSubmitting ? '처리 중' : config.submitLabel}
         <ArrowRight size={20} />
       </Button>
+      {submitError ? <p className="text-caption text-error text-right">{submitError}</p> : null}
     </form>
   );
 }
