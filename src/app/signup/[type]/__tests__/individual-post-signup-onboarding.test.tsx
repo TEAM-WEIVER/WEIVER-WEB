@@ -29,7 +29,9 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     navigationMock.push.mockClear();
     vi.mocked(completeSignup).mockResolvedValue(undefined);
     useSignupStore.getState().reset();
-    useSignupStore.getState().setAccount({ email: 'user@example.com' });
+    useSignupStore
+      .getState()
+      .setAccount({ email: 'user@example.com', signupToken: 'signup-token' });
   });
 
   afterEach(() => {
@@ -52,6 +54,8 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     await user.click(checkboxes[1]);
     await user.click(checkboxes[2]);
     await user.click(checkboxes[3]);
+    await user.click(checkboxes[4]);
+    await user.click(checkboxes[5]);
 
     await waitFor(() => expect(submitButton).toBeEnabled());
     await user.click(submitButton);
@@ -59,11 +63,13 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     await waitFor(() => {
       expect(completeSignup).toHaveBeenCalledWith({
         type: 'individual',
-        account: { email: 'user@example.com', companyName: '' },
+        account: { email: 'user@example.com', signupToken: 'signup-token', companyName: '' },
         terms: {
           serviceTerms: true,
           privacyPolicy: true,
           individualTerms: true,
+          aiAnalysisConsent: true,
+          sensitiveDataConsent: true,
           marketingConsent: false,
         },
         companyInfo: undefined,
@@ -74,6 +80,8 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
       serviceTerms: true,
       privacyPolicy: true,
       individualTerms: true,
+      aiAnalysisConsent: true,
+      sensitiveDataConsent: true,
       marketingConsent: false,
     });
     expect(navigationMock.push).toHaveBeenCalledWith('/onboarding/resume');
@@ -89,6 +97,8 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     await user.click(checkboxes[1]);
     await user.click(checkboxes[2]);
     await user.click(checkboxes[3]);
+    await user.click(checkboxes[4]);
+    await user.click(checkboxes[5]);
     await user.click(screen.getByRole('button', { name: '다음 단계' }));
 
     expect(
@@ -108,6 +118,8 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     await user.click(checkboxes[1]);
     await user.click(checkboxes[2]);
     await user.click(checkboxes[3]);
+    await user.click(checkboxes[4]);
+    await user.click(checkboxes[5]);
     await user.click(screen.getByRole('button', { name: '다음 단계' }));
 
     expect(

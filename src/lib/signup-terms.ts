@@ -94,5 +94,25 @@ export const INDIVIDUAL_TERMS: TermItem[] = [
 AI 분석 결과는 참고 자료이며,
 최종 채용 여부는 기업의 판단에 따릅니다.`,
   },
+  {
+    key: 'aiAnalysisConsent',
+    title: 'AI 분석 동의',
+    required: true,
+    agreeLabel: 'AI 분석에 동의합니다.',
+    content: `회사는 지원자가 입력한 이력서, 자기소개서, 포트폴리오 등의 정보를 바탕으로 AI 분석을 제공할 수 있습니다.
+
+AI 분석 결과는 채용 의사결정을 보조하는 참고 자료이며,
+최종 판단은 기업과 지원자의 선택에 따릅니다.`,
+  },
+  {
+    key: 'sensitiveDataConsent',
+    title: '민감정보 처리 동의',
+    required: true,
+    agreeLabel: '민감정보 처리에 동의합니다.',
+    content: `지원자가 직접 입력하거나 업로드한 자료에 민감정보가 포함될 수 있습니다.
+
+회사는 서비스 제공에 필요한 범위에서만 해당 정보를 처리하며,
+지원자는 민감정보가 포함되지 않도록 제출 자료를 확인할 책임이 있습니다.`,
+  },
   { ...CORPORATE_TERMS[3] },
 ];

@@ -161,6 +161,11 @@ export default function TermsPage() {
       return;
     }
 
+    if (!isCorporate && !account.signupToken) {
+      setSubmitError('계정 정보가 없습니다. 계정 입력 단계부터 다시 진행해주세요.');
+      return;
+    }
+
     try {
       await completeSignup({
         type,
