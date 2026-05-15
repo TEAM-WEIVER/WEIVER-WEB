@@ -29,6 +29,11 @@ interface VerifyApplicantEmailData {
   verificationToken: string;
 }
 
+interface CompleteApplicantSignupData {
+  publicId: string;
+  role: string;
+}
+
 interface CompleteSignupPayload {
   type: SignupType;
   account: {
@@ -38,6 +43,18 @@ interface CompleteSignupPayload {
   };
   terms: Record<string, boolean>;
   companyInfo?: SignupCompanyInfo;
+}
+
+interface CompleteApplicantSignupRequest {
+  signupToken: string;
+  agreements: {
+    termsOfService: boolean;
+    privacyPolicy: boolean;
+    individualMemberTerms: boolean;
+    aiAnalysisConsent: boolean;
+    sensitiveDataConsent: boolean;
+    marketingConsent: boolean;
+  };
 }
 
 export async function initApplicantSignup(payload: InitApplicantSignupPayload) {
@@ -61,7 +78,40 @@ export async function verifyApplicantEmail(payload: VerifyApplicantEmailPayload)
   });
 }
 
+function buildCompleteApplicantSignupRequest(
+  payload: CompleteSignupPayload,
+): CompleteApplicantSignupRequest {
+  const { signupToken } = payload.account;
+  const { terms } = payload;
+
+  if (!signupToken) {
+    throw new Error('개인 회원가입 토큰이 없습니다.');
+  }
+
+  return {
+    signupToken,
+    agreements: {
+      termsOfService: terms.serviceTerms,
+      privacyPolicy: terms.privacyPolicy,
+      individualMemberTerms: terms.individualTerms,
+      aiAnalysisConsent: terms.aiAnalysisConsent,
+      sensitiveDataConsent: terms.sensitiveDataConsent,
+      marketingConsent: terms.marketingConsent,
+    },
+  };
+}
+
 export async function completeSignup(payload: CompleteSignupPayload): Promise<void> {
-  void payload;
+  if (payload.type === 'individual') {
+    await apiRequest<ApiResponse<CompleteApplicantSignupData>>(
+      '/api/auth/applicants/signup/agreements',
+      {
+        method: 'PATCH',
+        body: buildCompleteApplicantSignupRequest(payload),
+      },
+    );
+    return;
+  }
+
   throw new Error('회원가입 API가 아직 연결되지 않았습니다.');
 }
