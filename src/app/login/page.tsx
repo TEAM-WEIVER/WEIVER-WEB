@@ -8,19 +8,21 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/common/header';
-import { loginCompany } from '@/lib/login-api';
+import { loginApplicant, loginCompany } from '@/lib/login-api';
 import { getFirstStep } from '@/lib/signup-flow';
 
 const TAB_CONTENT = {
   corporate: {
     description: '가장 적합한 지원자를 빠르고 정확하게 확인해보세요.',
     accountLabel: '아이디',
+    accountErrorLabel: '아이디와',
     accountPlaceholder: 'weiver',
     accountAutoComplete: 'username',
   },
   individual: {
     description: '나에게 가장 알맞는 공고를 확인해보세요.',
     accountLabel: '이메일',
+    accountErrorLabel: '이메일과',
     accountPlaceholder: 'personal@gmail.com',
     accountAutoComplete: 'email',
   },
@@ -64,9 +66,15 @@ export default function LoginPage() {
         return;
       }
 
-      setLoginError('개인 회원 로그인은 아직 준비 중입니다.');
+      await loginApplicant({
+        email: trimmedAccountId,
+        password,
+      });
+      router.push('/onboarding/resume');
     } catch {
-      setLoginError('로그인에 실패했습니다. 아이디와 비밀번호를 다시 확인해주세요.');
+      setLoginError(
+        `로그인에 실패했습니다. ${currentTab.accountErrorLabel} 비밀번호를 다시 확인해주세요.`,
+      );
     } finally {
       setIsSubmitting(false);
     }

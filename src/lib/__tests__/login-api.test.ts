@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { apiRequest } from '../api-client';
-import { loginCompany } from '../login-api';
+import { loginApplicant, loginCompany } from '../login-api';
 
 vi.mock('../api-client', () => ({
   apiRequest: vi.fn(),
@@ -34,6 +34,21 @@ describe('login-api', () => {
       method: 'POST',
       body: {
         id: 'weiver',
+        password: 'Password123!',
+      },
+    });
+  });
+
+  it('개인 로그인 요청을 서버 스펙에 맞게 보낸다', async () => {
+    await loginApplicant({
+      email: 'applicant@example.com',
+      password: 'Password123!',
+    });
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/auth/applicants/login', {
+      method: 'POST',
+      body: {
+        email: 'applicant@example.com',
         password: 'Password123!',
       },
     });
