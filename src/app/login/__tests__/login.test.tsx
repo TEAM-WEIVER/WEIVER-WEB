@@ -1,0 +1,87 @@
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { loginCompany } from '@/lib/login-api';
+
+import LoginPage from '../page';
+
+const navigationMock = vi.hoisted(() => ({
+  push: vi.fn(),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: navigationMock.push,
+  }),
+}));
+
+vi.mock('@/lib/login-api', () => ({
+  loginCompany: vi.fn(),
+}));
+
+describe('로그인 페이지', () => {
+  beforeEach(() => {
+    navigationMock.push.mockClear();
+    vi.mocked(loginCompany).mockResolvedValue({
+      status: 'OK',
+      code: 200,
+      data: {},
+      message: 'OK',
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it('기업 로그인 성공 시 기업 대시보드로 이동한다', async () => {
+    const user = userEvent.setup();
+
+    render(<LoginPage />);
+
+    await user.type(screen.getByPlaceholderText('example@gmail.co.kr'), 'hr@company.co.kr');
+    await user.type(screen.getByPlaceholderText('올바른 비밀번호를 입력하세요'), 'Password123!');
+    await user.click(screen.getByRole('button', { name: '로그인하기' }));
+
+    await waitFor(() => {
+      expect(loginCompany).toHaveBeenCalledWith({
+        email: 'hr@company.co.kr',
+        password: 'Password123!',
+      });
+    });
+    expect(navigationMock.push).toHaveBeenCalledWith('/corporate/dashboard');
+  });
+
+  it('기업 로그인 실패 시 오류를 표시하고 이동하지 않는다', async () => {
+    const user = userEvent.setup();
+    vi.mocked(loginCompany).mockRejectedValue(new Error('login failed'));
+
+    render(<LoginPage />);
+
+    await user.type(screen.getByPlaceholderText('example@gmail.co.kr'), 'hr@company.co.kr');
+    await user.type(screen.getByPlaceholderText('올바른 비밀번호를 입력하세요'), 'wrong-password');
+    await user.click(screen.getByRole('button', { name: '로그인하기' }));
+
+    expect(
+      await screen.findByText('로그인에 실패했습니다. 이메일과 비밀번호를 다시 확인해주세요.'),
+    ).toBeInTheDocument();
+    expect(navigationMock.push).not.toHaveBeenCalled();
+  });
+
+  it('개인 로그인 탭은 아직 API를 호출하지 않고 준비 중 메시지를 표시한다', async () => {
+    const user = userEvent.setup();
+
+    render(<LoginPage />);
+
+    await user.click(screen.getByRole('button', { name: '개인 회원' }));
+    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
+    await user.type(screen.getByPlaceholderText('올바른 비밀번호를 입력하세요'), 'Password123!');
+    await user.click(screen.getByRole('button', { name: '로그인하기' }));
+
+    expect(await screen.findByText('개인 회원 로그인은 아직 준비 중입니다.')).toBeInTheDocument();
+    expect(loginCompany).not.toHaveBeenCalled();
+    expect(navigationMock.push).not.toHaveBeenCalled();
+  });
+});

@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/common/header';
+import { loginCompany } from '@/lib/login-api';
 import { getFirstStep } from '@/lib/signup-flow';
 
 const TAB_CONTENT = {
@@ -21,15 +23,50 @@ const TAB_CONTENT = {
 } as const;
 
 export default function LoginPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'corporate' | 'individual'>('corporate');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentTab = TAB_CONTENT[activeTab];
 
-  const isFormValid = email.trim() !== '' && password.trim() !== '';
+  const trimmedEmail = email.trim();
+  const isFormValid = trimmedEmail !== '' && password.trim() !== '';
+
+  const handleTabChange = (tab: 'corporate' | 'individual') => {
+    setActiveTab(tab);
+    setLoginError(null);
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!isFormValid || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setLoginError(null);
+
+    try {
+      if (activeTab === 'corporate') {
+        await loginCompany({
+          email: trimmedEmail,
+          password,
+        });
+        router.push('/corporate/dashboard');
+        return;
+      }
+
+      setLoginError('개인 회원 로그인은 아직 준비 중입니다.');
+    } catch {
+      setLoginError('로그인에 실패했습니다. 이메일과 비밀번호를 다시 확인해주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="bg-bg-secondary min-h-screen">
@@ -40,12 +77,12 @@ export default function LoginPage() {
         <div className="border-border-light bg-bg-primary w-[628px] rounded-[20px] border px-16 py-11">
           <div className="flex w-[500px] flex-col gap-6">
             {/* 상단 섹션 */}
-            <div className="flex flex-col items-center gap-[34px]">
+            <form onSubmit={handleSubmit} className="flex flex-col items-center gap-[34px]">
               {/* 탭 바 */}
               <div className="bg-primary-100 flex w-full items-center gap-1.5 rounded-full p-1.5">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('corporate')}
+                  onClick={() => handleTabChange('corporate')}
                   className={`text-h4 flex h-12 flex-1 cursor-pointer items-center justify-center rounded-full transition-colors ${
                     activeTab === 'corporate'
                       ? 'bg-primary-700 text-text-inverse'
@@ -56,7 +93,7 @@ export default function LoginPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('individual')}
+                  onClick={() => handleTabChange('individual')}
                   className={`text-h4 flex h-12 flex-1 cursor-pointer items-center justify-center rounded-full transition-colors ${
                     activeTab === 'individual'
                       ? 'bg-primary-700 text-text-inverse'
@@ -85,6 +122,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={currentTab.emailPlaceholder}
+                    autoComplete="email"
                   />
                 </div>
 
@@ -98,6 +136,7 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="올바른 비밀번호를 입력하세요"
                       className="pr-14"
+                      autoComplete="current-password"
                     />
                     <button
                       type="button"
@@ -145,27 +184,37 @@ export default function LoginPage() {
                     </span>
                     <span className="text-body3 text-text-secondary">로그인 정보 저장</span>
                   </label>
-                  <Button variant="link">비밀번호를 잊으셨나요?</Button>
+                  <Button type="button" variant="link">
+                    비밀번호를 잊으셨나요?
+                  </Button>
                 </div>
               </div>
 
+              {loginError && <p className="text-body3 text-destructive">{loginError}</p>}
+
               {/* 로그인 버튼 */}
-              <Button type="submit" size="md" disabled={!isFormValid}>
-                로그인하기
+              <Button type="submit" size="md" disabled={!isFormValid || isSubmitting}>
+                {isSubmitting ? '로그인 중...' : '로그인하기'}
               </Button>
-            </div>
+            </form>
 
             {/* 하단: 회원가입 */}
             <div className="border-primary-100 flex justify-center border-t pt-6">
-              <div className="flex items-center gap-3">
-                <span className="text-body2 text-text-tertiary">아직 회원이 아니신가요?</span>
-                <Link
-                  href={`/signup/${activeTab}/${getFirstStep(activeTab)}`}
-                  className="text-body2 text-text-primary hover:underline"
-                >
-                  회원가입하기
-                </Link>
-              </div>
+              {activeTab === 'individual' ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-body2 text-text-tertiary">아직 회원이 아니신가요?</span>
+                  <Link
+                    href={`/signup/${getFirstStep()}`}
+                    className="text-body2 text-text-primary hover:underline"
+                  >
+                    회원가입하기
+                  </Link>
+                </div>
+              ) : (
+                <span className="text-body2 text-text-tertiary">
+                  기업 계정 발급은 관리자에게 문의해주세요.
+                </span>
+              )}
             </div>
           </div>
         </div>
