@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { type UseFormRegister, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
@@ -42,6 +42,44 @@ const QUESTIONS = [
   },
 ];
 
+interface CoverLetterQuestionFieldProps {
+  question: (typeof QUESTIONS)[number];
+  currentLength: number;
+  register: UseFormRegister<CoverLetterData>;
+}
+
+function CoverLetterQuestionField({
+  question,
+  currentLength,
+  register,
+}: CoverLetterQuestionFieldProps) {
+  const isOverLimit = currentLength > question.maxLength;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-end justify-between">
+        <p className="text-body1 text-text-secondary">
+          {question.number}. {question.text}
+        </p>
+        <p
+          className={`text-caption shrink-0 pl-4 text-right ${
+            isOverLimit ? 'text-error' : 'text-text-tertiary'
+          }`}
+        >
+          {currentLength}/{question.maxLength}
+        </p>
+      </div>
+      <Textarea
+        {...register(question.field)}
+        placeholder="내용을 입력해주세요."
+        className={`${formTextareaClass} min-h-[180px] resize-none ${
+          isOverLimit ? 'border-error focus-visible:border-error focus-visible:ring-error/20' : ''
+        }`}
+      />
+    </div>
+  );
+}
+
 export default function CoverLetterPage() {
   const router = useRouter();
 
@@ -53,7 +91,7 @@ export default function CoverLetterPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { isValid },
   } = useForm<CoverLetterData>({
     resolver: zodResolver(coverLetterSchema),
@@ -64,6 +102,12 @@ export default function CoverLetterPage() {
     },
     mode: 'onChange',
   });
+
+  const questionValues =
+    useWatch({
+      control,
+      name: QUESTIONS.map((question) => question.field),
+    }) ?? [];
 
   const navigateNext = () => {
     if (nextStep) router.push(getOnboardingPath(nextStep));
@@ -100,37 +144,14 @@ export default function CoverLetterPage() {
 
             {/* 문항 목록 */}
             <div className="flex flex-col gap-6">
-              {QUESTIONS.map((q) => {
-                const value = watch(q.field);
-                const currentLength = value?.length ?? 0;
-                const isOverLimit = currentLength > q.maxLength;
-
-                return (
-                  <div key={q.number} className="flex flex-col gap-2">
-                    <div className="flex items-end justify-between">
-                      <p className="text-body1 text-text-secondary">
-                        {q.number}. {q.text}
-                      </p>
-                      <p
-                        className={`text-caption shrink-0 pl-4 text-right ${
-                          isOverLimit ? 'text-error' : 'text-text-tertiary'
-                        }`}
-                      >
-                        {currentLength}/{q.maxLength}
-                      </p>
-                    </div>
-                    <Textarea
-                      {...register(q.field)}
-                      placeholder="내용을 입력해주세요."
-                      className={`${formTextareaClass} min-h-[180px] resize-none ${
-                        isOverLimit
-                          ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
-                          : ''
-                      }`}
-                    />
-                  </div>
-                );
-              })}
+              {QUESTIONS.map((question, index) => (
+                <CoverLetterQuestionField
+                  key={question.number}
+                  question={question}
+                  currentLength={questionValues[index]?.length ?? 0}
+                  register={register}
+                />
+              ))}
             </div>
           </div>
 
