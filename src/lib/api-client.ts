@@ -1,5 +1,13 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://api.piuda.site';
 const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
+const CSRF_EXCLUDED_PATHS = new Set([
+  '/api/auth/applicants/signup/init',
+  '/api/auth/applicants/signup/agreements',
+  '/api/auth/applicants/login',
+  '/api/auth/applicants/email/verify',
+  '/api/auth/applicants/email/send',
+  '/api/auth/companies/login',
+]);
 
 interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
@@ -32,6 +40,10 @@ let csrfTokenPromise: Promise<string> | null = null;
 
 function isCsrfRequired(method: string) {
   return method.toUpperCase() !== 'GET';
+}
+
+function shouldSkipCsrf(path: string, skipCsrf: boolean) {
+  return skipCsrf || CSRF_EXCLUDED_PATHS.has(path);
 }
 
 async function fetchCsrfToken() {
@@ -73,7 +85,11 @@ export async function apiRequest<TResponse>(
     requestHeaders.set('Content-Type', 'application/json');
   }
 
-  if (!skipCsrf && isCsrfRequired(method) && !requestHeaders.has(CSRF_HEADER_NAME)) {
+  if (
+    !shouldSkipCsrf(path, skipCsrf) &&
+    isCsrfRequired(method) &&
+    !requestHeaders.has(CSRF_HEADER_NAME)
+  ) {
     requestHeaders.set(CSRF_HEADER_NAME, await getCsrfToken());
   }
 
