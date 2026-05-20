@@ -3,7 +3,7 @@ import { CircleCheck } from 'lucide-react';
 function PasswordRuleItem({ passed, label }: { passed: boolean; label: string }) {
   return (
     <div className="flex items-center gap-1.5">
-      <CircleCheck size={18} className={passed ? 'text-error' : 'text-text-disabled'} />
+      <CircleCheck size={18} className={passed ? 'text-success' : 'text-text-disabled'} />
       <span className="text-caption text-text-primary">{label}</span>
     </div>
   );
