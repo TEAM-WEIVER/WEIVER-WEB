@@ -18,14 +18,17 @@ export function CoverLetterQuestionField({
   register,
 }: CoverLetterQuestionFieldProps) {
   const isOverLimit = currentLength > question.maxLength;
+  const textareaId = `cover-letter-${question.field}`;
+  const countId = `${textareaId}-count`;
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-end justify-between">
-        <p className="text-body1 text-text-secondary">
+        <label htmlFor={textareaId} className="text-body1 text-text-secondary">
           {question.number}. {question.text}
-        </p>
+        </label>
         <p
+          id={countId}
           className={`text-caption shrink-0 pl-4 text-right ${
             isOverLimit ? 'text-error' : 'text-text-tertiary'
           }`}
@@ -34,6 +37,8 @@ export function CoverLetterQuestionField({
         </p>
       </div>
       <Textarea
+        id={textareaId}
+        aria-describedby={countId}
         {...register(question.field)}
         placeholder="내용을 입력해주세요."
         className={`${formTextareaClass} min-h-[180px] resize-none ${

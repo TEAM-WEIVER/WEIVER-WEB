@@ -23,6 +23,9 @@ export function LoginForm({
   handleTabChange,
   handleSubmit,
 }: UseLoginFormReturn) {
+  const accountInputId = 'login-account-id';
+  const passwordInputId = 'login-password';
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col items-center gap-[34px]">
       <LoginTabs activeTab={activeTab} onTabChange={handleTabChange} />
@@ -34,8 +37,11 @@ export function LoginForm({
 
       <div className="flex w-full flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <label className="text-body1 text-text-primary">{currentTab.accountLabel}</label>
+          <label htmlFor={accountInputId} className="text-body1 text-text-primary">
+            {currentTab.accountLabel}
+          </label>
           <Input
+            id={accountInputId}
             type={activeTab === 'individual' ? 'email' : 'text'}
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
@@ -45,9 +51,12 @@ export function LoginForm({
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-body1 text-text-primary">비밀번호</label>
+          <label htmlFor={passwordInputId} className="text-body1 text-text-primary">
+            비밀번호
+          </label>
           <div className="relative">
             <Input
+              id={passwordInputId}
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
