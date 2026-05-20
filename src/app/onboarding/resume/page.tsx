@@ -5,7 +5,6 @@ import { ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFieldArray, useForm } from 'react-hook-form';
 
-import { FormStepHeader } from '@/components/common/form-step-header';
 import { Button } from '@/components/ui/button';
 import {
   TOTAL_STEPS,
@@ -16,6 +15,7 @@ import {
 } from '@/lib/onboarding-flow';
 import { resumeSchema, type ResumeData } from '@/schemas/onboarding';
 
+import { OnboardingStepShell } from '../_components/onboarding-step-shell';
 import { AwardSection, EMPTY_AWARD } from './_components/award-section';
 import { CareerSection, EMPTY_CAREER } from './_components/career-section';
 import { CertificationSection, EMPTY_CERTIFICATION } from './_components/certification-section';
@@ -71,56 +71,54 @@ export default function ResumePage() {
   };
 
   return (
-    <div>
-      <FormStepHeader totalSteps={TOTAL_STEPS} currentStep={stepNumber} title={stepTitle} />
-
-      <div className="border-border-light bg-bg-primary rounded-b-[20px] border p-11">
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-11">
-          <div className="flex flex-col gap-[34px]">
-            <PersonalInfoSection register={register} />
-            <EducationSection
-              fields={education.fields}
-              register={register}
-              append={education.append}
-              remove={education.remove}
-            />
-            <CertificationSection
-              fields={certifications.fields}
-              register={register}
-              append={certifications.append}
-              remove={certifications.remove}
-            />
-            <AwardSection
-              fields={awards.fields}
-              register={register}
-              append={awards.append}
-              remove={awards.remove}
-            />
-            <CareerSection
-              fields={careers.fields}
-              register={register}
-              append={careers.append}
-              remove={careers.remove}
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-3.5">
-            <Button
-              type="button"
-              variant="outline"
-              size="xs"
-              onClick={handleSkip}
-              className="border-error text-error hover:bg-error/5"
-            >
-              나중에 작성
-            </Button>
-            <Button type="submit" size="xs" disabled={!isValid}>
-              다음
-              <ArrowRight size={20} />
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <OnboardingStepShell
+      totalSteps={TOTAL_STEPS}
+      currentStep={stepNumber}
+      title={stepTitle}
+      onSubmit={handleSubmit(onSubmit)}
+      footer={
+        <div className="flex items-center justify-end gap-3.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            onClick={handleSkip}
+            className="border-error text-error hover:bg-error/5"
+          >
+            나중에 작성
+          </Button>
+          <Button type="submit" size="xs" disabled={!isValid}>
+            다음
+            <ArrowRight size={20} />
+          </Button>
+        </div>
+      }
+    >
+      <PersonalInfoSection register={register} />
+      <EducationSection
+        fields={education.fields}
+        register={register}
+        append={education.append}
+        remove={education.remove}
+      />
+      <CertificationSection
+        fields={certifications.fields}
+        register={register}
+        append={certifications.append}
+        remove={certifications.remove}
+      />
+      <AwardSection
+        fields={awards.fields}
+        register={register}
+        append={awards.append}
+        remove={awards.remove}
+      />
+      <CareerSection
+        fields={careers.fields}
+        register={register}
+        append={careers.append}
+        remove={careers.remove}
+      />
+    </OnboardingStepShell>
   );
 }

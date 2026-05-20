@@ -5,7 +5,6 @@ import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
-import { FormStepHeader } from '@/components/common/form-step-header';
 import { Button } from '@/components/ui/button';
 import {
   TOTAL_STEPS,
@@ -16,6 +15,7 @@ import {
 } from '@/lib/onboarding-flow';
 import { portfolioSchema, type PortfolioData } from '@/schemas/onboarding';
 
+import { OnboardingStepShell } from '../_components/onboarding-step-shell';
 import { AgreementSection } from './_components/agreement-section';
 import { ExternalLinksSection } from './_components/external-links-section';
 import { FileUploadSection } from './_components/file-upload-section';
@@ -63,51 +63,49 @@ export default function PortfolioPage() {
   };
 
   return (
-    <div>
-      <FormStepHeader totalSteps={TOTAL_STEPS} currentStep={stepNumber} title={stepTitle} />
+    <OnboardingStepShell
+      totalSteps={TOTAL_STEPS}
+      currentStep={stepNumber}
+      title={stepTitle}
+      onSubmit={handleSubmit(onSubmit)}
+      footer={
+        <div className="flex items-center justify-between">
+          <Button type="button" variant="outline" size="xs" onClick={handleBack}>
+            <ArrowLeft size={20} />
+            이전 단계
+          </Button>
 
-      <div className="border-border-light bg-bg-primary rounded-b-[20px] border p-11">
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-11">
-          <div className="flex flex-col gap-[34px]">
-            <FileUploadSection
-              fileInputRef={portfolioFile.fileInputRef}
-              uploadedFile={portfolioFile.uploadedFile}
-              fileError={portfolioFile.fileError}
-              isDragging={portfolioFile.isDragging}
-              onBrowse={portfolioFile.openFileDialog}
-              onFileChange={portfolioFile.handleFileChange}
-              onDragOver={portfolioFile.handleDragOver}
-              onDragLeave={portfolioFile.handleDragLeave}
-              onDrop={portfolioFile.handleDrop}
-              onRemove={portfolioFile.removeFile}
-            />
-            <ExternalLinksSection register={register} />
-            <AgreementSection control={control} />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Button type="button" variant="outline" size="xs" onClick={handleBack}>
-              <ArrowLeft size={20} />
-              이전 단계
+          <div className="flex items-center gap-3.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={handleSkip}
+              className="border-error text-error hover:bg-error/5"
+            >
+              나중에 작성
             </Button>
-
-            <div className="flex items-center gap-3.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="xs"
-                onClick={handleSkip}
-                className="border-error text-error hover:bg-error/5"
-              >
-                나중에 작성
-              </Button>
-              <Button type="submit" size="xs" disabled={!isValid}>
-                제출
-              </Button>
-            </div>
+            <Button type="submit" size="xs" disabled={!isValid}>
+              제출
+            </Button>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      }
+    >
+      <FileUploadSection
+        fileInputRef={portfolioFile.fileInputRef}
+        uploadedFile={portfolioFile.uploadedFile}
+        fileError={portfolioFile.fileError}
+        isDragging={portfolioFile.isDragging}
+        onBrowse={portfolioFile.openFileDialog}
+        onFileChange={portfolioFile.handleFileChange}
+        onDragOver={portfolioFile.handleDragOver}
+        onDragLeave={portfolioFile.handleDragLeave}
+        onDrop={portfolioFile.handleDrop}
+        onRemove={portfolioFile.removeFile}
+      />
+      <ExternalLinksSection register={register} />
+      <AgreementSection control={control} />
+    </OnboardingStepShell>
   );
 }
