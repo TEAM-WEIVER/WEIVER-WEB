@@ -7,19 +7,22 @@ interface ApiResponse<TData> {
   message: string;
 }
 
-interface LoginPayload {
-  email: string;
+interface CompanyLoginPayload {
+  id: string;
   password: string;
 }
 
 interface CompanyLoginData {
-  publicId?: string;
-  role?: string;
+  accessToken: string;
+  role: 'COMPANY';
 }
 
-export async function loginCompany(payload: LoginPayload) {
+export async function loginCompany(payload: CompanyLoginPayload) {
   return apiRequest<ApiResponse<CompanyLoginData>>('/api/auth/companies/login', {
     method: 'POST',
-    body: payload,
+    body: {
+      id: payload.id,
+      password: payload.password,
+    },
   });
 }

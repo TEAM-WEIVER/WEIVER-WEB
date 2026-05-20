@@ -14,11 +14,15 @@ import { getFirstStep } from '@/lib/signup-flow';
 const TAB_CONTENT = {
   corporate: {
     description: '가장 적합한 지원자를 빠르고 정확하게 확인해보세요.',
-    emailPlaceholder: 'example@gmail.co.kr',
+    accountLabel: '아이디',
+    accountPlaceholder: 'weiver',
+    accountAutoComplete: 'username',
   },
   individual: {
     description: '나에게 가장 알맞는 공고를 확인해보세요.',
-    emailPlaceholder: 'personal@gmail.com',
+    accountLabel: '이메일',
+    accountPlaceholder: 'personal@gmail.com',
+    accountAutoComplete: 'email',
   },
 } as const;
 
@@ -27,15 +31,15 @@ export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<'corporate' | 'individual'>('corporate');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [email, setEmail] = useState('');
+  const [accountId, setAccountId] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentTab = TAB_CONTENT[activeTab];
 
-  const trimmedEmail = email.trim();
-  const isFormValid = trimmedEmail !== '' && password.trim() !== '';
+  const trimmedAccountId = accountId.trim();
+  const isFormValid = trimmedAccountId !== '' && password.trim() !== '';
 
   const handleTabChange = (tab: 'corporate' | 'individual') => {
     setActiveTab(tab);
@@ -53,7 +57,7 @@ export default function LoginPage() {
     try {
       if (activeTab === 'corporate') {
         await loginCompany({
-          email: trimmedEmail,
+          id: trimmedAccountId,
           password,
         });
         router.push('/corporate/dashboard');
@@ -62,7 +66,7 @@ export default function LoginPage() {
 
       setLoginError('개인 회원 로그인은 아직 준비 중입니다.');
     } catch {
-      setLoginError('로그인에 실패했습니다. 이메일과 비밀번호를 다시 확인해주세요.');
+      setLoginError('로그인에 실패했습니다. 아이디와 비밀번호를 다시 확인해주세요.');
     } finally {
       setIsSubmitting(false);
     }
@@ -114,15 +118,15 @@ export default function LoginPage() {
 
               {/* 폼 필드 */}
               <div className="flex w-full flex-col gap-4">
-                {/* 이메일 필드 */}
+                {/* 계정 필드 */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-body1 text-text-primary">이메일</label>
+                  <label className="text-body1 text-text-primary">{currentTab.accountLabel}</label>
                   <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={currentTab.emailPlaceholder}
-                    autoComplete="email"
+                    type={activeTab === 'individual' ? 'email' : 'text'}
+                    value={accountId}
+                    onChange={(e) => setAccountId(e.target.value)}
+                    placeholder={currentTab.accountPlaceholder}
+                    autoComplete={currentTab.accountAutoComplete}
                   />
                 </div>
 

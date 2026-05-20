@@ -26,7 +26,10 @@ describe('로그인 페이지', () => {
     vi.mocked(loginCompany).mockResolvedValue({
       status: 'OK',
       code: 200,
-      data: {},
+      data: {
+        accessToken: 'access-token',
+        role: 'COMPANY',
+      },
       message: 'OK',
     });
   });
@@ -41,13 +44,13 @@ describe('로그인 페이지', () => {
 
     render(<LoginPage />);
 
-    await user.type(screen.getByPlaceholderText('example@gmail.co.kr'), 'hr@company.co.kr');
+    await user.type(screen.getByPlaceholderText('weiver'), 'weiver');
     await user.type(screen.getByPlaceholderText('올바른 비밀번호를 입력하세요'), 'Password123!');
     await user.click(screen.getByRole('button', { name: '로그인하기' }));
 
     await waitFor(() => {
       expect(loginCompany).toHaveBeenCalledWith({
-        email: 'hr@company.co.kr',
+        id: 'weiver',
         password: 'Password123!',
       });
     });
@@ -60,12 +63,12 @@ describe('로그인 페이지', () => {
 
     render(<LoginPage />);
 
-    await user.type(screen.getByPlaceholderText('example@gmail.co.kr'), 'hr@company.co.kr');
+    await user.type(screen.getByPlaceholderText('weiver'), 'weiver');
     await user.type(screen.getByPlaceholderText('올바른 비밀번호를 입력하세요'), 'wrong-password');
     await user.click(screen.getByRole('button', { name: '로그인하기' }));
 
     expect(
-      await screen.findByText('로그인에 실패했습니다. 이메일과 비밀번호를 다시 확인해주세요.'),
+      await screen.findByText('로그인에 실패했습니다. 아이디와 비밀번호를 다시 확인해주세요.'),
     ).toBeInTheDocument();
     expect(navigationMock.push).not.toHaveBeenCalled();
   });

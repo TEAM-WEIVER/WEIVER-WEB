@@ -12,7 +12,10 @@ describe('login-api', () => {
     vi.mocked(apiRequest).mockResolvedValue({
       status: 'OK',
       code: 200,
-      data: {},
+      data: {
+        accessToken: 'access-token',
+        role: 'COMPANY',
+      },
       message: 'OK',
     });
   });
@@ -23,14 +26,14 @@ describe('login-api', () => {
 
   it('기업 로그인 요청을 서버 스펙에 맞게 보낸다', async () => {
     await loginCompany({
-      email: 'hr@company.co.kr',
+      id: 'weiver',
       password: 'Password123!',
     });
 
     expect(apiRequest).toHaveBeenCalledWith('/api/auth/companies/login', {
       method: 'POST',
       body: {
-        email: 'hr@company.co.kr',
+        id: 'weiver',
         password: 'Password123!',
       },
     });
