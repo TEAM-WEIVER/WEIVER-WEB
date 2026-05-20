@@ -1,4 +1,4 @@
-import type { SignupCompanyInfo, SignupType } from '@/store/signup-store';
+import type { SignupAccount } from '@/store/signup-store';
 
 import { apiRequest } from './api-client';
 
@@ -35,14 +35,8 @@ interface CompleteApplicantSignupData {
 }
 
 interface CompleteSignupPayload {
-  type: SignupType;
-  account: {
-    email: string;
-    signupToken?: string;
-    companyName?: string;
-  };
+  account: SignupAccount;
   terms: Record<string, boolean>;
-  companyInfo?: SignupCompanyInfo;
 }
 
 interface CompleteApplicantSignupRequest {
@@ -102,16 +96,11 @@ function buildCompleteApplicantSignupRequest(
 }
 
 export async function completeSignup(payload: CompleteSignupPayload): Promise<void> {
-  if (payload.type === 'individual') {
-    await apiRequest<ApiResponse<CompleteApplicantSignupData>>(
-      '/api/auth/applicants/signup/agreements',
-      {
-        method: 'PATCH',
-        body: buildCompleteApplicantSignupRequest(payload),
-      },
-    );
-    return;
-  }
-
-  throw new Error('회원가입 API가 아직 연결되지 않았습니다.');
+  await apiRequest<ApiResponse<CompleteApplicantSignupData>>(
+    '/api/auth/applicants/signup/agreements',
+    {
+      method: 'PATCH',
+      body: buildCompleteApplicantSignupRequest(payload),
+    },
+  );
 }

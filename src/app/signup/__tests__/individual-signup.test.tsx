@@ -9,15 +9,13 @@ import {
 } from '@/lib/signup-api';
 import { useSignupStore } from '@/store/signup-store';
 
-import AccountPage from '../account/page';
+import SignupAccountInfoPage from '../account-info/page';
 
 const navigationMock = vi.hoisted(() => ({
-  params: { type: 'individual' },
   push: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
-  useParams: () => navigationMock.params,
   useRouter: () => ({
     push: navigationMock.push,
   }),
@@ -31,7 +29,6 @@ vi.mock('@/lib/signup-api', () => ({
 
 describe('개인 회원가입 플로우', () => {
   beforeEach(() => {
-    navigationMock.params = { type: 'individual' };
     navigationMock.push.mockClear();
     vi.mocked(initApplicantSignup).mockResolvedValue({
       status: 'OK',
@@ -66,7 +63,7 @@ describe('개인 회원가입 플로우', () => {
   it('이메일 형식이 유효하지 않으면 계정 단계 제출을 막는다', async () => {
     const user = userEvent.setup();
 
-    render(<AccountPage />);
+    render(<SignupAccountInfoPage />);
 
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
 
@@ -87,7 +84,7 @@ describe('개인 회원가입 플로우', () => {
   it('비밀번호 규칙을 만족하지 않으면 인증 후에도 계정 단계 제출을 막는다', async () => {
     const user = userEvent.setup();
 
-    render(<AccountPage />);
+    render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
     await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1aaa');
@@ -108,7 +105,7 @@ describe('개인 회원가입 플로우', () => {
   it('비밀번호 확인이 일치하지 않으면 오류를 표시하고 계정 단계 제출을 막는다', async () => {
     const user = userEvent.setup();
 
-    render(<AccountPage />);
+    render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
     await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1!aa');
@@ -127,7 +124,7 @@ describe('개인 회원가입 플로우', () => {
   it('이메일 인증 전에는 계정 단계에서 다음 단계로 이동할 수 없다', async () => {
     const user = userEvent.setup();
 
-    render(<AccountPage />);
+    render(<SignupAccountInfoPage />);
 
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
     expect(screen.getByText('1단계 : 계정 정보를 입력해주세요.')).toBeInTheDocument();
@@ -148,7 +145,7 @@ describe('개인 회원가입 플로우', () => {
   it('이메일 인증과 유효한 계정 입력 후 약관 단계로 이동한다', async () => {
     const user = userEvent.setup();
 
-    render(<AccountPage />);
+    render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
     await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1!aa');
@@ -176,11 +173,10 @@ describe('개인 회원가입 플로우', () => {
       passwordConfirm: 'Aa1!aa',
       verificationToken: 'verification-token',
     });
-    expect(navigationMock.push).toHaveBeenCalledWith('/signup/individual/terms');
+    expect(navigationMock.push).toHaveBeenCalledWith('/signup/agreements');
     expect(useSignupStore.getState().account).toEqual({
       email: 'user@example.com',
       signupToken: 'signup-token',
-      companyName: undefined,
     });
   });
 
@@ -188,7 +184,7 @@ describe('개인 회원가입 플로우', () => {
     const user = userEvent.setup();
     vi.mocked(initApplicantSignup).mockRejectedValue(new Error('init failed'));
 
-    render(<AccountPage />);
+    render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
     await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1!aa');
@@ -214,7 +210,7 @@ describe('개인 회원가입 플로우', () => {
     const user = userEvent.setup();
     vi.mocked(sendApplicantVerificationEmail).mockRejectedValue(new Error('send failed'));
 
-    render(<AccountPage />);
+    render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
     await user.click(screen.getByRole('button', { name: '인증하기' }));
@@ -230,7 +226,7 @@ describe('개인 회원가입 플로우', () => {
     const user = userEvent.setup();
     vi.mocked(verifyApplicantEmail).mockRejectedValue(new Error('verify failed'));
 
-    render(<AccountPage />);
+    render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
     await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1!aa');

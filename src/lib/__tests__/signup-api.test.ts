@@ -73,7 +73,6 @@ describe('signup-api', () => {
 
   it('회원가입 2단계 약관 동의 요청을 서버 스펙에 맞게 보낸다', async () => {
     await completeSignup({
-      type: 'individual',
       account: {
         email: 'applicant@example.com',
         signupToken: 'signup-token',
@@ -107,7 +106,6 @@ describe('signup-api', () => {
   it('회원가입 2단계에 signupToken이 없으면 요청하지 않는다', async () => {
     await expect(
       completeSignup({
-        type: 'individual',
         account: {
           email: 'applicant@example.com',
         },

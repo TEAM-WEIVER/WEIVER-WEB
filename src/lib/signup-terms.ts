@@ -6,13 +6,12 @@ export interface TermItem {
   agreeLabel: string;
 }
 
-export const CORPORATE_TERMS: TermItem[] = [
-  {
-    key: 'serviceTerms',
-    title: '서비스 이용약관',
-    required: true,
-    agreeLabel: '서비스 이용약관을 읽고 동의합니다.',
-    content: `제1조 (목적)
+const SERVICE_TERMS: TermItem = {
+  key: 'serviceTerms',
+  title: '서비스 이용약관',
+  required: true,
+  agreeLabel: '서비스 이용약관을 읽고 동의합니다.',
+  content: `제1조 (목적)
 본 약관은 (주)피우다(이하 "회사")가 제공하는 AI 기반 채용 매칭 서비스(이하 "서비스")의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
 
 제2조 (용어 정의)
@@ -29,13 +28,14 @@ export const CORPORATE_TERMS: TermItem[] = [
 타인의 개인정보 무단 사용
 서비스 결과의 무단 복제 또는 외부 공개
 서비스를 이용한 차별적 채용 행위`,
-  },
-  {
-    key: 'privacyPolicy',
-    title: '개인정보 처리방침',
-    required: true,
-    agreeLabel: '개인정보 처리방침을 읽고 동의합니다.',
-    content: `수집 항목
+};
+
+const PRIVACY_POLICY: TermItem = {
+  key: 'privacyPolicy',
+  title: '개인정보 처리방침',
+  required: true,
+  agreeLabel: '개인정보 처리방침을 읽고 동의합니다.',
+  content: `수집 항목
 • 공통: 이메일, 비밀번호, 이름
 • 기업: 기업명, 담당자 정보, 기업 문화 및 채용 정보
 • 지원자: 이력서, 자소서, 면접 응답(영상·음성 포함)
@@ -44,27 +44,14 @@ export const CORPORATE_TERMS: TermItem[] = [
 회원 관리
 AI 분석 및 매칭
 서비스 개선 및 품질 고도화`,
-  },
-  {
-    key: 'corporateTerms',
-    title: '기업회원 이용약관',
-    required: true,
-    agreeLabel: '기업회원 이용약관을 읽고 동의합니다.',
-    content: `제1조 (기업 회원의 책임)
-기업 회원은 AI 분석 결과를 참고 자료로 활용해야 하며,
-채용 결과 및 그에 따른 법적 책임은 기업 회원에게 귀속됩니다.
+};
 
-제2조 (차별적 이용 금지)
-기업 회원은 서비스 이용 시 다음 행위를 해서는 안 됩니다.
-성별, 연령, 출신, 신체 조건 등을 이유로 한 차별
-AI 분석 결과만을 근거로 한 자동 탈락 처리`,
-  },
-  {
-    key: 'marketingConsent',
-    title: '마케팅 정보 수신동의 (선택)',
-    required: false,
-    agreeLabel: '마케팅 정보 수신동의를 읽고 동의합니다.',
-    content: `제1조 (목적)
+const MARKETING_CONSENT: TermItem = {
+  key: 'marketingConsent',
+  title: '마케팅 정보 수신동의 (선택)',
+  required: false,
+  agreeLabel: '마케팅 정보 수신동의를 읽고 동의합니다.',
+  content: `제1조 (목적)
 본 동의서는 (주)피우다(이하 "회사")가 제공하는 서비스와 관련하여
 신규 기능 안내, 서비스 업데이트, 이벤트 및 프로모션 정보 등을
 회원에게 제공하기 위한 마케팅 정보 수신에 대한 동의를 받기 위함입니다.
@@ -75,12 +62,11 @@ AI 분석 결과만을 근거로 한 자동 탈락 처리`,
 AI 채용 서비스 관련 업데이트 및 활용 가이드
 이벤트, 프로모션, 설문조사 안내
 채용 및 HR 트렌드 콘텐츠, 서비스 활용 사례 안내`,
-  },
-];
+};
 
 export const INDIVIDUAL_TERMS: TermItem[] = [
-  { ...CORPORATE_TERMS[0] },
-  { ...CORPORATE_TERMS[1] },
+  SERVICE_TERMS,
+  PRIVACY_POLICY,
   {
     key: 'individualTerms',
     title: '개인회원 이용약관',
@@ -114,5 +100,5 @@ AI 분석 결과는 채용 의사결정을 보조하는 참고 자료이며,
 회사는 서비스 제공에 필요한 범위에서만 해당 정보를 처리하며,
 지원자는 민감정보가 포함되지 않도록 제출 자료를 확인할 책임이 있습니다.`,
   },
-  { ...CORPORATE_TERMS[3] },
+  MARKETING_CONSENT,
 ];
