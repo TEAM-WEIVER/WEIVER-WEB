@@ -12,9 +12,19 @@ interface CompanyLoginPayload {
   password: string;
 }
 
+interface ApplicantLoginPayload {
+  email: string;
+  password: string;
+}
+
 interface CompanyLoginData {
   accessToken: string;
   role: 'COMPANY';
+}
+
+interface ApplicantLoginData {
+  accessToken: string;
+  role: 'APPLICANT';
 }
 
 export async function loginCompany(payload: CompanyLoginPayload) {
@@ -22,6 +32,16 @@ export async function loginCompany(payload: CompanyLoginPayload) {
     method: 'POST',
     body: {
       id: payload.id,
+      password: payload.password,
+    },
+  });
+}
+
+export async function loginApplicant(payload: ApplicantLoginPayload) {
+  return apiRequest<ApiResponse<ApplicantLoginData>>('/api/auth/applicants/login', {
+    method: 'POST',
+    body: {
+      email: payload.email,
       password: payload.password,
     },
   });
