@@ -7,78 +7,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { completeSignup } from '@/lib/signup-api';
 import { getPrevStep, getStepNumber } from '@/lib/signup-flow';
-import { INDIVIDUAL_TERMS, type TermItem } from '@/lib/signup-terms';
+import { INDIVIDUAL_TERMS } from '@/lib/signup-terms';
 import { individualTermsSchema, type IndividualTermsData } from '@/schemas/signup';
 import { useSignupStore } from '@/store/signup-store';
 
-function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <label className="flex shrink-0 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        className="sr-only"
-        aria-checked={checked}
-      />
-      <span
-        className={`flex h-[22px] w-[22px] items-center justify-center rounded border transition-colors ${
-          checked ? 'border-primary-700 bg-primary-700' : 'border-border-default bg-white'
-        }`}
-      >
-        {checked && (
-          <svg
-            width="14"
-            height="10"
-            viewBox="0 0 14 10"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M1 5L5 9L13 1"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
-      </span>
-    </label>
-  );
-}
-
-function TermSection({
-  item,
-  checked,
-  onToggle,
-}: {
-  item: TermItem;
-  checked: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="flex flex-col gap-3.5">
-      <div className="flex items-center gap-1.5">
-        <h3 className="text-h4 text-text-primary">{item.title}</h3>
-        {item.required && <span className="text-body2 text-error">*</span>}
-      </div>
-
-      <div className="border-border-default bg-bg-primary rounded-lg border px-5 py-3.5">
-        <div className="h-[124px] overflow-y-auto">
-          <p className="text-body2 whitespace-pre-line text-black">{item.content}</p>
-        </div>
-      </div>
-
-      <div className="bg-bg-tertiary flex items-center gap-2.5 rounded-lg px-5 py-3">
-        <Checkbox checked={checked} onChange={onToggle} />
-        <span className="text-body2 text-text-secondary">{item.agreeLabel}</span>
-      </div>
-    </div>
-  );
-}
+import { TermSection } from './_components/term-section';
 
 export default function SignupAgreementsPage() {
   const router = useRouter();
@@ -167,7 +103,7 @@ export default function SignupAgreementsPage() {
 
         <div className="bg-bg-tertiary flex flex-col gap-2 rounded-lg px-5 py-3">
           <div className="flex items-center gap-2.5">
-            <Checkbox checked={allChecked} onChange={handleToggleAll} />
+            <Checkbox checked={allChecked} onCheckedChange={handleToggleAll} />
             <span className="text-body2 text-text-secondary font-medium">모두 동의합니다.</span>
           </div>
           <p className="text-body3 text-text-tertiary pl-8">
