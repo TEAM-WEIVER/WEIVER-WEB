@@ -55,9 +55,8 @@ export default function CoverLetterPage() {
     if (nextStep) router.push(getOnboardingPath(nextStep));
   };
 
-  const onSubmit = (data: CoverLetterData) => {
-    // TODO: API 연동
-    console.log(data);
+  const onSubmit = () => {
+    // TODO: 저장 API 스펙 확정 후 API 계층으로 이동
     navigateNext();
   };
 
