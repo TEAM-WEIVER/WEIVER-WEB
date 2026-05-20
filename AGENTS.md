@@ -43,6 +43,8 @@ Recent history uses short type prefixes such as `feat`, `fix`, `refactor`, `cicd
 
 When asked to recommend a commit message, answer with a concise Korean message using the existing prefix style, for example `docs: 이슈 기반 git flow 가이드 추가`. Include 2-3 alternatives only when useful.
 
+When asked to write or recommend a PR message, include a concise PR title first, then provide the PR body using the repository template. Use bracketed uppercase type labels for PR titles, for example `[FEATURE] 개인 회원가입 API 연동`.
+
 Start work from an issue. Create or link the issue first, then create a branch that includes the issue number and purpose, for example `feat/123-signup-flow` or `fix/124-button-story`. Keep each branch scoped to one issue.
 
 Keep issue and PR descriptions brief and practical. Prefer plain bullet lists over long checklists unless completion tracking is useful. For issues, write only the task, background, scope, completion criteria, and references that help implementation.
