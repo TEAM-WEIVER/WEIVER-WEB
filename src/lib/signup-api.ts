@@ -99,7 +99,7 @@ export async function completeSignup(payload: CompleteSignupPayload): Promise<vo
   await apiRequest<ApiResponse<CompleteApplicantSignupData>>(
     '/api/auth/applicants/signup/agreements',
     {
-      method: 'PATCH',
+      method: 'POST',
       body: buildCompleteApplicantSignupRequest(payload),
     },
   );
