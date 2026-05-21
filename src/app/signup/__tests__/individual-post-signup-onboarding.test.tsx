@@ -5,15 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { completeSignup } from '@/lib/signup-api';
 import { useSignupStore } from '@/store/signup-store';
 
-import TermsPage from '../terms/page';
+import SignupAgreementsPage from '../agreements/page';
 
 const navigationMock = vi.hoisted(() => ({
-  params: { type: 'individual' },
   push: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
-  useParams: () => navigationMock.params,
   useRouter: () => ({
     push: navigationMock.push,
   }),
@@ -25,7 +23,6 @@ vi.mock('@/lib/signup-api', () => ({
 
 describe('개인 회원가입 후 이력서 작성 연결', () => {
   beforeEach(() => {
-    navigationMock.params = { type: 'individual' };
     navigationMock.push.mockClear();
     vi.mocked(completeSignup).mockResolvedValue(undefined);
     useSignupStore.getState().reset();
@@ -42,7 +39,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
   it('필수 약관 동의 후 회원가입을 완료하고 이력서 작성으로 이동한다', async () => {
     const user = userEvent.setup();
 
-    render(<TermsPage />);
+    render(<SignupAgreementsPage />);
 
     const submitButton = screen.getByRole('button', { name: '다음 단계' });
     expect(
@@ -62,8 +59,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
 
     await waitFor(() => {
       expect(completeSignup).toHaveBeenCalledWith({
-        type: 'individual',
-        account: { email: 'user@example.com', signupToken: 'signup-token', companyName: '' },
+        account: { email: 'user@example.com', signupToken: 'signup-token' },
         terms: {
           serviceTerms: true,
           privacyPolicy: true,
@@ -72,7 +68,6 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
           sensitiveDataConsent: true,
           marketingConsent: false,
         },
-        companyInfo: undefined,
       });
     });
 
@@ -91,7 +86,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     const user = userEvent.setup();
     useSignupStore.getState().reset();
 
-    render(<TermsPage />);
+    render(<SignupAgreementsPage />);
 
     const checkboxes = screen.getAllByRole('checkbox');
     await user.click(checkboxes[1]);
@@ -112,7 +107,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     const user = userEvent.setup();
     vi.mocked(completeSignup).mockRejectedValue(new Error('signup failed'));
 
-    render(<TermsPage />);
+    render(<SignupAgreementsPage />);
 
     const checkboxes = screen.getAllByRole('checkbox');
     await user.click(checkboxes[1]);
