@@ -83,7 +83,7 @@ describe('로그인 페이지', () => {
     expect(navigationMock.push).not.toHaveBeenCalled();
   });
 
-  it('개인 로그인 성공 시 이력서 온보딩으로 이동한다', async () => {
+  it('개인 로그인 성공 시 개인 대시보드로 이동한다', async () => {
     const user = userEvent.setup();
 
     render(<LoginPage />);
@@ -100,7 +100,7 @@ describe('로그인 페이지', () => {
       });
     });
     expect(loginCompany).not.toHaveBeenCalled();
-    expect(navigationMock.push).toHaveBeenCalledWith('/onboarding/resume');
+    expect(navigationMock.push).toHaveBeenCalledWith('/applicant/dashboard');
   });
 
   it('개인 로그인 실패 시 이메일 기준 오류를 표시하고 이동하지 않는다', async () => {

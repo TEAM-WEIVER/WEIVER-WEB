@@ -30,9 +30,9 @@ export default function SignupCompletionPage() {
       <div className="flex flex-col items-center gap-3.5">
         <h1 className="text-h2 text-text-secondary">회원가입이 완료되었습니다!</h1>
         <p className="text-body2 text-text-tertiary text-center">
-          개인 회원으로 가입이 완료되었습니다.
+          서류를 작성하고 딱 맞는 기업을 매칭받아보세요.
           <br />
-          나에게 맞는 공고를 찾아보세요.
+          (개인정보 외에는 이후에 작성이 가능합니다.)
         </p>
       </div>
 

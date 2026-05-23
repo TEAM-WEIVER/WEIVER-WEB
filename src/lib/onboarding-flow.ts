@@ -2,6 +2,8 @@ const ONBOARDING_STEPS = ['resume', 'cover-letter', 'portfolio'] as const;
 
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
+export type OnboardingProgress = Record<OnboardingStep, boolean>;
+
 const STEP_TITLES: Record<OnboardingStep, string> = {
   resume: '이력서를 작성해주세요.',
   'cover-letter': '자기소개서를 작성해주세요.',
@@ -12,6 +14,17 @@ export const TOTAL_STEPS = ONBOARDING_STEPS.length;
 
 export function getOnboardingPath(step: OnboardingStep) {
   return `/onboarding/${step}`;
+}
+
+export function getNextIncompleteOnboardingStep(
+  progress: OnboardingProgress,
+): OnboardingStep | null {
+  return ONBOARDING_STEPS.find((step) => !progress[step]) ?? null;
+}
+
+export function getProfileEditPath(progress: OnboardingProgress) {
+  const nextStep = getNextIncompleteOnboardingStep(progress);
+  return getOnboardingPath(nextStep ?? 'resume');
 }
 
 export function getNextOnboardingStep(current: OnboardingStep): OnboardingStep | null {

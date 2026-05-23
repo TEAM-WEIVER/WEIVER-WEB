@@ -35,7 +35,7 @@ export function CertificationSection({
         >
           {fields.length > 1 ? <RemoveButton onClick={() => remove(index)} /> : null}
           <div className="flex gap-3.5">
-            <div className="flex w-[388px] flex-col gap-2">
+            <div className="flex flex-col gap-2">
               <Label className="text-text-secondary">취득일</Label>
               <Input
                 {...register(`certifications.${index}.acquiredDate`)}
