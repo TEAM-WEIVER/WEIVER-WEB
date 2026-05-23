@@ -88,7 +88,7 @@ describe('signup-api', () => {
     });
 
     expect(apiRequest).toHaveBeenCalledWith('/api/auth/applicants/signup/agreements', {
-      method: 'PATCH',
+      method: 'POST',
       body: {
         signupToken: 'signup-token',
         agreements: {

@@ -1,8 +1,17 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('apiRequest', () => {
+  beforeEach(() => {
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.piuda.site');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('GET 요청에는 CSRF 토큰을 요청하지 않는다', async () => {
     vi.resetModules();
+
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
         status: 200,
@@ -26,6 +35,7 @@ describe('apiRequest', () => {
 
   it('GET이 아닌 요청에는 CSRF 토큰을 헤더에 담아 보낸다', async () => {
     vi.resetModules();
+
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
