@@ -11,8 +11,8 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
-  title: '피우다',
-  description: '투명한 AI로 완성하는 채용의 혁신, 피우다',
+  title: '위버',
+  description: '검증된 인재를 엮다, Weiver',
 };
 
 export default function RootLayout({
