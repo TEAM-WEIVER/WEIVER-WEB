@@ -7,7 +7,7 @@ export function InterviewCallout() {
         <div className="flex flex-col gap-3">
           <h2 className="text-h3 text-text-inverse">AI 면접을 진행할 준비가 되셨나요?</h2>
           <p className="text-body2 text-primary-200">
-            면접은 1차 기술면접, 2차 인적성면접으로 진행되며 약 1시간정도 소요됩니다.
+            면접은 1차 기술면접, 2차 인적성면접으로 진행되며 약 1시간 정도 소요됩니다.
           </p>
         </div>
         <Button type="button" size="sm" className="h-[42px] w-full rounded-[10px]" disabled>
