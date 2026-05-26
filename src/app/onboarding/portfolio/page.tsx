@@ -50,12 +50,11 @@ export default function PortfolioPage() {
 
   const onSubmit = (data: PortfolioData) => {
     // TODO: 파일 업로드 API와 링크 저장 API 스펙 확정 후 API 계층으로 이동
-    console.log({ ...data, file: portfolioFile.uploadedFile });
-    router.push('/');
+    router.push('/applicant/dashboard');
   };
 
   const handleSkip = () => {
-    router.push('/');
+    router.push('/applicant/dashboard');
   };
 
   const handleBack = () => {

@@ -63,7 +63,7 @@ export function useLoginForm() {
         email: trimmedAccountId,
         password,
       });
-      router.push('/onboarding/resume');
+      router.push('/applicant/dashboard');
     } catch {
       setLoginError(
         `로그인에 실패했습니다. ${currentTab.accountErrorLabel} 비밀번호를 다시 확인해주세요.`,
