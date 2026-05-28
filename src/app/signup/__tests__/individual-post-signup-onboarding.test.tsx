@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { clearAccessToken, getAccessToken } from '@/lib/auth-token';
 import { completeSignup } from '@/lib/signup-api';
 import { useSignupStore } from '@/store/signup-store';
 
@@ -24,7 +25,16 @@ vi.mock('@/lib/signup-api', () => ({
 describe('개인 회원가입 후 이력서 작성 연결', () => {
   beforeEach(() => {
     navigationMock.push.mockClear();
-    vi.mocked(completeSignup).mockResolvedValue(undefined);
+    clearAccessToken();
+    vi.mocked(completeSignup).mockResolvedValue({
+      status: 'OK',
+      code: 200,
+      data: {
+        role: 'APPLICANT',
+        accessToken: 'access-token',
+      },
+      message: 'OK',
+    });
     useSignupStore.getState().reset();
     useSignupStore
       .getState()
@@ -33,6 +43,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
 
   afterEach(() => {
     cleanup();
+    clearAccessToken();
     vi.clearAllMocks();
   });
 
@@ -79,6 +90,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
       sensitiveDataConsent: true,
       marketingConsent: false,
     });
+    expect(getAccessToken()).toBe('access-token');
     expect(navigationMock.push).toHaveBeenCalledWith('/onboarding/resume');
   });
 

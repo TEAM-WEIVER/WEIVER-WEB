@@ -30,8 +30,8 @@ interface VerifyApplicantEmailData {
 }
 
 interface CompleteApplicantSignupData {
-  publicId: string;
-  role: string;
+  role: 'APPLICANT';
+  accessToken: string;
 }
 
 interface CompleteSignupPayload {
@@ -95,8 +95,8 @@ function buildCompleteApplicantSignupRequest(
   };
 }
 
-export async function completeSignup(payload: CompleteSignupPayload): Promise<void> {
-  await apiRequest<ApiResponse<CompleteApplicantSignupData>>(
+export async function completeSignup(payload: CompleteSignupPayload) {
+  return apiRequest<ApiResponse<CompleteApplicantSignupData>>(
     '/api/auth/applicants/signup/agreements',
     {
       method: 'POST',

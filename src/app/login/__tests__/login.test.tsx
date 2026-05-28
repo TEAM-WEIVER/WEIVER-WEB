@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { clearAccessToken, getAccessToken } from '@/lib/auth-token';
 import { loginApplicant, loginCompany } from '@/lib/login-api';
 
 import LoginPage from '../page';
@@ -24,6 +25,7 @@ vi.mock('@/lib/login-api', () => ({
 describe('로그인 페이지', () => {
   beforeEach(() => {
     navigationMock.push.mockClear();
+    clearAccessToken();
     vi.mocked(loginCompany).mockResolvedValue({
       status: 'OK',
       code: 200,
@@ -46,6 +48,7 @@ describe('로그인 페이지', () => {
 
   afterEach(() => {
     cleanup();
+    clearAccessToken();
     vi.clearAllMocks();
   });
 
@@ -64,6 +67,7 @@ describe('로그인 페이지', () => {
         password: 'Password123!',
       });
     });
+    expect(getAccessToken()).toBe('access-token');
     expect(navigationMock.push).toHaveBeenCalledWith('/corporate/dashboard');
   });
 
@@ -100,6 +104,7 @@ describe('로그인 페이지', () => {
       });
     });
     expect(loginCompany).not.toHaveBeenCalled();
+    expect(getAccessToken()).toBe('access-token');
     expect(navigationMock.push).toHaveBeenCalledWith('/applicant/dashboard');
   });
 

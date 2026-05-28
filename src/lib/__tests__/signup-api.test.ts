@@ -72,19 +72,39 @@ describe('signup-api', () => {
   });
 
   it('회원가입 2단계 약관 동의 요청을 서버 스펙에 맞게 보낸다', async () => {
-    await completeSignup({
-      account: {
-        email: 'applicant@example.com',
-        signupToken: 'signup-token',
+    vi.mocked(apiRequest).mockResolvedValueOnce({
+      status: 'OK',
+      code: 200,
+      data: {
+        role: 'APPLICANT',
+        accessToken: 'access-token',
       },
-      terms: {
-        serviceTerms: true,
-        privacyPolicy: true,
-        individualTerms: true,
-        aiAnalysisConsent: true,
-        sensitiveDataConsent: true,
-        marketingConsent: false,
+      message: 'OK',
+    });
+
+    await expect(
+      completeSignup({
+        account: {
+          email: 'applicant@example.com',
+          signupToken: 'signup-token',
+        },
+        terms: {
+          serviceTerms: true,
+          privacyPolicy: true,
+          individualTerms: true,
+          aiAnalysisConsent: true,
+          sensitiveDataConsent: true,
+          marketingConsent: false,
+        },
+      }),
+    ).resolves.toEqual({
+      status: 'OK',
+      code: 200,
+      data: {
+        role: 'APPLICANT',
+        accessToken: 'access-token',
       },
+      message: 'OK',
     });
 
     expect(apiRequest).toHaveBeenCalledWith('/api/auth/applicants/signup/agreements', {
