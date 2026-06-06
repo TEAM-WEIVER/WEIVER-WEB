@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { setAuthSession } from '@/lib/auth-token';
 import { loginApplicant, loginCompany } from '@/lib/login-api';
 
 import type { LoginTab } from '../_components/login-tabs';
@@ -51,18 +52,20 @@ export function useLoginForm() {
 
     try {
       if (activeTab === 'corporate') {
-        await loginCompany({
+        const response = await loginCompany({
           id: trimmedAccountId,
           password,
         });
+        setAuthSession(response.data.accessToken, response.data.role);
         router.push('/corporate/dashboard');
         return;
       }
 
-      await loginApplicant({
+      const response = await loginApplicant({
         email: trimmedAccountId,
         password,
       });
+      setAuthSession(response.data.accessToken, response.data.role);
       router.push('/applicant/dashboard');
     } catch {
       setLoginError(

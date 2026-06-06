@@ -8,6 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { setAuthSession } from '@/lib/auth-token';
 import { completeSignup } from '@/lib/signup-api';
 import { getPrevStep, getStepNumber } from '@/lib/signup-flow';
 import { INDIVIDUAL_TERMS } from '@/lib/signup-terms';
@@ -76,10 +77,11 @@ export default function SignupAgreementsPage() {
     }
 
     try {
-      await completeSignup({
+      const response = await completeSignup({
         account,
         terms: data,
       });
+      setAuthSession(response.data.accessToken, response.data.role);
       setTerms(data);
       router.push('/onboarding/resume');
     } catch {
