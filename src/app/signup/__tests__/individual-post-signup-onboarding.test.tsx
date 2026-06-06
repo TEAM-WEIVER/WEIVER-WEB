@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { clearAccessToken, getAccessToken } from '@/lib/auth-token';
+import { clearAccessToken, getAccessToken, getAuthRole } from '@/lib/auth-token';
 import { completeSignup } from '@/lib/signup-api';
 import { useSignupStore } from '@/store/signup-store';
 
@@ -91,6 +91,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
       marketingConsent: false,
     });
     expect(getAccessToken()).toBe('access-token');
+    expect(getAuthRole()).toBe('APPLICANT');
     expect(navigationMock.push).toHaveBeenCalledWith('/onboarding/resume');
   });
 

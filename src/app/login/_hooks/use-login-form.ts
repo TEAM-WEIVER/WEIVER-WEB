@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { setAccessToken } from '@/lib/auth-token';
+import { setAuthSession } from '@/lib/auth-token';
 import { loginApplicant, loginCompany } from '@/lib/login-api';
 
 import type { LoginTab } from '../_components/login-tabs';
@@ -56,7 +56,7 @@ export function useLoginForm() {
           id: trimmedAccountId,
           password,
         });
-        setAccessToken(response.data.accessToken);
+        setAuthSession(response.data.accessToken, response.data.role);
         router.push('/corporate/dashboard');
         return;
       }
@@ -65,7 +65,7 @@ export function useLoginForm() {
         email: trimmedAccountId,
         password,
       });
-      setAccessToken(response.data.accessToken);
+      setAuthSession(response.data.accessToken, response.data.role);
       router.push('/applicant/dashboard');
     } catch {
       setLoginError(

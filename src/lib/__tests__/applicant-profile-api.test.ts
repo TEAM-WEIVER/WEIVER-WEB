@@ -25,11 +25,11 @@ const applicantInfo = {
 describe('applicant-profile-api', () => {
   beforeEach(() => {
     vi.mocked(apiRequest).mockImplementation((path) => {
-      if (path === '/applicants') {
+      if (path === '/api/applicants') {
         return Promise.resolve({ status: 'OK', code: 200, data: applicantInfo, message: 'OK' });
       }
 
-      if (path === '/essay-answers') {
+      if (path === '/api/essay-answers') {
         return Promise.resolve({
           status: 'OK',
           code: 200,
@@ -61,14 +61,14 @@ describe('applicant-profile-api', () => {
       },
     });
 
-    expect(apiRequest).toHaveBeenCalledWith('/applicants');
-    expect(apiRequest).toHaveBeenCalledWith('/essay-answers');
-    expect(apiRequest).toHaveBeenCalledWith('/portfolios');
+    expect(apiRequest).toHaveBeenCalledWith('/api/applicants');
+    expect(apiRequest).toHaveBeenCalledWith('/api/essay-answers');
+    expect(apiRequest).toHaveBeenCalledWith('/api/portfolios');
   });
 
   it('자기소개서와 포트폴리오가 없으면 미완료로 반환한다', async () => {
     vi.mocked(apiRequest).mockImplementation((path) => {
-      if (path === '/applicants') {
+      if (path === '/api/applicants') {
         return Promise.resolve({
           status: 'OK',
           code: 200,
