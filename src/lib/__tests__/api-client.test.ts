@@ -53,6 +53,7 @@ describe('apiRequest', () => {
 
     const [, requestOptions] = fetchMock.mock.calls[0];
     expect((requestOptions.headers as Headers).get('Authorization')).toBe('Bearer access-token');
+    expect((requestOptions.headers as Headers).get('X-XSRF-TOKEN')).toBeNull();
   });
 
   it('GET이 아닌 요청에는 CSRF 토큰을 헤더에 담아 보낸다', async () => {
