@@ -33,6 +33,28 @@ describe('apiRequest', () => {
     );
   });
 
+  it('accessToken이 있으면 인증 요청에 Authorization 헤더를 담아 보낸다', async () => {
+    vi.resetModules();
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { setAccessToken } = await import('../auth-token');
+    const { apiRequest } = await import('../api-client');
+
+    setAccessToken('access-token');
+
+    await expect(apiRequest('/api/applicants/me')).resolves.toEqual({ ok: true });
+
+    const [, requestOptions] = fetchMock.mock.calls[0];
+    expect((requestOptions.headers as Headers).get('Authorization')).toBe('Bearer access-token');
+  });
+
   it('GET이 아닌 요청에는 CSRF 토큰을 헤더에 담아 보낸다', async () => {
     vi.resetModules();
 
@@ -109,6 +131,9 @@ describe('apiRequest', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const { apiRequest } = await import('../api-client');
+    const { setAccessToken } = await import('../auth-token');
+
+    setAccessToken('stale-access-token');
 
     await expect(
       apiRequest(path, {
@@ -122,6 +147,7 @@ describe('apiRequest', () => {
     const [, requestOptions] = fetchMock.mock.calls[0];
     expect(fetchMock.mock.calls[0][0]).toBe(`https://api.piuda.site${path}`);
     expect((requestOptions.headers as Headers).get('X-XSRF-TOKEN')).toBeNull();
+    expect((requestOptions.headers as Headers).get('Authorization')).toBeNull();
   });
 
   it.each(['/api/auth/reissue', '/api/auth/logout', '/api/auth/applicants/me'])(
@@ -168,4 +194,70 @@ describe('apiRequest', () => {
       expect((requestOptions.headers as Headers).get('X-XSRF-TOKEN')).toBe('csrf-token');
     },
   );
+
+  it('인증 요청이 401이면 accessToken을 재발급하고 원 요청을 한 번 재시도한다', async () => {
+    vi.resetModules();
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: 'OK',
+            code: 200,
+            data: { csrfToken: 'csrf-token' },
+            message: 'OK',
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: 'OK',
+            code: 200,
+            data: { accessToken: 'new-access-token' },
+            message: 'OK',
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { getAccessToken, setAccessToken } = await import('../auth-token');
+    const { apiRequest } = await import('../api-client');
+
+    setAccessToken('expired-access-token');
+
+    await expect(apiRequest('/api/applicants/me')).resolves.toEqual({ ok: true });
+
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.piuda.site/api/applicants/me');
+    expect(fetchMock.mock.calls[1][0]).toBe('https://api.piuda.site/api/auth/csrf');
+    expect(fetchMock.mock.calls[2][0]).toBe('https://api.piuda.site/api/auth/reissue');
+    expect(fetchMock.mock.calls[3][0]).toBe('https://api.piuda.site/api/applicants/me');
+
+    expect((fetchMock.mock.calls[0][1].headers as Headers).get('Authorization')).toBe(
+      'Bearer expired-access-token',
+    );
+    expect((fetchMock.mock.calls[2][1].headers as Headers).get('Authorization')).toBeNull();
+    expect((fetchMock.mock.calls[2][1].headers as Headers).get('X-XSRF-TOKEN')).toBe('csrf-token');
+    expect((fetchMock.mock.calls[3][1].headers as Headers).get('Authorization')).toBe(
+      'Bearer new-access-token',
+    );
+    expect(getAccessToken()).toBe('new-access-token');
+  });
 });

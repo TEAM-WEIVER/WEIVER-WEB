@@ -78,15 +78,15 @@ async function readOptionalProfileSection<TData>(
 }
 
 export function getApplicantInfo() {
-  return apiRequest<ApiResponse<ApplicantInfo>>('/applicants');
+  return apiRequest<ApiResponse<ApplicantInfo>>('/api/applicants');
 }
 
 function getEssayAnswer() {
-  return apiRequest<ApiResponse<EssayAnswer>>('/essay-answers');
+  return apiRequest<ApiResponse<EssayAnswer>>('/api/essay-answers');
 }
 
 function getPortfolio() {
-  return apiRequest<ApiResponse<Portfolio>>('/portfolios');
+  return apiRequest<ApiResponse<Portfolio>>('/api/portfolios');
 }
 
 export async function getApplicantProfileOverview(): Promise<ApplicantProfileOverview> {
