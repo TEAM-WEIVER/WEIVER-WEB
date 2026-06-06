@@ -62,9 +62,14 @@ export default function ApplicantLayout({ children }: { children: React.ReactNod
               <Settings size={24} />
             </button>
           </div>
-          <div className="bg-bg-primary text-primary-500 flex size-11 items-center justify-center rounded-md">
+          <Link
+            href="/applicant/mypage"
+            aria-label="마이페이지"
+            title="마이페이지"
+            className="bg-bg-primary text-primary-500 flex size-11 items-center justify-center rounded-md"
+          >
             <UserRound size={24} />
-          </div>
+          </Link>
         </div>
       </aside>
 

@@ -2,7 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, FileText, MessageSquare, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, MessageSquare, Settings } from 'lucide-react';
+
+import { LogoutButton } from '@/components/common/logout-button';
+import { ProtectedRouteGuard } from '@/components/common/protected-route-guard';
 
 const NAV_ITEMS = [
   { href: '/corporate/dashboard', label: '대시보드', icon: LayoutDashboard },
@@ -49,13 +52,7 @@ function Sidebar() {
 
       {/* 하단 로그아웃 */}
       <div className="border-border-light border-t px-3 py-4">
-        <button
-          type="button"
-          className="text-body2 text-text-tertiary hover:bg-bg-secondary hover:text-text-secondary flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-colors"
-        >
-          <LogOut size={20} />
-          로그아웃
-        </button>
+        <LogoutButton className="text-body2 text-text-tertiary hover:bg-bg-secondary hover:text-text-secondary flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-colors" />
       </div>
     </aside>
   );
@@ -73,7 +70,9 @@ export default function CorporateLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
-        <main className="flex-1 p-8">{children}</main>
+        <main className="flex-1 p-8">
+          <ProtectedRouteGuard area="corporate">{children}</ProtectedRouteGuard>
+        </main>
       </div>
     </div>
   );
