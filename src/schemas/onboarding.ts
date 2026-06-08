@@ -12,6 +12,16 @@ export const educationSchema = z.object({
   status: z.string().optional(),
 });
 
+const emptyEducationSchema = z.object({
+  type: z.literal(''),
+  school: z.literal(''),
+  major: z.literal(''),
+  gpa: z.literal(''),
+  enrollmentDate: z.literal(''),
+  graduationDate: z.literal(''),
+  status: z.literal(''),
+});
+
 export type EducationData = z.infer<typeof educationSchema>;
 
 /* ─── 자격증 ─── */
@@ -22,6 +32,12 @@ export const certificationSchema = z.object({
   issuer: z.string().optional(),
 });
 
+const emptyCertificationSchema = z.object({
+  acquiredDate: z.literal(''),
+  name: z.literal(''),
+  issuer: z.literal(''),
+});
+
 export type CertificationData = z.infer<typeof certificationSchema>;
 
 /* ─── 수상이력 ─── */
@@ -30,6 +46,12 @@ export const awardSchema = z.object({
   date: z.string().optional(),
   name: z.string().min(1, '수상명을 입력해주세요.'),
   issuer: z.string().optional(),
+});
+
+const emptyAwardSchema = z.object({
+  date: z.literal(''),
+  name: z.literal(''),
+  issuer: z.literal(''),
 });
 
 export type AwardData = z.infer<typeof awardSchema>;
@@ -45,19 +67,28 @@ export const careerSchema = z.object({
   duty: z.string().optional(),
 });
 
+const emptyCareerSchema = z.object({
+  company: z.literal(''),
+  startDate: z.literal(''),
+  endDate: z.literal(''),
+  type: z.literal(''),
+  position: z.literal(''),
+  duty: z.literal(''),
+});
+
 export type CareerData = z.infer<typeof careerSchema>;
 
 /* ─── 이력서 전체 (1단계) ─── */
 
 export const resumeSchema = z.object({
   name: z.string().min(1, '이름을 입력해주세요.'),
-  email: z.string().email('올바른 이메일 형식을 입력해주세요.'),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  education: z.array(educationSchema),
-  certifications: z.array(certificationSchema),
-  awards: z.array(awardSchema),
-  careers: z.array(careerSchema),
+  email: z.string().email('올바른 이메일 형식을 입력해주세요.').or(z.literal('')),
+  phone: z.string().min(1, '전화번호를 입력해주세요.'),
+  address: z.string().min(1, '주소를 입력해주세요.'),
+  education: z.array(z.union([educationSchema, emptyEducationSchema])),
+  certifications: z.array(z.union([certificationSchema, emptyCertificationSchema])),
+  awards: z.array(z.union([awardSchema, emptyAwardSchema])),
+  careers: z.array(z.union([careerSchema, emptyCareerSchema])),
 });
 
 export type ResumeData = z.infer<typeof resumeSchema>;
