@@ -2,6 +2,7 @@ import { clearAccessToken, getAccessToken, setAccessToken } from './auth-token';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://api.piuda.site';
 const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
+const CSRF_COOKIE_NAME = 'XSRF-TOKEN';
 const REISSUE_PATH = '/api/auth/reissue';
 const CSRF_EXCLUDED_PATHS = new Set([
   '/api/auth/applicants/signup/init',
@@ -65,6 +66,24 @@ function shouldRetryAuthorization(path: string, skipAuthRetry: boolean) {
   return !skipAuthRetry && !AUTHORIZATION_EXCLUDED_PATHS.has(path);
 }
 
+function getCookieValue(name: string) {
+  if (typeof document === 'undefined') return null;
+
+  return (
+    document.cookie
+      .split('; ')
+      .find((cookie) => cookie.startsWith(`${name}=`))
+      ?.split('=')
+      .slice(1)
+      .join('=') ?? null
+  );
+}
+
+function getXsrfCookieToken() {
+  const token = getCookieValue(CSRF_COOKIE_NAME);
+  return token ? decodeURIComponent(token) : null;
+}
+
 async function fetchCsrfToken() {
   const response = await fetch(`${API_BASE_URL}/api/auth/csrf`, {
     method: 'GET',
@@ -79,12 +98,14 @@ async function fetchCsrfToken() {
   }
 
   const result = (await response.json()) as ApiResponse<CsrfData>;
-  csrfToken = result.data.csrfToken;
+  csrfToken = getXsrfCookieToken() ?? result.data.csrfToken;
   return csrfToken;
 }
 
 async function getCsrfToken() {
-  if (csrfToken) return csrfToken;
+  const canReadCookie = typeof document !== 'undefined';
+  const xsrfCookieToken = getXsrfCookieToken();
+  if (csrfToken && (!canReadCookie || xsrfCookieToken === csrfToken)) return csrfToken;
 
   csrfTokenPromise ??= fetchCsrfToken().finally(() => {
     csrfTokenPromise = null;

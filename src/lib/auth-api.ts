@@ -1,4 +1,4 @@
-import { setAccessToken } from './auth-token';
+import { clearAccessToken, setAccessToken } from './auth-token';
 import { apiRequest } from './api-client';
 
 interface ApiResponse<TData> {
@@ -21,4 +21,14 @@ export async function reissueAccessToken() {
 
   setAccessToken(response.data.accessToken);
   return response;
+}
+
+export async function logout() {
+  try {
+    return await apiRequest<ApiResponse<string>>('/api/auth/logout', {
+      method: 'POST',
+    });
+  } finally {
+    clearAccessToken();
+  }
 }
