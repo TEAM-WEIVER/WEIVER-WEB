@@ -94,7 +94,7 @@ describe('개인 회원가입 플로우', () => {
     );
     await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
     await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
-    await user.click(screen.getByRole('button', { name: '확인' }));
+    await user.click(screen.getByRole('button', { name: '인증번호 확인' }));
 
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
     await waitFor(() => expect(screen.getByText('인증 완료')).toBeInTheDocument());
@@ -156,7 +156,7 @@ describe('개인 회원가입 플로우', () => {
     await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
     expect(sendApplicantVerificationEmail).toHaveBeenCalledWith('user@example.com');
     await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
-    await user.click(screen.getByRole('button', { name: '확인' }));
+    await user.click(screen.getByRole('button', { name: '인증번호 확인' }));
 
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
     await waitFor(() => expect(nextButton).toBeEnabled());
@@ -194,7 +194,7 @@ describe('개인 회원가입 플로우', () => {
     );
     await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
     await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
-    await user.click(screen.getByRole('button', { name: '확인' }));
+    await user.click(screen.getByRole('button', { name: '인증번호 확인' }));
 
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
     await waitFor(() => expect(nextButton).toBeEnabled());
@@ -250,13 +250,13 @@ describe('개인 회원가입 플로우', () => {
     );
     expect(passwordConfirmInput).toHaveAttribute('type', 'password');
 
-    const toggleButton = screen.getByRole('button', { name: '비밀번호 확인 보기' });
+    const toggleButton = screen.getByRole('button', { name: '비밀번호 확인 필드 표시' });
     await user.click(toggleButton);
 
     expect(passwordConfirmInput).toHaveAttribute('type', 'text');
-    expect(screen.getByRole('button', { name: '비밀번호 확인 숨기기' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '비밀번호 확인 필드 숨기기' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: '비밀번호 확인 숨기기' }));
+    await user.click(screen.getByRole('button', { name: '비밀번호 확인 필드 숨기기' }));
     expect(passwordConfirmInput).toHaveAttribute('type', 'password');
   });
 
@@ -274,7 +274,7 @@ describe('개인 회원가입 플로우', () => {
     );
     await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
     await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
-    await user.click(screen.getByRole('button', { name: '확인' }));
+    await user.click(screen.getByRole('button', { name: '인증번호 확인' }));
 
     expect(
       await screen.findByText('인증번호가 올바르지 않습니다. 다시 확인해주세요.'),

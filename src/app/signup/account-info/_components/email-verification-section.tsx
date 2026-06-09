@@ -91,6 +91,7 @@ export function EmailVerificationSection({
             {!verification.isEmailVerified ? (
               <Button
                 type="button"
+                aria-label="인증번호 확인"
                 onClick={() => void verification.verifyCode()}
                 disabled={
                   verification.verificationCode.length !== 6 ||
