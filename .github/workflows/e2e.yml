@@ -62,4 +62,9 @@ jobs:
         run: pnpm build
 
       - name: Run E2E tests
-        run: pnpm exec playwright test
+        run: |
+          if find e2e -name "*.spec.ts" | grep -q .; then
+            pnpm exec playwright test
+          else
+            echo "E2E 테스트 파일 없음 — 건너뜀"
+          fi
