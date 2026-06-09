@@ -184,9 +184,9 @@ Closes #
 
 ## 체크리스트
 
-- [ ] 셀프 코드 리뷰 완료
-- [ ] 불필요한 console.log 제거
-- [ ] 타입 에러 없음
+- [ ] `pnpm lint:check`
+- [ ] `pnpm exec tsc --noEmit`
+- [ ] UI 변경 시 스크린샷 첨부
 ```
 
 ---
