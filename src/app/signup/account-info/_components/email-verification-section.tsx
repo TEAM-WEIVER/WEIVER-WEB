@@ -66,7 +66,7 @@ export function EmailVerificationSection({
             <Label className="text-text-primary">인증 코드를 입력해주세요.</Label>
             <span
               role="timer"
-              aria-live="off"
+              aria-live="polite"
               className={
                 timer.isRunning || (!verification.isEmailVerified && !timer.isExpired)
                   ? 'text-caption text-error'

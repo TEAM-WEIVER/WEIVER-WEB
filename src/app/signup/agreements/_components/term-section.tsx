@@ -29,6 +29,7 @@ export function TermSection({ item, checked, onToggle }: TermSectionProps) {
           checked={checked}
           onCheckedChange={onToggle}
           aria-labelledby={labelId}
+          aria-required={item.required}
         />
         <span id={labelId} className="text-body2 text-text-secondary">
           {item.agreeLabel}
