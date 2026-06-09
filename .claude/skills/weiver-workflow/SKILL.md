@@ -26,14 +26,7 @@ description: 새 작업 요청 시 AI 워크플로우 단계를 자동 파악하
 - `docs/plans/#이슈번호-설명.md` 저장
 - Critical/Major 이슈 시 planner 재호출
 
-### 3단계 — 디자인 (AC 있음, UI 작업)
-
-`designer` → `design-reviewer` 순서로 호출:
-
-- 컴포넌트 스펙 작성 (shadcn/ui 활용 방안 포함)
-- 기획 문서 내 컴포넌트 스펙 섹션 보완
-
-### 4단계 — 개발 (브랜치 있음, 코드 작업)
+### 3단계 — 개발 (브랜치 있음, 코드 작업)
 
 순서대로 호출:
 
@@ -43,7 +36,7 @@ description: 새 작업 요청 시 AI 워크플로우 단계를 자동 파악하
 4. `design-reviewer` — 디자인 스펙 대조
 5. `code-reviewer` — 코드 품질 검토
 
-### 5단계 — 마무리 (PR 요청)
+### 4단계 — 마무리 (PR 요청)
 
 `git-ops` 에이전트 호출:
 
@@ -52,6 +45,6 @@ description: 새 작업 요청 시 AI 워크플로우 단계를 자동 파악하
 
 ## 단계 명시 시 직접 진입
 
-- "PR 올려줘" → 5단계
+- "PR 올려줘" → 4단계
 - "테스트 작성해줘" → atdd-writer
 - "코드 리뷰해줘" → code-reviewer
