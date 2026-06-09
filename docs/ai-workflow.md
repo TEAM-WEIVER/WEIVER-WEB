@@ -112,20 +112,24 @@
 ### 3. 개발 (ATDD)
 
 - **진입**: 기획 완료(표준) 또는 브랜치 존재(경량)
-- **에이전트**: `atdd-writer`, `next-dev`, `coverage-auditor`, `code-reviewer` (+ 다자토론)
+- **에이전트**: `atdd-writer`, `ui-implementer`, `next-dev`, `coverage-auditor`, `code-reviewer` (+ 다자토론)
 - **실행 순서**:
   1. AC 기반 Playwright 인수 테스트 작성 (`atdd-writer`) — **셀렉터는 사용자 행동 기준** (role/label/text)
   2. MSW 목 핸들러 작성 — 정상 응답 + 에러 응답 포함
-  3. 구현 (`next-dev`) — 인수 테스트 통과 목표
-  4. Vitest + RTL 단위 테스트 작성 (`next-dev`) — 비즈니스 로직·유틸 함수·컴포넌트 인터랙션
-  5. 커버리지 확인 (`coverage-auditor`) — 70% 임계값
-  6. **다자토론(Claude × Codex × Gemini)** — `code-reviewer` 검토를 다자토론으로 진행. 사용자가 별도 지시하지 않아도 Claude가 자동으로 시작한다.
+  3. **UI 구현** (`ui-implementer`) — 기존 레이아웃 유지하며 AC 기준 화면 구현. 테스트 셀렉터와 실제 DOM 일치 확인
+  4. 로직 구현 (`next-dev`) — 훅·API 연동·유효성 검사. 인수 테스트 통과 목표
+  5. Vitest + RTL 단위 테스트 작성 (`next-dev`) — 비즈니스 로직·유틸 함수·컴포넌트 인터랙션
+  6. 커버리지 확인 (`coverage-auditor`) — 70% 임계값
+  7. **`verify` 스킬로 실제 화면 확인** — AC별 동작을 실제 브라우저에서 검증. 셀렉터 충돌·레이아웃 깨짐 확인
+  8. **다자토론(Claude × Codex × Gemini)** — `code-reviewer` 검토를 다자토론으로 진행.
      - Claude 렌즈: `code-reviewer` 서브에이전트 실행 (품질·타입 안전성·보안·컨벤션) + 보안·엣지케이스
      - Codex 렌즈: 정확성·논리 비약·반례
      - Gemini 렌즈: 외부 사실·도메인 접지·현실성
-  7. **⚠️ `code-reviewer` 단독 실행 금지**: 반드시 다자토론 안에서 Claude 렌즈로 실행한다.
-  8. `pnpm lint:check` + `pnpm typecheck` 통과
-  9. 커밋 (`type: 설명` 한국어, 기능 단위로 분리)
+  9. **⚠️ `code-reviewer` 단독 실행 금지**: 반드시 다자토론 안에서 Claude 렌즈로 실행한다.
+  10. `pnpm lint:check` + `pnpm typecheck` 통과
+  11. 커밋 (`type: 설명` 한국어, 기능 단위로 분리)
+
+- **⚠️ ATDD 순서 준수**: 테스트 먼저(1~2) → UI(3) → 로직(4) 순서를 반드시 지킨다. 구현 후 테스트를 맞추는 방식은 ATDD가 아니다.
 
 ### 테스트 레이어
 

@@ -49,12 +49,12 @@ async function sendVerificationCode(page: Page) {
 
 async function verifyCode(page: Page, code = '123456') {
   await page.getByLabel('이메일 인증번호').fill(code);
-  await page.getByRole('button', { name: '확인' }).click();
+  await page.getByRole('button', { name: '확인', exact: true }).click();
 }
 
 async function fillPassword(page: Page, pw = 'Password1!') {
   await page.getByLabel('비밀번호').fill(pw);
-  await page.getByLabel('비밀번호 확인').fill(pw);
+  await page.getByRole('textbox', { name: '비밀번호 확인' }).fill(pw);
 }
 
 // ---------------------------------------------------------------------------
@@ -77,7 +77,7 @@ test('AC1: 유효한 이메일 입력 후 인증번호 전송 버튼 클릭 시 
 
   // Then — 인증번호 입력 필드와 확인 버튼 표시
   await expect(page.getByLabel('이메일 인증번호')).toBeVisible();
-  await expect(page.getByRole('button', { name: '확인' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '확인', exact: true })).toBeVisible();
 
   // Then — 인증번호 전송 버튼 비활성화 (중복 요청 방지)
   await expect(page.getByRole('button', { name: '인증번호 전송' })).toBeDisabled();
@@ -221,7 +221,7 @@ test('AC6: 타이머 만료 후 재전송 버튼이 표시되고, 클릭 시 타
 
   // Then — 인증번호 입력 필드, 확인 버튼 비활성화
   await expect(page.getByLabel('이메일 인증번호')).toBeDisabled();
-  await expect(page.getByRole('button', { name: '확인' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '확인', exact: true })).toBeDisabled();
 
   // Then — 재전송 버튼 표시
   await expect(page.getByRole('button', { name: '재전송' })).toBeVisible();
