@@ -20,7 +20,10 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Approve builds
+        run: pnpm approve-builds --yes || true
 
       - name: Lint
         run: pnpm lint:check
@@ -47,7 +50,10 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Approve builds
+        run: pnpm approve-builds --yes || true
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium

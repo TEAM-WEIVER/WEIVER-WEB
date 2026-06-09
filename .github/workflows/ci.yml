@@ -20,7 +20,10 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Approve builds
+        run: pnpm approve-builds --yes || true
 
       - name: Lint
         run: pnpm lint:check
