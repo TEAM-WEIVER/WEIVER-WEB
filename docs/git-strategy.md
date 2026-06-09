@@ -185,6 +185,21 @@ Closes #
 
 ---
 
+## 브랜치 정리 루틴
+
+PR 머지 후 또는 주기적으로 upstream이 삭제된 로컬 브랜치를 정리한다.
+
+```bash
+# 원격 삭제된 브랜치 정보 동기화 + gone 브랜치 일괄 삭제
+git fetch --prune && git branch -vv | grep ': gone]' | awk '{print $1}' | xargs git branch -d
+```
+
+- `--prune`: 원격에서 삭제된 브랜치 추적 정보 제거
+- `-d`: 머지된 브랜치만 삭제 (미머지 브랜치는 보호됨)
+- 미머지 브랜치를 강제 삭제하려면 `-D` 사용 (주의)
+
+---
+
 ## 사용 도구
 
 - **GitHub CLI (`gh`)**: 이슈 생성, 라벨 관리, PR 생성
