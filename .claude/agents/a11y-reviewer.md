@@ -1,4 +1,5 @@
 ---
+color: red
 name: a11y-reviewer
 description: Storybook a11y 애드온 및 코드 검토 기반 웹 접근성 검토
 tools: Read, Bash, Write

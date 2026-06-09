@@ -61,6 +61,13 @@ pnpm storybook    # Storybook (port 6006)
 
 ---
 
+## Claude 행동 원칙
+
+- **모든 요청을 실행하기 전에** 적합한 서브에이전트(`.claude/agents/`)나 스킬이 있는지 확인하고, 있으면 반드시 사용한다.
+- **워크플로우 진입 전에** `docs/ai-workflow.md`의 단계 파악 기준표를 확인하고 올바른 단계부터 시작한다.
+
+---
+
 ## AI 개발 워크플로우
 
 → `docs/ai-workflow.md` 참고
