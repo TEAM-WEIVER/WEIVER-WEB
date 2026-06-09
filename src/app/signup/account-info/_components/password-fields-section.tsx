@@ -45,6 +45,7 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
           </div>
         </div>
         <PasswordRules password={password} />
+        <FieldError>{errors.password?.message}</FieldError>
       </div>
 
       <div className="flex flex-col gap-2">

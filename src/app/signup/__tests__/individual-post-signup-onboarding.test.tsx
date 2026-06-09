@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { clearAccessToken, getAccessToken, getAuthRole } from '@/lib/auth-token';
+import { clearAccessToken, getAuthRole } from '@/lib/auth-token';
 import { completeSignup } from '@/lib/signup-api';
 import { useSignupStore } from '@/store/signup-store';
 
@@ -34,7 +34,6 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
       code: 200,
       data: {
         role: 'APPLICANT',
-        accessToken: 'access-token',
       },
       message: 'OK',
     });
@@ -84,7 +83,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
 
     // 가입 완료 후 store는 reset됨 (AC4)
     expect(useSignupStore.getState().terms).toEqual({});
-    expect(getAccessToken()).toBe('access-token');
+    // accessToken은 httpOnly cookie에 저장되므로 JS에서 직접 접근 불가
     expect(getAuthRole()).toBe('APPLICANT');
     expect(navigationMock.push).toHaveBeenCalledWith('/onboarding/resume');
   });

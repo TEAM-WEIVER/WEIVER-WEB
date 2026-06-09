@@ -1,5 +1,7 @@
+import type { IndividualTermsData } from '@/schemas/signup';
+
 export interface TermItem {
-  key: string;
+  key: keyof IndividualTermsData;
   title: string;
   required: boolean;
   content: string;

@@ -27,7 +27,7 @@ export function EmailVerificationSection({
 
   return (
     <div className="flex flex-col gap-3.5">
-      <FormField label="이메일" error={emailError}>
+      <FormField label="이메일" error={emailError ? <span id="email-error">{emailError}</span> : undefined}>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             id="email"
@@ -36,6 +36,8 @@ export function EmailVerificationSection({
             placeholder="personal@gmail.com"
             disabled={verification.isEmailVerified}
             aria-label="이메일"
+            aria-describedby={emailError ? 'email-error' : undefined}
+            aria-invalid={!!emailError}
             className="flex-1"
           />
           <Button
@@ -44,6 +46,7 @@ export function EmailVerificationSection({
             disabled={
               verification.isEmailVerified ||
               !watchedEmail ||
+              !!emailError ||
               verification.isSending ||
               timer.isRunning
             }
@@ -63,7 +66,7 @@ export function EmailVerificationSection({
             <Label className="text-text-primary">인증 코드를 입력해주세요.</Label>
             <span
               role="timer"
-              aria-live="polite"
+              aria-live="off"
               className={
                 timer.isRunning || (!verification.isEmailVerified && !timer.isExpired)
                   ? 'text-caption text-error'

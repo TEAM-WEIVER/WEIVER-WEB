@@ -8,7 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { setAuthSession } from '@/lib/auth-token';
+import { setAuthRole } from '@/lib/auth-token';
 import { completeSignup } from '@/lib/signup-api';
 import { getPrevStep, getStepNumber } from '@/lib/signup-flow';
 import { INDIVIDUAL_TERMS } from '@/lib/signup-terms';
@@ -23,13 +23,6 @@ export default function SignupAgreementsPage() {
   const savedTerms = useSignupStore((state) => state.terms);
   const reset = useSignupStore((state) => state.reset);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  // AC11: signupToken 없으면 즉시 리다이렉트
-  useEffect(() => {
-    if (!account.signupToken) {
-      router.replace('/signup/account-info');
-    }
-  }, [account.signupToken, router]);
 
   const defaultValues = Object.fromEntries(
     INDIVIDUAL_TERMS.map((item) => [item.key, savedTerms[item.key] ?? false]),
@@ -49,28 +42,39 @@ export default function SignupAgreementsPage() {
   const watchedValues =
     useWatch({
       control,
-      name: INDIVIDUAL_TERMS.map((item) => item.key) as Array<keyof IndividualTermsData>,
+      name: INDIVIDUAL_TERMS.map((item) => item.key),
     }) ?? [];
+
+  // AC11: signupToken 없으면 즉시 리다이렉트 (플리커 방지 early return — Hook 이후에 위치)
+  useEffect(() => {
+    if (!account.signupToken) {
+      router.replace('/signup/account-info');
+    }
+  }, [account.signupToken, router]);
+
+  if (!account.signupToken) return null;
 
   const watchedTerms = Object.fromEntries(
     INDIVIDUAL_TERMS.map((item, index) => [item.key, Boolean(watchedValues[index])]),
   );
-  const allChecked = INDIVIDUAL_TERMS.every((item) => watchedTerms[item.key]);
+  const allChecked = INDIVIDUAL_TERMS.filter((item) => item.required).every(
+    (item) => watchedTerms[item.key],
+  );
   const stepNumber = getStepNumber('agreements');
   const prevStep = getPrevStep('agreements');
 
   const handleToggleAll = () => {
     const next = !allChecked;
     INDIVIDUAL_TERMS.forEach((item) => {
-      setValue(item.key as keyof IndividualTermsData, next, {
+      setValue(item.key, next, {
         shouldValidate: true,
       });
     });
   };
 
-  const handleToggle = (key: string) => {
+  const handleToggle = (key: keyof IndividualTermsData) => {
     const current = watchedTerms[key];
-    setValue(key as keyof IndividualTermsData, !current, {
+    setValue(key, !current, {
       shouldValidate: true,
     });
   };
@@ -83,7 +87,7 @@ export default function SignupAgreementsPage() {
         account,
         terms: data,
       });
-      setAuthSession(response.data.accessToken, response.data.role);
+      setAuthRole(response.data.role);
       reset();
       router.push('/onboarding/resume');
     } catch {

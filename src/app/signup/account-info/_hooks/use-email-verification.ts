@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useTimer } from '@/hooks/use-timer';
 import { sendApplicantVerificationEmail, verifyApplicantEmail } from '@/lib/signup-api';
@@ -8,6 +8,7 @@ const MAX_SEND_COUNT = 3;
 export function useEmailVerification(email: string) {
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
   const [sentEmail, setSentEmail] = useState<string | null>(null);
+  const prevEmailRef = useRef(email);
   const [verificationToken, setVerificationToken] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -16,6 +17,21 @@ export function useEmailVerification(email: string) {
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [sendCount, setSendCount] = useState(0);
   const timer = useTimer(300);
+
+  // M2/M3: 이메일 변경 시 인증 세션(타이머, sentEmail, sendCount) 리셋
+  const timerReset = timer.reset;
+  useEffect(() => {
+    if (prevEmailRef.current === email) return;
+    prevEmailRef.current = email;
+    setSentEmail(null);
+    setVerifiedEmail(null);
+    setVerificationToken('');
+    setVerificationCode('');
+    setSendCount(0);
+    setSendError(null);
+    setVerifyError(null);
+    timerReset();
+  }, [email, timerReset]);
 
   const isEmailVerified = email !== '' && verifiedEmail === email;
   const isCodeSent = email !== '' && sentEmail === email;
