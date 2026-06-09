@@ -43,3 +43,7 @@ next-env.d.ts
 
 *storybook.log
 storybook-static
+
+# cmux 토론 산출물 (디렉토리 구조만 추적)
+.cmux/*
+!.cmux/.gitignore
