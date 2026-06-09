@@ -123,16 +123,19 @@ chore: GitHub Actions CI 설정
    git push -u origin type/#이슈번호
 
 3. 작업 후 develop으로 PR 생성
-   gh pr create --base develop --body "Closes #이슈번호"
+   gh pr create --base develop --body "Refs #이슈번호"
    → CI (lint, typecheck, unit test) 통과 필수
-   → develop 머지 시 이슈 자동 종료
 
 4. develop → main PR (마일스톤 완료 시점)
    - 마일스톤 단위 기능이 develop에 모두 머지됐을 때
    - develop에서 직접 동작 확인 완료 후 PR 생성
-   gh pr create --base main --body "Refs #이슈번호"
+   gh pr create --base main --body "Closes #이슈번호"
    → CI + Playwright E2E 테스트 전체 통과 필수
-   → 통과 시 머지 & 자동 배포
+   → main 머지 시 이슈 자동 종료
+
+   develop → main CI 실패 시:
+   → 원인별 서브 이슈를 상위 이슈 하위에 생성하여 추적
+   → 서브 이슈 해결 후 재시도
 ```
 
 ---
