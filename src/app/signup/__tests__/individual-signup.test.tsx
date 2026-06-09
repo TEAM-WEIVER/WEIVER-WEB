@@ -222,6 +222,44 @@ describe('개인 회원가입 플로우', () => {
     expect(screen.getByRole('button', { name: /다음 단계/ })).toBeDisabled();
   });
 
+  it('비밀번호 보기 토글 클릭 시 input type이 password에서 text로 전환된다', async () => {
+    const user = userEvent.setup();
+
+    render(<SignupAccountInfoPage />);
+
+    const passwordInput = screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자');
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    const toggleButton = screen.getByRole('button', { name: '비밀번호 보기' });
+    await user.click(toggleButton);
+
+    expect(passwordInput).toHaveAttribute('type', 'text');
+    expect(screen.getByRole('button', { name: '비밀번호 숨기기' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '비밀번호 숨기기' }));
+    expect(passwordInput).toHaveAttribute('type', 'password');
+  });
+
+  it('비밀번호 확인 보기 토글 클릭 시 input type이 password에서 text로 전환된다', async () => {
+    const user = userEvent.setup();
+
+    render(<SignupAccountInfoPage />);
+
+    const passwordConfirmInput = screen.getByPlaceholderText(
+      '위에서 입력한 비밀번호를 입력해주세요.',
+    );
+    expect(passwordConfirmInput).toHaveAttribute('type', 'password');
+
+    const toggleButton = screen.getByRole('button', { name: '비밀번호 확인 보기' });
+    await user.click(toggleButton);
+
+    expect(passwordConfirmInput).toHaveAttribute('type', 'text');
+    expect(screen.getByRole('button', { name: '비밀번호 확인 숨기기' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '비밀번호 확인 숨기기' }));
+    expect(passwordConfirmInput).toHaveAttribute('type', 'password');
+  });
+
   it('인증번호 검증 요청이 실패하면 다음 단계로 이동할 수 없다', async () => {
     const user = userEvent.setup();
     vi.mocked(verifyApplicantEmail).mockRejectedValue(new Error('verify failed'));

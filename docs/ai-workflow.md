@@ -112,15 +112,20 @@
 ### 3. 개발 (ATDD)
 
 - **진입**: 기획 완료(표준) 또는 브랜치 존재(경량)
-- **에이전트**: `atdd-writer`, `next-dev`, `coverage-auditor`, `code-reviewer`
+- **에이전트**: `atdd-writer`, `next-dev`, `coverage-auditor`, `code-reviewer` (+ 다자토론)
 - **실행 순서**:
   1. AC 기반 Playwright 인수 테스트 작성 (`atdd-writer`) — **셀렉터는 사용자 행동 기준** (role/label/text)
   2. MSW 목 핸들러 작성 — 정상 응답 + 에러 응답 포함
   3. 구현 (`next-dev`) — 인수 테스트 통과 목표
   4. Vitest + RTL 단위 테스트 작성 (`next-dev`) — 비즈니스 로직·유틸 함수·컴포넌트 인터랙션
   5. 커버리지 확인 (`coverage-auditor`) — 70% 임계값
-  6. `pnpm lint:check` + `pnpm typecheck` 통과
-  7. 커밋 (`type: 설명` 한국어, 기능 단위로 분리)
+  6. **다자토론(Claude × Codex × Gemini)** — `code-reviewer` 검토를 다자토론으로 진행. 사용자가 별도 지시하지 않아도 Claude가 자동으로 시작한다.
+     - Claude 렌즈: `code-reviewer` 서브에이전트 실행 (품질·타입 안전성·보안·컨벤션) + 보안·엣지케이스
+     - Codex 렌즈: 정확성·논리 비약·반례
+     - Gemini 렌즈: 외부 사실·도메인 접지·현실성
+  7. **⚠️ `code-reviewer` 단독 실행 금지**: 반드시 다자토론 안에서 Claude 렌즈로 실행한다.
+  8. `pnpm lint:check` + `pnpm typecheck` 통과
+  9. 커밋 (`type: 설명` 한국어, 기능 단위로 분리)
 
 ### 테스트 레이어
 
