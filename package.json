@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest --project unit",
+    "test:coverage": "vitest --project unit --coverage",
     "test:storybook": "vitest --project storybook",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",
@@ -37,6 +40,7 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.0",
+    "@playwright/test": "^1.60.0",
     "@storybook/addon-a11y": "^10.2.4",
     "@storybook/addon-docs": "^10.2.4",
     "@storybook/addon-onboarding": "^10.2.4",

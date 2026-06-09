@@ -1,0 +1,79 @@
+# CLAUDE.md
+
+## 프로젝트 개요
+
+**WEIVER** — 지원자(applicant)와 기업(corporate) 양쪽을 지원하는 AI 채용 매칭 플랫폼. → `docs/project-overview.md` 참고
+Next.js 16 App Router + TypeScript + Tailwind CSS + shadcn/ui + Zustand + React Hook Form + Zod 스택.
+
+### 주요 라우트
+
+- `/login`, `/signup` — 인증
+- `/onboarding` — 이력서, 포트폴리오, 자기소개서 작성
+- `/applicant` — 지원자 대시보드, 마이페이지
+- `/corporate` — 기업 대시보드
+
+### 디렉토리
+
+- `src/app` — 페이지 및 라우트
+- `src/components/ui` — 재사용 원시 컴포넌트
+- `src/components/common` — 레이아웃/공통 컴포넌트
+- `src/hooks` — 클라이언트 훅
+- `src/schemas` — Zod 스키마 및 타입
+- `src/store` — Zustand 스토어
+- `src/lib` — 순수 유틸 함수
+
+---
+
+## 명령어
+
+패키지 매니저는 **pnpm** 사용.
+
+```bash
+pnpm dev          # 개발 서버
+pnpm build        # 프로덕션 빌드
+pnpm lint:check   # ESLint 검사
+pnpm lint         # ESLint 자동 수정
+pnpm typecheck    # TypeScript 검사
+pnpm test         # Vitest 유닛 테스트
+pnpm storybook    # Storybook (port 6006)
+```
+
+---
+
+## 코딩 컨벤션
+
+- 컴포넌트: `PascalCase` / 변수·함수: `camelCase` / 파일명: `kebab-case`
+- Prettier: 2 spaces, single quotes, semicolons, printWidth 100, Tailwind class 정렬
+- 비밀번호, 인증코드 등 민감 정보는 클라이언트 스토어에 저장 금지
+
+---
+
+## Git 워크플로우
+
+→ `docs/git-strategy.md` 참고
+
+---
+
+## 테스트
+
+- UI 컴포넌트는 `*.stories.tsx`로 작성 (Storybook 기반 테스트)
+- 큰 UI 변경 전 `pnpm build-storybook` + `pnpm lint:check` 실행
+
+---
+
+## AI 개발 워크플로우
+
+→ `docs/ai-workflow.md` 참고
+
+핵심 루프: **US/AC → 테스트(ATDD) → 구현 → CI 자동 검증**
+
+- 표준 경로: 브리핑 → 기획 → 개발 → 마무리
+- 경량 경로: 브리핑 → 개발 → 마무리 (스타일·버그픽스·리팩토링)
+- 인증·개인정보·라우팅·핵심 API 변경은 **반드시 표준 경로**
+
+## 교차 리뷰 (Claude × Codex × Gemini)
+
+→ `docs/discussion-guide.md` (토론 운영), `docs/cmux-guide.md` (pane 제어) 참고
+
+- cmux 0.64+ / codex 0.138+ / gemini 0.45+ 설치 완료
+- **매 이슈가 아닌** 인증·핵심 도메인·아키텍처 변경·마일스톤 시점에만 적용
