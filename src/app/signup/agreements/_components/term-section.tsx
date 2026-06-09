@@ -8,6 +8,8 @@ interface TermSectionProps {
 }
 
 export function TermSection({ item, checked, onToggle }: TermSectionProps) {
+  const labelId = `term-label-${item.key}`;
+
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center gap-1.5">
@@ -22,8 +24,15 @@ export function TermSection({ item, checked, onToggle }: TermSectionProps) {
       </div>
 
       <div className="bg-bg-tertiary flex items-center gap-2.5 rounded-lg px-5 py-3">
-        <Checkbox checked={checked} onCheckedChange={onToggle} />
-        <span className="text-body2 text-text-secondary">{item.agreeLabel}</span>
+        <Checkbox
+          id={`term-${item.key}`}
+          checked={checked}
+          onCheckedChange={onToggle}
+          aria-labelledby={labelId}
+        />
+        <span id={labelId} className="text-body2 text-text-secondary">
+          {item.agreeLabel}
+        </span>
       </div>
     </div>
   );

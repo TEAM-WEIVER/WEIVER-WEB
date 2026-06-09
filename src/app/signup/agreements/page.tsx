@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,10 +19,17 @@ import { TermSection } from './_components/term-section';
 
 export default function SignupAgreementsPage() {
   const router = useRouter();
-  const setTerms = useSignupStore((state) => state.setTerms);
-  const savedTerms = useSignupStore((state) => state.terms);
   const account = useSignupStore((state) => state.account);
+  const savedTerms = useSignupStore((state) => state.terms);
+  const reset = useSignupStore((state) => state.reset);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // AC11: signupToken 없으면 즉시 리다이렉트
+  useEffect(() => {
+    if (!account.signupToken) {
+      router.replace('/signup/account-info');
+    }
+  }, [account.signupToken, router]);
 
   const defaultValues = Object.fromEntries(
     INDIVIDUAL_TERMS.map((item) => [item.key, savedTerms[item.key] ?? false]),
@@ -71,18 +78,13 @@ export default function SignupAgreementsPage() {
   const onSubmit = async (data: IndividualTermsData) => {
     setSubmitError(null);
 
-    if (!account.email.trim() || !account.signupToken) {
-      setSubmitError('계정 정보가 없습니다. 계정 입력 단계부터 다시 진행해주세요.');
-      return;
-    }
-
     try {
       const response = await completeSignup({
         account,
         terms: data,
       });
       setAuthSession(response.data.accessToken, response.data.role);
-      setTerms(data);
+      reset();
       router.push('/onboarding/resume');
     } catch {
       setSubmitError('회원가입 처리에 실패했습니다. 잠시 후 다시 시도해주세요.');

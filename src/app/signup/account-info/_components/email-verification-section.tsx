@@ -22,24 +22,34 @@ export function EmailVerificationSection({
   watchedEmail,
   verification,
 }: EmailVerificationSectionProps) {
+  const { timer } = verification;
+  const showResend = verification.isCodeSent && timer.isExpired && !verification.isEmailVerified;
+
   return (
     <div className="flex flex-col gap-3.5">
-      <FormField label="이메일을 입력해주세요." error={emailError}>
+      <FormField label="이메일" error={emailError}>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
+            id="email"
             type="email"
             {...emailInputProps}
             placeholder="personal@gmail.com"
             disabled={verification.isEmailVerified}
+            aria-label="이메일"
             className="flex-1"
           />
           <Button
             type="button"
             onClick={() => void verification.sendVerification()}
-            disabled={verification.isEmailVerified || !watchedEmail || verification.isSending}
+            disabled={
+              verification.isEmailVerified ||
+              !watchedEmail ||
+              verification.isSending ||
+              timer.isRunning
+            }
             className="w-full rounded-lg sm:w-24"
           >
-            {verification.isSending ? '전송 중' : '인증하기'}
+            {verification.isSending ? '전송 중' : '인증번호 전송'}
           </Button>
         </div>
       </FormField>
@@ -51,11 +61,17 @@ export function EmailVerificationSection({
         <div className="flex flex-col gap-2">
           <div className="flex items-end justify-between gap-4">
             <Label className="text-text-primary">인증 코드를 입력해주세요.</Label>
-            {verification.timer.isRunning ? (
-              <span className="text-caption text-error">
-                {verification.timer.formatted} 제한시간
-              </span>
-            ) : null}
+            <span
+              role="timer"
+              aria-live="polite"
+              className={
+                timer.isRunning || (!verification.isEmailVerified && !timer.isExpired)
+                  ? 'text-caption text-error'
+                  : 'sr-only hidden'
+              }
+            >
+              {timer.isRunning ? `${timer.formatted} 제한시간` : ''}
+            </span>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
@@ -65,7 +81,8 @@ export function EmailVerificationSection({
               value={verification.verificationCode}
               onChange={(event) => verification.updateVerificationCode(event.target.value)}
               placeholder="숫자 6자리"
-              disabled={verification.isEmailVerified}
+              disabled={verification.isEmailVerified || timer.isExpired}
+              aria-label="이메일 인증번호"
               className="flex-1"
             />
             {!verification.isEmailVerified ? (
@@ -74,7 +91,7 @@ export function EmailVerificationSection({
                 onClick={() => void verification.verifyCode()}
                 disabled={
                   verification.verificationCode.length !== 6 ||
-                  !verification.timer.isRunning ||
+                  !timer.isRunning ||
                   verification.isVerifying
                 }
                 className="w-full rounded-lg sm:w-24"
@@ -87,15 +104,24 @@ export function EmailVerificationSection({
             <p className="text-caption text-error">{verification.verifyError}</p>
           ) : null}
           {verification.isEmailVerified ? (
-            <p className="text-caption text-success">이메일이 인증되었습니다.</p>
+            <p className="text-caption text-success">인증 완료</p>
           ) : null}
-          {!verification.timer.isRunning &&
-          !verification.isEmailVerified &&
-          verification.isCodeSent &&
-          verification.timer.seconds === 0 ? (
-            <p className="text-caption text-error">
-              인증 시간이 만료되었습니다. 다시 인증해주세요.
-            </p>
+          {showResend ? (
+            <div className="flex flex-col gap-1">
+              <p className="text-caption text-error">
+                인증 시간이 만료되었습니다. 다시 인증해주세요.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void verification.sendVerification()}
+                disabled={verification.isSendLimitReached}
+                className="w-full rounded-lg sm:w-24"
+              >
+                재전송
+              </Button>
+            </div>
           ) : null}
         </div>
       ) : null}

@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useTimer } from '@/hooks/use-timer';
 import { sendApplicantVerificationEmail, verifyApplicantEmail } from '@/lib/signup-api';
 
+const MAX_SEND_COUNT = 3;
+
 export function useEmailVerification(email: string) {
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
   const [sentEmail, setSentEmail] = useState<string | null>(null);
@@ -12,13 +14,20 @@ export function useEmailVerification(email: string) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [sendCount, setSendCount] = useState(0);
   const timer = useTimer(300);
 
   const isEmailVerified = email !== '' && verifiedEmail === email;
   const isCodeSent = email !== '' && sentEmail === email;
+  const isSendLimitReached = sendCount >= MAX_SEND_COUNT;
 
   const sendVerification = async () => {
     if (!email || isSending) return;
+
+    if (isSendLimitReached) {
+      setSendError('인증번호 전송 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
 
     setIsSending(true);
     setSendError(null);
@@ -30,6 +39,7 @@ export function useEmailVerification(email: string) {
       setVerifiedEmail(null);
       setVerificationToken('');
       setVerificationCode('');
+      setSendCount((c) => c + 1);
       timer.start();
     } catch {
       setSendError('인증번호 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
@@ -50,7 +60,7 @@ export function useEmailVerification(email: string) {
       setVerifiedEmail(email);
       timer.reset();
     } catch {
-      setVerifyError('인증번호 확인에 실패했습니다. 다시 확인해주세요.');
+      setVerifyError('인증번호가 올바르지 않습니다. 다시 확인해주세요.');
     } finally {
       setIsVerifying(false);
     }
@@ -69,6 +79,8 @@ export function useEmailVerification(email: string) {
     verificationToken,
     verificationCode,
     isCodeSent,
+    sendCount,
+    isSendLimitReached,
     timer,
     sendVerification,
     verifyCode,

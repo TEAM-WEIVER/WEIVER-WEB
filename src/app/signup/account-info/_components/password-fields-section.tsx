@@ -26,9 +26,11 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
           <Label className="text-text-primary">비밀번호를 입력해주세요.</Label>
           <div className="relative">
             <Input
+              id="password"
               type={showPassword ? 'text' : 'password'}
               {...register('password')}
-              placeholder="영문, 숫자, 특수문자 조합 6-14자"
+              placeholder="영문, 숫자, 특수문자 조합 8-64자"
+              aria-label="비밀번호"
               className="pr-14"
             />
             <button
@@ -49,9 +51,11 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
         <Label className="text-text-primary">비밀번호를 확인해주세요.</Label>
         <div className="relative">
           <Input
+            id="passwordConfirm"
             type={showPasswordConfirm ? 'text' : 'password'}
             {...register('passwordConfirm')}
             placeholder="위에서 입력한 비밀번호를 입력해주세요."
+            aria-label="비밀번호 확인"
             className="pr-14"
           />
           <button

@@ -68,10 +68,10 @@ describe('개인 회원가입 플로우', () => {
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'invalid-email');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1!aa');
+    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
     await user.type(
       screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!aa',
+      'Aa1!aaaa',
     );
 
     await waitFor(() =>
@@ -87,17 +87,17 @@ describe('개인 회원가입 플로우', () => {
     render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1aaa');
+    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1aaa');
     await user.type(
       screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
       'Aa1aaa',
     );
-    await user.click(screen.getByRole('button', { name: '인증하기' }));
+    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
     await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
     await user.click(screen.getByRole('button', { name: '확인' }));
 
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
-    await waitFor(() => expect(screen.getByText('이메일이 인증되었습니다.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('인증 완료')).toBeInTheDocument());
     expect(nextButton).toBeDisabled();
     expect(navigationMock.push).not.toHaveBeenCalled();
   });
@@ -108,10 +108,10 @@ describe('개인 회원가입 플로우', () => {
     render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1!aa');
+    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
     await user.type(
       screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!ab',
+      'Aa1!aaab',
     );
 
     await waitFor(() =>
@@ -132,10 +132,10 @@ describe('개인 회원가입 플로우', () => {
     expect(nextButton).toBeDisabled();
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1!aa');
+    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
     await user.type(
       screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!aa',
+      'Aa1!aaaa',
     );
 
     await waitFor(() => expect(nextButton).toBeDisabled());
@@ -148,12 +148,12 @@ describe('개인 회원가입 플로우', () => {
     render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1!aa');
+    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
     await user.type(
       screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!aa',
+      'Aa1!aaaa',
     );
-    await user.click(screen.getByRole('button', { name: '인증하기' }));
+    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
     expect(sendApplicantVerificationEmail).toHaveBeenCalledWith('user@example.com');
     await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
     await user.click(screen.getByRole('button', { name: '확인' }));
@@ -169,8 +169,8 @@ describe('개인 회원가입 플로우', () => {
     });
     expect(initApplicantSignup).toHaveBeenCalledWith({
       email: 'user@example.com',
-      password: 'Aa1!aa',
-      passwordConfirm: 'Aa1!aa',
+      password: 'Aa1!aaaa',
+      passwordConfirm: 'Aa1!aaaa',
       verificationToken: 'verification-token',
     });
     expect(navigationMock.push).toHaveBeenCalledWith('/signup/agreements');
@@ -187,12 +187,12 @@ describe('개인 회원가입 플로우', () => {
     render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1!aa');
+    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
     await user.type(
       screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!aa',
+      'Aa1!aaaa',
     );
-    await user.click(screen.getByRole('button', { name: '인증하기' }));
+    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
     await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
     await user.click(screen.getByRole('button', { name: '확인' }));
 
@@ -213,7 +213,7 @@ describe('개인 회원가입 플로우', () => {
     render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.click(screen.getByRole('button', { name: '인증하기' }));
+    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
 
     expect(
       await screen.findByText('인증번호 전송에 실패했습니다. 잠시 후 다시 시도해주세요.'),
@@ -229,17 +229,17 @@ describe('개인 회원가입 플로우', () => {
     render(<SignupAccountInfoPage />);
 
     await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 6-14자'), 'Aa1!aa');
+    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
     await user.type(
       screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!aa',
+      'Aa1!aaaa',
     );
-    await user.click(screen.getByRole('button', { name: '인증하기' }));
+    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
     await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
     await user.click(screen.getByRole('button', { name: '확인' }));
 
     expect(
-      await screen.findByText('인증번호 확인에 실패했습니다. 다시 확인해주세요.'),
+      await screen.findByText('인증번호가 올바르지 않습니다. 다시 확인해주세요.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /다음 단계/ })).toBeDisabled();
     expect(initApplicantSignup).not.toHaveBeenCalled();

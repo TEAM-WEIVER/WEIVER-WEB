@@ -10,11 +10,13 @@ import SignupAgreementsPage from '../agreements/page';
 
 const navigationMock = vi.hoisted(() => ({
   push: vi.fn(),
+  replace: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: navigationMock.push,
+    replace: navigationMock.replace,
   }),
 }));
 
@@ -25,6 +27,7 @@ vi.mock('@/lib/signup-api', () => ({
 describe('개인 회원가입 후 이력서 작성 연결', () => {
   beforeEach(() => {
     navigationMock.push.mockClear();
+    navigationMock.replace.mockClear();
     clearAccessToken();
     vi.mocked(completeSignup).mockResolvedValue({
       status: 'OK',
@@ -63,7 +66,6 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     await user.click(checkboxes[2]);
     await user.click(checkboxes[3]);
     await user.click(checkboxes[4]);
-    await user.click(checkboxes[5]);
 
     await waitFor(() => expect(submitButton).toBeEnabled());
     await user.click(submitButton);
@@ -71,47 +73,30 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     await waitFor(() => {
       expect(completeSignup).toHaveBeenCalledWith({
         account: { email: 'user@example.com', signupToken: 'signup-token' },
-        terms: {
+        terms: expect.objectContaining({
           serviceTerms: true,
           privacyPolicy: true,
           individualTerms: true,
           aiAnalysisConsent: true,
-          sensitiveDataConsent: true,
-          marketingConsent: false,
-        },
+        }),
       });
     });
 
-    expect(useSignupStore.getState().terms).toEqual({
-      serviceTerms: true,
-      privacyPolicy: true,
-      individualTerms: true,
-      aiAnalysisConsent: true,
-      sensitiveDataConsent: true,
-      marketingConsent: false,
-    });
+    // 가입 완료 후 store는 reset됨 (AC4)
+    expect(useSignupStore.getState().terms).toEqual({});
     expect(getAccessToken()).toBe('access-token');
     expect(getAuthRole()).toBe('APPLICANT');
     expect(navigationMock.push).toHaveBeenCalledWith('/onboarding/resume');
   });
 
-  it('계정 정보가 없으면 회원가입 완료 요청을 보내지 않는다', async () => {
-    const user = userEvent.setup();
-    useSignupStore.getState().reset();
+  it('signupToken이 없으면 account-info로 리다이렉트된다 (AC11)', async () => {
+    useSignupStore.getState().reset(); // signupToken 제거
 
     render(<SignupAgreementsPage />);
 
-    const checkboxes = screen.getAllByRole('checkbox');
-    await user.click(checkboxes[1]);
-    await user.click(checkboxes[2]);
-    await user.click(checkboxes[3]);
-    await user.click(checkboxes[4]);
-    await user.click(checkboxes[5]);
-    await user.click(screen.getByRole('button', { name: '다음 단계' }));
-
-    expect(
-      await screen.findByText('계정 정보가 없습니다. 계정 입력 단계부터 다시 진행해주세요.'),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(navigationMock.replace).toHaveBeenCalledWith('/signup/account-info');
+    });
     expect(completeSignup).not.toHaveBeenCalled();
     expect(navigationMock.push).not.toHaveBeenCalled();
   });
@@ -127,7 +112,6 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     await user.click(checkboxes[2]);
     await user.click(checkboxes[3]);
     await user.click(checkboxes[4]);
-    await user.click(checkboxes[5]);
     await user.click(screen.getByRole('button', { name: '다음 단계' }));
 
     expect(

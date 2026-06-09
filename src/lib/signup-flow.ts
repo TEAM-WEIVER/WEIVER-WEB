@@ -1,4 +1,4 @@
-const SIGNUP_FLOW = ['account-info', 'agreements', 'completion'] as const;
+const SIGNUP_FLOW = ['account-info', 'agreements'] as const;
 
 export function getSignupFlow() {
   return SIGNUP_FLOW;
