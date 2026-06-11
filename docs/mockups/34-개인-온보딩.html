@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>[#34] 개인 온보딩 목업</title>
+    <!--
+    US: 신규 가입한 지원자로서, 이력서·자기소개서·포트폴리오를 순서대로 작성하고 싶다.
+        AI 면접을 진행하기 전에 내 정보를 플랫폼에 등록해야 하기 때문이다.
+
+    AC1  Given: /onboarding 진입
+         When:  페이지 로드
+         Then:  PIPA 동의 체크박스 + "시작하기" 버튼 (미체크 시 비활성화 + 에러 문구)
+
+    AC2  Given: /onboarding/resume — 필수 항목 전부 입력
+         When:  "다음" 클릭
+         Then:  버튼 disabled → API 호출 → /onboarding/cover-letter 이동
+
+    AC3  Given: 이력서 "다음" 클릭 후 세부 항목 API 일부 실패
+         When:  부분 성공
+         Then:  폼 상단 에러 배너 + 버튼 재활성화
+
+    AC4  Given: 필수 항목 미입력
+         When:  "다음" 클릭
+         Then:  인라인 에러 메시지 + API 호출 차단
+
+    AC5  Given: /onboarding/resume 진입
+         When:  "나중에 작성" 클릭
+         Then:  API 호출 없이 /onboarding/cover-letter 이동
+
+    AC6  Given: /onboarding/cover-letter — 1자 이상 작성
+         When:  "다음" 클릭
+         Then:  버튼 disabled → GET→POST/PATCH → /onboarding/portfolio 이동
+
+    AC7  Given: 자기소개서 작성 중
+         When:  글자수 제한 초과 입력
+         Then:  인라인 에러 + "다음" 버튼 비활성화
+
+    AC8  Given: 자기소개서 "다음" 클릭 후 API 실패
+         When:  POST/PATCH 오류
+         Then:  에러 배너 + 버튼 재활성화
+
+    AC9  Given: /onboarding/cover-letter 진입
+         When:  "나중에 작성" 클릭
+         Then:  API 호출 없이 /onboarding/portfolio 이동
+
+    AC10 Given: /onboarding/portfolio — 동의 체크박스 체크 (파일/URL 선택 사항)
+         When:  "제출" 클릭
+         Then:  버튼 disabled → GET→POST/PATCH → /applicant/dashboard 이동
+
+    AC11 Given: 포트폴리오 파일 첨부 시도
+         When:  허용되지 않는 확장자 또는 용량 초과 선택
+         Then:  즉시 인라인 에러 + 파일 미첨부 + "제출" 비활성
+
+    AC12 Given: 포트폴리오 "제출" 클릭 후 API 실패
+         When:  POST/PATCH 오류
+         Then:  에러 배너 + 버튼 재활성화
+
+    AC13 Given: /onboarding/portfolio 진입
+         When:  "나중에 작성" 클릭
+         Then:  API 호출 없이 /applicant/dashboard 이동
+
+    AC14 Given: 각 단계에서 "다음"/"제출" 클릭
+         When:  API 요청 진행 중
+         Then:  버튼 disabled + 스피너 표시
+
+    AC15 Given: 액세스 토큰 만료 또는 없음
+         When:  온보딩 페이지 접근 또는 API 호출
+         Then:  refresh 시도 → 실패 시 /login 리다이렉트 배너
+    -->
+    <style>
+      /* 레이아웃 파악용 최소 스타일 — Tailwind 클래스 없음 */
+      body { font-family: sans-serif; max-width: 720px; margin: 0 auto; padding: 24px; }
+      section { border: 1px solid #ccc; border-radius: 8px; padding: 20px; margin-bottom: 32px; }
+      section > h2 { margin-top: 0; font-size: 1rem; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; }
+      fieldset { border: 1px dashed #aaa; padding: 12px; margin-bottom: 12px; }
+      legend { font-weight: bold; font-size: 0.9rem; }
+      label { display: block; margin-bottom: 4px; font-size: 0.875rem; }
+      input[type="text"], input[type="email"], input[type="tel"], input[type="date"],
+      input[type="url"], textarea, select { display: block; width: 100%; box-sizing: border-box; padding: 6px 8px; margin-bottom: 4px; }
+      .error-message { color: #c0392b; font-size: 0.8rem; }
+      .error-banner { background: #fdecea; border: 1px solid #c0392b; padding: 10px 14px; border-radius: 4px; margin-bottom: 12px; color: #c0392b; }
+      .success-hint { color: #27ae60; font-size: 0.8rem; }
+      .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #999; border-top-color: #333; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .step-nav { display: flex; gap: 8px; }
+      .redirect-banner { background: #fff3cd; border: 1px solid #f0ad4e; padding: 10px 14px; border-radius: 4px; color: #856404; }
+      .char-counter { font-size: 0.8rem; color: #555; text-align: right; }
+    </style>
+  </head>
+  <body>
+    <h1>온보딩 목업 — #34</h1>
+    <p style="color:#555; font-size:0.875rem;">
+      각 섹션은 독립된 AC 상태를 나타냅니다. 실제 구현에서는 라우트·조건부 렌더링으로 분리됩니다.
+    </p>
+
+    <!-- ============================================================ -->
+    <!-- AC1: /onboarding — PIPA 동의 안내                            -->
+    <!-- ============================================================ -->
+    <section data-ac="AC1">
+      <h2>AC1 — PIPA 동의 안내 · /onboarding</h2>
+
+      <!-- AC1: 초기 상태 (페이지 로드) -->
+      <article aria-labelledby="pipa-heading">
+        <h3 id="pipa-heading">개인정보 수집·이용 동의</h3>
+        <p>
+          WEIVER는 AI 면접 서비스 제공을 위해 아래와 같이 개인정보를 수집·이용합니다.
+          (회원가입 약관과 별도의 동의입니다.)
+        </p>
+        <ul>
+          <li>수집 항목: 이름, 이메일, 전화번호, 주소, 생년월일, 학력, 경력, 자격증, 자기소개서, 포트폴리오</li>
+          <li>이용 목적: AI 면접 매칭 서비스 제공</li>
+          <li>보유 기간: 서비스 탈퇴 시 즉시 파기</li>
+        </ul>
+
+        <form novalidate>
+          <!-- AC1: 이벤트 발생 영역 — 동의 체크박스 -->
+          <fieldset>
+            <legend>동의</legend>
+            <label>
+              <input
+                type="checkbox"
+                id="pipa-consent"
+                name="pipaConsent"
+                aria-required="true"
+                aria-describedby="pipa-consent-error"
+              />
+              개인정보 수집·이용에 동의합니다. (필수)
+            </label>
+            <!-- AC1: 결과 피드백 — 미동의 시 에러 -->
+            <p
+              id="pipa-consent-error"
+              role="alert"
+              class="error-message"
+              aria-live="polite"
+            >
+              개인정보 수집·이용에 동의해주세요.
+            </p>
+          </fieldset>
+
+          <div class="step-nav">
+            <!-- AC1: 미체크 시 disabled, 체크 시 활성화 -->
+            <button type="submit" disabled aria-disabled="true">
+              시작하기
+            </button>
+            <!-- 동의 후 활성화 상태 참고용 -->
+            <button type="submit" style="opacity:0.5; cursor:default;" aria-label="동의 체크 후 활성화 예시 (비활성)">
+              시작하기 (동의 후 활성)
+            </button>
+          </div>
+        </form>
+      </article>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- AC2: /onboarding/resume — 이력서 정상 입력 상태              -->
+    <!-- ============================================================ -->
+    <section data-ac="AC2">
+      <h2>AC2 — 이력서 정상 입력 · /onboarding/resume</h2>
+
+      <form novalidate aria-label="이력서 작성 폼">
+        <!-- 필수 항목 fieldset -->
+        <fieldset>
+          <legend>기본 정보 (필수)</legend>
+
+          <label for="resume-name">이름</label>
+          <input
+            type="text"
+            id="resume-name"
+            name="name"
+            aria-required="true"
+            aria-describedby="resume-name-error"
+            placeholder="홍길동"
+            value="홍길동"
+          />
+
+          <label for="resume-email">이메일</label>
+          <input
+            type="email"
+            id="resume-email"
+            name="email"
+            aria-required="true"
+            aria-describedby="resume-email-error"
+            placeholder="example@email.com"
+            value="example@email.com"
+          />
+
+          <label for="resume-phone">전화번호</label>
+          <input
+            type="tel"
+            id="resume-phone"
+            name="phoneNumber"
+            aria-required="true"
+            aria-describedby="resume-phone-error"
+            placeholder="010-0000-0000"
+            value="010-1234-5678"
+          />
+
+          <label for="resume-address">주소</label>
+          <input
+            type="text"
+            id="resume-address"
+            name="address"
+            aria-required="true"
+            aria-describedby="resume-address-error"
+            placeholder="서울특별시 강남구"
+            value="서울특별시 강남구"
+          />
+
+          <label for="resume-birthday">생년월일</label>
+          <input
+            type="date"
+            id="resume-birthday"
+            name="birthday"
+            aria-required="true"
+            aria-describedby="resume-birthday-error"
+            value="1995-03-15"
+          />
+        </fieldset>
+
+        <!-- 선택 항목 fieldset -->
+        <fieldset>
+          <legend>학력 (선택)</legend>
+          <label for="resume-school">학교명</label>
+          <input type="text" id="resume-school" name="schoolName" placeholder="OO대학교" />
+          <label for="resume-major">전공</label>
+          <input type="text" id="resume-major" name="major" placeholder="컴퓨터공학과" />
+          <label for="resume-degree">학위</label>
+          <select id="resume-degree" name="degreeType">
+            <option value="">선택</option>
+            <option value="BACHELOR">학사</option>
+            <option value="MASTER">석사</option>
+            <option value="DOCTOR">박사</option>
+          </select>
+        </fieldset>
+
+        <fieldset>
+          <legend>경력 (선택)</legend>
+          <label for="resume-company">회사명</label>
+          <input type="text" id="resume-company" name="companyName" placeholder="OO회사" />
+          <label for="resume-position">직책/직무</label>
+          <input type="text" id="resume-position" name="position" placeholder="프론트엔드 개발자" />
+        </fieldset>
+
+        <fieldset>
+          <legend>자격증 (선택)</legend>
+          <label for="resume-cert-name">자격증명</label>
+          <input type="text" id="resume-cert-name" name="certificateName" placeholder="정보처리기사" />
+        </fieldset>
+
+        <fieldset>
+          <legend>수상 (선택)</legend>
+          <label for="resume-award-name">수상명</label>
+          <input type="text" id="resume-award-name" name="awardName" placeholder="OO 공모전 대상" />
+        </fieldset>
+
+        <!-- AC2: 이벤트 발생 영역 -->
+        <div class="step-nav">
+          <button type="submit">다음</button>
+          <!-- AC5: 나중에 작성 버튼 -->
+          <button type="button">나중에 작성</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- AC3: 이력서 — 다중 API 부분 성공 에러 상태                  -->
+    <!-- ============================================================ -->
+    <section data-ac="AC3">
+      <h2>AC3 — 이력서 다중 API 부분 성공 에러 · /onboarding/resume</h2>
+
+      <form novalidate aria-label="이력서 작성 폼">
+        <!-- AC3: 결과 피드백 — 폼 상단 에러 배너 -->
+        <div
+          role="alert"
+          aria-live="assertive"
+          class="error-banner"
+          id="resume-api-error"
+        >
+          일부 정보를 저장하지 못했습니다. 다시 시도해주세요.
+        </div>
+
+        <fieldset>
+          <legend>기본 정보 (필수)</legend>
+          <label for="resume-name-ac3">이름</label>
+          <input type="text" id="resume-name-ac3" name="name" value="홍길동" aria-required="true" />
+          <label for="resume-email-ac3">이메일</label>
+          <input type="email" id="resume-email-ac3" name="email" value="example@email.com" aria-required="true" />
+          <label for="resume-phone-ac3">전화번호</label>
+          <input type="tel" id="resume-phone-ac3" name="phoneNumber" value="010-1234-5678" aria-required="true" />
+          <label for="resume-address-ac3">주소</label>
+          <input type="text" id="resume-address-ac3" name="address" value="서울특별시 강남구" aria-required="true" />
+          <label for="resume-birthday-ac3">생년월일</label>
+          <input type="date" id="resume-birthday-ac3" name="birthday" value="1995-03-15" aria-required="true" />
+        </fieldset>
+
+        <!-- AC3: 버튼 재활성화 (페이지 이동 없음) -->
+        <div class="step-nav">
+          <button type="submit">다음</button>
+          <button type="button">나중에 작성</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- AC4: 이력서 — 필수 항목 미입력 유효성 에러 상태             -->
+    <!-- ============================================================ -->
+    <section data-ac="AC4">
+      <h2>AC4 — 이력서 필수 항목 미입력 에러 · /onboarding/resume</h2>
+
+      <form novalidate aria-label="이력서 작성 폼">
+        <fieldset>
+          <legend>기본 정보 (필수)</legend>
+
+          <label for="resume-name-ac4">이름</label>
+          <input
+            type="text"
+            id="resume-name-ac4"
+            name="name"
+            aria-required="true"
+            aria-invalid="true"
+            aria-describedby="resume-name-ac4-error"
+          />
+          <!-- AC4: 인라인 에러 메시지 -->
+          <p id="resume-name-ac4-error" role="alert" class="error-message">이름을 입력해주세요.</p>
+
+          <label for="resume-email-ac4">이메일</label>
+          <input
+            type="email"
+            id="resume-email-ac4"
+            name="email"
+            aria-required="true"
+            aria-invalid="true"
+            aria-describedby="resume-email-ac4-error"
+          />
+          <p id="resume-email-ac4-error" role="alert" class="error-message">이메일을 입력해주세요.</p>
+
+          <label for="resume-phone-ac4">전화번호</label>
+          <input
+            type="tel"
+            id="resume-phone-ac4"
+            name="phoneNumber"
+            aria-required="true"
+            aria-invalid="true"
+            aria-describedby="resume-phone-ac4-error"
+          />
+          <p id="resume-phone-ac4-error" role="alert" class="error-message">전화번호를 입력해주세요.</p>
+
+          <label for="resume-address-ac4">주소</label>
+          <input
+            type="text"
+            id="resume-address-ac4"
+            name="address"
+            aria-required="true"
+            aria-invalid="true"
+            aria-describedby="resume-address-ac4-error"
+          />
+          <p id="resume-address-ac4-error" role="alert" class="error-message">주소를 입력해주세요.</p>
+
+          <label for="resume-birthday-ac4">생년월일</label>
+          <input
+            type="date"
+            id="resume-birthday-ac4"
+            name="birthday"
+            aria-required="true"
+            aria-invalid="true"
+            aria-describedby="resume-birthday-ac4-error"
+          />
+          <p id="resume-birthday-ac4-error" role="alert" class="error-message">생년월일을 입력해주세요.</p>
+        </fieldset>
+
+        <!-- AC4: API 호출 없이 폼 제출 차단 — 버튼은 활성 상태이나 제출 안 됨 -->
+        <div class="step-nav">
+          <button type="submit">다음</button>
+          <button type="button">나중에 작성</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- AC5: 이력서 — "나중에 작성" 상태 (AC2 폼과 동일, 버튼 강조) -->
+    <!-- AC5는 AC2 섹션의 "나중에 작성" 버튼으로 표현됩니다.          -->
+    <!-- 별도 UI 없이 내비게이션 버튼 구조가 이 AC를 커버합니다.      -->
+    <!-- ============================================================ -->
+
+    <!-- ============================================================ -->
+    <!-- AC6: /onboarding/cover-letter — 자기소개서 정상 작성 상태   -->
+    <!-- ============================================================ -->
+    <section data-ac="AC6">
+      <h2>AC6 — 자기소개서 정상 작성 · /onboarding/cover-letter</h2>
+
+      <form novalidate aria-label="자기소개서 작성 폼">
+        <fieldset>
+          <legend>자기소개서</legend>
+
+          <label for="cover-letter-answer">자기소개서를 작성해주세요.</label>
+          <textarea
+            id="cover-letter-answer"
+            name="answer"
+            rows="10"
+            aria-required="true"
+            aria-describedby="cover-letter-char-count cover-letter-answer-error"
+            maxlength="5000"
+            placeholder="자유롭게 작성해주세요. (최대 5,000자)"
+          >안녕하세요. 저는 프론트엔드 개발자 지망생 홍길동입니다...</textarea>
+          <!-- AC6: 글자수 카운터 -->
+          <p id="cover-letter-char-count" class="char-counter" aria-live="polite">
+            45 / 5,000자
+          </p>
+        </fieldset>
+
+        <!-- AC6: 이벤트 발생 영역 -->
+        <div class="step-nav">
+          <button type="submit">다음</button>
+          <!-- AC9: 나중에 작성 -->
+          <button type="button">나중에 작성</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- AC7: 자기소개서 — 글자수 초과 에러 상태                     -->
+    <!-- ============================================================ -->
+    <section data-ac="AC7">
+      <h2>AC7 — 자기소개서 글자수 초과 · /onboarding/cover-letter</h2>
+
+      <form novalidate aria-label="자기소개서 작성 폼">
+        <fieldset>
+          <legend>자기소개서</legend>
+
+          <label for="cover-letter-over">자기소개서를 작성해주세요.</label>
+          <textarea
+            id="cover-letter-over"
+            name="answer"
+            rows="10"
+            aria-required="true"
+            aria-invalid="true"
+            aria-describedby="cover-letter-over-char-count cover-letter-over-error"
+          >5001자 초과 텍스트 예시...</textarea>
+          <p id="cover-letter-over-char-count" class="char-counter" style="color:#c0392b;" aria-live="polite">
+            5,001 / 5,000자
+          </p>
+          <!-- AC7: 결과 피드백 — 인라인 에러 -->
+          <p id="cover-letter-over-error" role="alert" class="error-message">
+            글자수 제한(5,000자)을 초과했습니다.
+          </p>
+        </fieldset>
+
+        <!-- AC7: "다음" 버튼 비활성화 -->
+        <div class="step-nav">
+          <button type="submit" disabled aria-disabled="true">다음</button>
+          <button type="button">나중에 작성</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- AC8: 자기소개서 — API 실패 에러 상태                        -->
+    <!-- ============================================================ -->
+    <section data-ac="AC8">
+      <h2>AC8 — 자기소개서 API 실패 · /onboarding/cover-letter</h2>
+
+      <form novalidate aria-label="자기소개서 작성 폼">
+        <!-- AC8: 결과 피드백 — 폼 상단 에러 배너 -->
+        <div
+          role="alert"
+          aria-live="assertive"
+          class="error-banner"
+          id="cover-letter-api-error"
+        >
+          저장 중 오류가 발생했습니다. 다시 시도해주세요.
+        </div>
+
+        <fieldset>
+          <legend>자기소개서</legend>
+          <label for="cover-letter-ac8">자기소개서를 작성해주세요.</label>
+          <textarea
+            id="cover-letter-ac8"
+            name="answer"
+            rows="10"
+            aria-required="true"
+            aria-describedby="cover-letter-ac8-char-count"
+          >안녕하세요. 저는 프론트엔드 개발자 지망생 홍길동입니다...</textarea>
+          <p id="cover-letter-ac8-char-count" class="char-counter" aria-live="polite">45 / 5,000자</p>
+        </fieldset>
+
+        <!-- AC8: 버튼 재활성화 (페이지 이동 없음) -->
+        <div class="step-nav">
+          <button type="submit">다음</button>
+          <button type="button">나중에 작성</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- AC9: 자기소개서 — "나중에 작성"은 AC6 섹션 버튼으로 표현    -->
+    <!-- ============================================================ -->
+
+    <!-- ============================================================ -->
+    <!-- AC10: /onboarding/portfolio — 포트폴리오 정상 제출 상태     -->
+    <!-- ============================================================ -->
+    <section data-ac="AC10">
+      <h2>AC10 — 포트폴리오 정상 제출 · /onboarding/portfolio</h2>
+
+      <form novalidate aria-label="포트폴리오 작성 폼" enctype="multipart/form-data">
+        <fieldset>
+          <legend>파일 업로드 (선택)</legend>
+          <!-- AC11: 파일 입력 — 확장자·용량 검증 대상 -->
+          <div
+            role="region"
+            aria-label="포트폴리오 파일 업로드 영역"
+            style="border: 2px dashed #aaa; padding: 20px; text-align: center;"
+          >
+            <label for="portfolio-file">
+              PDF 또는 ZIP 파일을 선택하세요. (최대 20MB)
+            </label>
+            <input
+              type="file"
+              id="portfolio-file"
+              name="portfolio"
+              accept=".pdf,.zip"
+              aria-describedby="portfolio-file-error"
+            />
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>URL 링크 (선택)</legend>
+
+          <label for="portfolio-github">GitHub URL</label>
+          <input
+            type="url"
+            id="portfolio-github"
+            name="urlGithub"
+            placeholder="https://github.com/username"
+            aria-describedby="portfolio-github-hint"
+          />
+          <p id="portfolio-github-hint" class="success-hint">선택 사항입니다.</p>
+
+          <label for="portfolio-tech">기술 블로그 URL</label>
+          <input
+            type="url"
+            id="portfolio-tech"
+            name="urlTech"
+            placeholder="https://tech.blog.com"
+          />
+
+          <label for="portfolio-etc">기타 URL</label>
+          <input
+            type="url"
+            id="portfolio-etc"
+            name="urlEtc"
+            placeholder="https://notion.so/..."
+          />
+        </fieldset>
+
+        <!-- AC10: 동의 체크박스 (필수) -->
+        <fieldset>
+          <legend>제출 동의</legend>
+          <label>
+            <input
+              type="checkbox"
+              id="portfolio-consent"
+              name="portfolioConsent"
+              aria-required="true"
+              aria-describedby="portfolio-consent-error"
+              checked
+            />
+            포트폴리오 정보 수집·이용에 동의합니다. (필수)
+          </label>
+          <p
+            id="portfolio-consent-error"
+            role="alert"
+            class="error-message"
+            aria-live="polite"
+            hidden
+          >
+            포트폴리오 정보 수집·이용에 동의해주세요.
+          </p>
+        </fieldset>
+
+        <!-- AC10: 이벤트 발생 영역 -->
+        <div class="step-nav">
+          <button type="submit">제출</button>
+          <!-- AC13: 나중에 작성 -->
+          <button type="button">나중에 작성</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- AC11: 포트폴리오 — 파일 용량/확장자 에러 상태               -->
+    <!-- ============================================================ -->
+    <section data-ac="AC11">
+      <h2>AC11 — 포트폴리오 파일 용량/확장자 에러 · /onboarding/portfolio</h2>
+
+      <form novalidate aria-label="포트폴리오 작성 폼" enctype="multipart/form-data">
+        <fieldset>
+          <legend>파일 업로드 (선택)</legend>
+          <div
+            role="region"
+            aria-label="포트폴리오 파일 업로드 영역"
+            style="border: 2px dashed #c0392b; padding: 20px; text-align: center;"
+          >
+            <label for="portfolio-file-ac11">
+              PDF 또는 ZIP 파일을 선택하세요. (최대 20MB)
+            </label>
+            <input
+              type="file"
+              id="portfolio-file-ac11"
+              name="portfolio"
+              accept=".pdf,.zip"
+              aria-invalid="true"
+              aria-describedby="portfolio-file-error"
+            />
+            <!-- AC11: 결과 피드백 — 즉시 인라인 에러 (확장자 에러 예시) -->
+            <p id="portfolio-file-error" role="alert" class="error-message">
+              PDF 또는 ZIP 파일만 업로드할 수 있습니다.
+            </p>
+            <!-- 용량 초과 에러 예시 (확장자 에러와 교체 표시) -->
+            <p role="alert" class="error-message" style="display:none;">
+              파일 크기는 20MB 이하여야 합니다.
+            </p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>URL 링크 (선택)</legend>
+          <label for="portfolio-github-ac11">GitHub URL</label>
+          <input type="url" id="portfolio-github-ac11" name="urlGithub" placeholder="https://github.com/username" />
+          <label for="portfolio-tech-ac11">기술 블로그 URL</label>
+          <input type="url" id="portfolio-tech-ac11" name="urlTech" placeholder="https://tech.blog.com" />
+          <label for="portfolio-etc-ac11">기타 URL</label>
+          <input type="url" id="portfolio-etc-ac11" name="urlEtc" placeholder="https://notion.so/..." />
+        </fieldset>
+
+        <fieldset>
+          <legend>제출 동의</legend>
+          <label>
+            <input
+              type="checkbox"
+              id="portfolio-consent-ac11"
+              name="portfolioConsent"
+              aria-required="true"
+            />
+            포트폴리오 정보 수집·이용에 동의합니다. (필수)
+          </label>
+        </fieldset>
+
+        <!-- AC11: "제출" 버튼 비활성 유지 -->
+        <div class="step-nav">
+          <button type="submit" disabled aria-disabled="true">제출</button>
+          <button type="button">나중에 작성</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- AC12: 포트폴리오 — API 실패 에러 상태                       -->
+    <!-- ============================================================ -->
+    <section data-ac="AC12">
+      <h2>AC12 — 포트폴리오 API 실패 · /onboarding/portfolio</h2>
+
+      <form novalidate aria-label="포트폴리오 작성 폼" enctype="multipart/form-data">
+        <!-- AC12: 결과 피드백 — 에러 배너 -->
+        <div
+          role="alert"
+          aria-live="assertive"
+          class="error-banner"
+          id="portfolio-api-error"
+        >
+          업로드 중 오류가 발생했습니다. 다시 시도해주세요.
+        </div>
+
+        <fieldset>
+          <legend>파일 업로드 (선택)</legend>
+          <div
+            role="region"
+            aria-label="포트폴리오 파일 업로드 영역"
+            style="border: 2px dashed #aaa; padding: 20px; text-align: center;"
+          >
+            <label for="portfolio-file-ac12">PDF 또는 ZIP 파일을 선택하세요. (최대 20MB)</label>
+            <input type="file" id="portfolio-file-ac12" name="portfolio" accept=".pdf,.zip" />
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>URL 링크 (선택)</legend>
+          <label for="portfolio-github-ac12">GitHub URL</label>
+          <input type="url" id="portfolio-github-ac12" name="urlGithub" value="https://github.com/example" />
+          <label for="portfolio-tech-ac12">기술 블로그 URL</label>
+          <input type="url" id="portfolio-tech-ac12" name="urlTech" />
+          <label for="portfolio-etc-ac12">기타 URL</label>
+          <input type="url" id="portfolio-etc-ac12" name="urlEtc" />
+        </fieldset>
+
+        <fieldset>
+          <legend>제출 동의</legend>
+          <label>
+            <input
+              type="checkbox"
+              id="portfolio-consent-ac12"
+              name="portfolioConsent"
+              aria-required="true"
+              checked
+            />
+            포트폴리오 정보 수집·이용에 동의합니다. (필수)
+          </label>
+        </fieldset>
+
+        <!-- AC12: 버튼 재활성화 (페이지 이동 없음) -->
+        <div class="step-nav">
+          <button type="submit">제출</button>
+          <button type="button">나중에 작성</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- AC13: 포트폴리오 — "나중에 작성"은 AC10 섹션 버튼으로 표현 -->
+    <!-- ============================================================ -->
+
+    <!-- ============================================================ -->
+    <!-- AC14: 공통 — API 호출 중 로딩 상태                          -->
+    <!-- ============================================================ -->
+    <section data-ac="AC14">
+      <h2>AC14 — 로딩 상태 (공통) — 버튼 disabled + 스피너</h2>
+
+      <!-- 이력서 "다음" 버튼 로딩 예시 -->
+      <div style="margin-bottom: 16px;">
+        <p style="font-size:0.875rem; color:#555;">이력서 "다음" 버튼 로딩 예시:</p>
+        <button
+          type="button"
+          disabled
+          aria-disabled="true"
+          aria-busy="true"
+          aria-label="저장 중"
+        >
+          <span class="spinner" aria-hidden="true"></span>
+          저장 중...
+        </button>
+      </div>
+
+      <!-- 자기소개서 "다음" 버튼 로딩 예시 -->
+      <div style="margin-bottom: 16px;">
+        <p style="font-size:0.875rem; color:#555;">자기소개서 "다음" 버튼 로딩 예시:</p>
+        <button
+          type="button"
+          disabled
+          aria-disabled="true"
+          aria-busy="true"
+          aria-label="저장 중"
+        >
+          <span class="spinner" aria-hidden="true"></span>
+          저장 중...
+        </button>
+      </div>
+
+      <!-- 포트폴리오 "제출" 버튼 로딩 예시 -->
+      <div>
+        <p style="font-size:0.875rem; color:#555;">포트폴리오 "제출" 버튼 로딩 예시:</p>
+        <button
+          type="button"
+          disabled
+          aria-disabled="true"
+          aria-busy="true"
+          aria-label="업로드 중"
+        >
+          <span class="spinner" aria-hidden="true"></span>
+          업로드 중...
+        </button>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- AC15: 공통 — 인증 만료 리다이렉트 상태                      -->
+    <!-- ============================================================ -->
+    <section data-ac="AC15">
+      <h2>AC15 — 인증 만료 리다이렉트 (공통)</h2>
+
+      <!-- AC15: 결과 피드백 — refresh 실패 후 /login 리다이렉트 안내 -->
+      <div
+        role="alert"
+        aria-live="assertive"
+        class="redirect-banner"
+        id="auth-expired-banner"
+      >
+        <strong>세션이 만료되었습니다.</strong>
+        로그인 페이지로 이동합니다.
+        <a href="/login" aria-label="로그인 페이지로 이동">로그인하러 가기</a>
+      </div>
+
+      <p style="font-size:0.875rem; color:#555;">
+        액세스 토큰 만료 시 api-client 레이어에서 refresh를 시도하고,
+        refresh도 실패(401)하면 위 배너를 표시한 뒤 /login으로 리다이렉트됩니다.
+      </p>
+    </section>
+
+  </body>
+</html>
