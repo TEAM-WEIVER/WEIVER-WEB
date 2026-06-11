@@ -76,9 +76,20 @@
 ### 2. 기획 (표준 경로만)
 
 - **진입**: 이슈 있음, 구현 범위·요구사항 미정
-- **에이전트**: `planner` → `us-reviewer`
-- **실행**: User Story 작성 → Acceptance Criteria 정의 → 컴포넌트 스펙 정의 → API 연동 매핑 → 사람 검증
-- **산출물**: `docs/plans/#이슈번호-설명.md`
+- **에이전트**: `planner` → 다자토론 (Claude 렌즈 = `us-reviewer`)
+- **실행 순서**:
+  1. `planner` — US/AC/컴포넌트 스펙/API 연동 매핑 작성 → `docs/plans/#이슈번호-설명.md` 저장
+  2. **다자토론(Claude × Codex × Gemini)** — 사용자가 별도 지시하지 않아도 Claude가 자동으로 시작한다.
+     - Claude 렌즈: `us-reviewer` 서브에이전트 실행 (AC 완결성·에러 케이스·형식 검토) + 보안·엣지케이스
+     - Codex 렌즈: 정확성·논리 비약·반례
+     - Gemini 렌즈: 외부 사실·도메인 접지·현실성
+  3. FAIL 시 `planner` 재작성 → 다자토론 재실행
+  4. PASS 시 사람 검증
+- **⚠️ `us-reviewer` 단독 실행 금지**: 반드시 다자토론 안에서 Claude 렌즈로 실행한다.
+- **산출물**:
+  - `docs/plans/#이슈번호-설명.md` — 기획 문서
+  - `docs/reviews/us-#이슈번호-round{N}.md` — **라운드 종료 즉시 저장 (빠뜨리면 안 됨)**
+  - `.cmux/debates/{slug}/{model}-rN.md` — 각 모델 결과 원본
 - **AC 형식**:
 
   ```
