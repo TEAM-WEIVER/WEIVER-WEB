@@ -1,5 +1,5 @@
-import { clearAccessToken, setAccessToken } from './auth-token';
-import { apiRequest } from './api-client';
+import { clearAccessToken } from './auth-token';
+import { apiRequest, reissueAccessTokenWithRefreshCookie } from './api-client';
 
 interface ApiResponse<TData> {
   status: string;
@@ -8,19 +8,8 @@ interface ApiResponse<TData> {
   message: string;
 }
 
-interface ReissueAccessTokenData {
-  accessToken: string;
-}
-
 export async function reissueAccessToken() {
-  const response = await apiRequest<ApiResponse<ReissueAccessTokenData>>('/api/auth/reissue', {
-    method: 'POST',
-    skipAuthorization: true,
-    skipAuthRetry: true,
-  });
-
-  setAccessToken(response.data.accessToken);
-  return response;
+  return reissueAccessTokenWithRefreshCookie();
 }
 
 export async function logout() {

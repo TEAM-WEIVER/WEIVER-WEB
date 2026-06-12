@@ -7,7 +7,7 @@ import type { ResumeData } from '@/schemas/onboarding';
 
 import { RemoveButton, RepeatableSection } from './repeatable-section';
 
-const EMPTY_CERTIFICATION = { acquiredDate: '', name: '', issuer: '' };
+const EMPTY_CERTIFICATION = { certificateId: undefined, acquiredDate: '', name: '', issuer: '' };
 
 interface CertificationSectionProps {
   fields: FieldArrayWithId<ResumeData, 'certifications', 'id'>[];
@@ -33,13 +33,15 @@ export function CertificationSection({
           key={field.id}
           className="bg-bg-tertiary relative flex flex-col gap-2 rounded-[10px] p-6"
         >
-          {fields.length > 1 ? <RemoveButton onClick={() => remove(index)} /> : null}
+          {fields.length > 1 || field.name ? (
+            <RemoveButton label="자격증 삭제" onClick={() => remove(index)} />
+          ) : null}
           <div className="flex gap-3.5">
             <div className="flex flex-col gap-2">
               <Label className="text-text-secondary">취득일</Label>
               <Input
                 {...register(`certifications.${index}.acquiredDate`)}
-                placeholder="YYYY.MM.DD"
+                placeholder="YYYY-MM-DD"
                 className={formControlClass}
               />
             </div>

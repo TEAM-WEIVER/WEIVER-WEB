@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { clearAccessToken, getAccessToken, getAuthRole, setAuthSession } from '../auth-token';
-import { apiRequest } from '../api-client';
+import { apiRequest, reissueAccessTokenWithRefreshCookie } from '../api-client';
 import { logout, reissueAccessToken } from '../auth-api';
 
 vi.mock('../api-client', () => ({
   apiRequest: vi.fn(),
+  reissueAccessTokenWithRefreshCookie: vi.fn(),
 }));
 
 describe('auth-api', () => {
@@ -15,9 +16,9 @@ describe('auth-api', () => {
     vi.clearAllMocks();
   });
 
-  it('refreshToken 쿠키 기반 accessToken 재발급 요청을 보내고 새 토큰을 저장한다', async () => {
+  it('refreshToken 쿠키 기반 accessToken 재발급 요청을 공용 재발급 함수에 위임한다', async () => {
     setAuthSession('expired-access-token', 'APPLICANT');
-    vi.mocked(apiRequest).mockResolvedValue({
+    vi.mocked(reissueAccessTokenWithRefreshCookie).mockResolvedValue({
       status: 'OK',
       code: 200,
       data: {
@@ -35,12 +36,8 @@ describe('auth-api', () => {
       message: 'OK',
     });
 
-    expect(apiRequest).toHaveBeenCalledWith('/api/auth/reissue', {
-      method: 'POST',
-      skipAuthorization: true,
-      skipAuthRetry: true,
-    });
-    expect(getAccessToken()).toBe('new-access-token');
+    expect(reissueAccessTokenWithRefreshCookie).toHaveBeenCalledTimes(1);
+    expect(getAccessToken()).toBe('expired-access-token');
     expect(getAuthRole()).toBe('APPLICANT');
   });
 

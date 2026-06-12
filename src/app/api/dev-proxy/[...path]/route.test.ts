@@ -90,8 +90,10 @@ describe('dev proxy route', () => {
 
     const [, requestOptions] = fetchMock.mock.calls[0];
     expect((requestOptions.headers as Headers).get('host')).toBeNull();
-    expect((requestOptions.headers as Headers).get('origin')).toBeNull();
-    expect((requestOptions.headers as Headers).get('referer')).toBeNull();
+    expect((requestOptions.headers as Headers).get('origin')).toBe('http://localhost:3000');
+    expect((requestOptions.headers as Headers).get('referer')).toBe(
+      'http://localhost:3000/signup/account-info',
+    );
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true });
 

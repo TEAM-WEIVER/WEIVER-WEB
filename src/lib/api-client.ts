@@ -15,7 +15,7 @@ const CSRF_EXCLUDED_PATHS = new Set([
 const AUTHORIZATION_EXCLUDED_PATHS = new Set([...CSRF_EXCLUDED_PATHS, REISSUE_PATH]);
 
 interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
-  body?: unknown;
+  body?: unknown | FormData;
   skipCsrf?: boolean;
   skipAuthorization?: boolean;
   skipAuthRetry?: boolean;
@@ -46,9 +46,8 @@ export class ApiError extends Error {
   }
 }
 
-let csrfToken: string | null = null;
 let csrfTokenPromise: Promise<string> | null = null;
-let accessTokenReissuePromise: Promise<string> | null = null;
+let accessTokenReissuePromise: Promise<ApiResponse<ReissueAccessTokenData>> | null = null;
 
 function isCsrfRequired(method: string) {
   return method.toUpperCase() !== 'GET';
@@ -98,14 +97,12 @@ async function fetchCsrfToken() {
   }
 
   const result = (await response.json()) as ApiResponse<CsrfData>;
-  csrfToken = getXsrfCookieToken() ?? result.data.csrfToken;
-  return csrfToken;
+  return getXsrfCookieToken() ?? result.data.csrfToken;
 }
 
 async function getCsrfToken() {
-  const canReadCookie = typeof document !== 'undefined';
-  const xsrfCookieToken = getXsrfCookieToken();
-  if (csrfToken && (!canReadCookie || xsrfCookieToken === csrfToken)) return csrfToken;
+  const cookieToken = getXsrfCookieToken();
+  if (cookieToken) return cookieToken;
 
   csrfTokenPromise ??= fetchCsrfToken().finally(() => {
     csrfTokenPromise = null;
@@ -115,10 +112,7 @@ async function getCsrfToken() {
 }
 
 async function fetchReissuedAccessToken() {
-  const headers = new Headers({
-    'Content-Type': 'application/json',
-  });
-
+  const headers = new Headers();
   headers.set(CSRF_HEADER_NAME, await getCsrfToken());
 
   const response = await fetch(`${API_BASE_URL}${REISSUE_PATH}`, {
@@ -134,10 +128,11 @@ async function fetchReissuedAccessToken() {
 
   const result = (await response.json()) as ApiResponse<ReissueAccessTokenData>;
   setAccessToken(result.data.accessToken);
-  return result.data.accessToken;
+  csrfTokenPromise = null;
+  return result;
 }
 
-async function reissueAccessToken() {
+export async function reissueAccessTokenWithRefreshCookie() {
   accessTokenReissuePromise ??= fetchReissuedAccessToken().finally(() => {
     accessTokenReissuePromise = null;
   });
@@ -171,7 +166,8 @@ export async function apiRequest<TResponse>(
   const method = options.method ?? 'GET';
   const requestHeaders = new Headers(headers);
 
-  if (body !== undefined && !requestHeaders.has('Content-Type')) {
+  const isFormData = body instanceof FormData;
+  if (body !== undefined && !isFormData && !requestHeaders.has('Content-Type')) {
     requestHeaders.set('Content-Type', 'application/json');
   }
 
@@ -192,7 +188,8 @@ export async function apiRequest<TResponse>(
     requestHeaders.set(CSRF_HEADER_NAME, await getCsrfToken());
   }
 
-  const requestBody = body === undefined ? undefined : JSON.stringify(body);
+  const requestBody =
+    body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body);
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     method,
@@ -202,7 +199,8 @@ export async function apiRequest<TResponse>(
   });
 
   if (response.status === 401 && shouldRetryAuthorization(path, skipAuthRetry)) {
-    const nextAccessToken = await reissueAccessToken();
+    const reissueResponse = await reissueAccessTokenWithRefreshCookie();
+    const nextAccessToken = reissueResponse.data.accessToken;
     const retryHeaders = new Headers(requestHeaders);
     retryHeaders.set('Authorization', `Bearer ${nextAccessToken}`);
 
