@@ -1,4 +1,5 @@
 import type { FieldArrayWithId, UseFormRegister } from 'react-hook-form';
+import { useWatch, type Control } from 'react-hook-form';
 
 import { formControlClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -11,12 +12,15 @@ const EMPTY_AWARD = { awardId: undefined, date: '', name: '', issuer: '' };
 
 interface AwardSectionProps {
   fields: FieldArrayWithId<ResumeData, 'awards', 'id'>[];
+  control: Control<ResumeData>;
   register: UseFormRegister<ResumeData>;
   append: (value: typeof EMPTY_AWARD) => void;
   remove: (index: number) => void;
 }
 
-export function AwardSection({ fields, register, append, remove }: AwardSectionProps) {
+export function AwardSection({ fields, control, register, append, remove }: AwardSectionProps) {
+  const watchedAwards = useWatch({ control, name: 'awards' });
+
   return (
     <RepeatableSection
       title="수상이력"
@@ -28,7 +32,7 @@ export function AwardSection({ fields, register, append, remove }: AwardSectionP
           key={field.id}
           className="bg-bg-tertiary relative flex flex-col gap-2 rounded-[10px] p-6"
         >
-          {fields.length > 1 || field.name ? (
+          {fields.length > 1 || watchedAwards?.[index]?.name ? (
             <RemoveButton label="수상이력 삭제" onClick={() => remove(index)} />
           ) : null}
           <div className="flex gap-3.5">

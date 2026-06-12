@@ -75,7 +75,8 @@ describe('onboarding-api', () => {
         isRecognized: true,
       },
       {
-        companyName: '새 회사',
+        workExperienceId: 2,
+        companyName: '네이버',
         startDate: '2025-01-01',
         endDate: '2025-06-01',
         employmentType: 'CONTRACT',
@@ -124,6 +125,7 @@ describe('onboarding-api', () => {
         issuer: '한국데이터산업진흥원',
       },
       {
+        certificateId: 2,
         acquisitionDate: '2026-01-01',
         certificateName: '정보처리기사',
         issuer: '한국산업인력공단',

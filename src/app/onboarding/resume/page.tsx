@@ -262,21 +262,12 @@ export default function ResumePage() {
         endDate: e.graduationDate,
         status: e.status ? (EDUCATION_STATUS_LABEL_TO_ENUM[e.status] ?? e.status) : undefined,
       }));
+      // 빈 배열 PUT = 전체 삭제 의도 (사용자가 항목을 모두 제거한 경우)
       if (hasSavedEducationsRef.current) {
         subRequests.push(putEducations(educationPayload));
       } else if (educationPayload.length > 0) {
         subRequests.push(
-          postEducations(
-            educationPayload.map((e) => ({
-              degreeType: e.degreeType,
-              schoolName: e.schoolName,
-              major: e.major,
-              gpa: e.gpa,
-              startDate: e.startDate,
-              endDate: e.endDate,
-              status: e.status,
-            })),
-          ),
+          postEducations(educationPayload.map(({ educationId: _id, ...rest }) => rest)),
         );
       }
 
@@ -295,17 +286,7 @@ export default function ResumePage() {
         subRequests.push(putExperiences(careerPayload));
       } else if (careerPayload.length > 0) {
         subRequests.push(
-          postExperiences(
-            careerPayload.map((c) => ({
-              companyName: c.companyName,
-              startDate: c.startDate,
-              endDate: c.endDate,
-              employmentType: c.employmentType,
-              position: c.position,
-              duties: c.duties,
-              isRecognized: c.isRecognized,
-            })),
-          ),
+          postExperiences(careerPayload.map(({ workExperienceId: _id, ...rest }) => rest)),
         );
       }
 
@@ -320,13 +301,7 @@ export default function ResumePage() {
         subRequests.push(putCertificates(certificatePayload));
       } else if (certificatePayload.length > 0) {
         subRequests.push(
-          postCertificates(
-            certificatePayload.map((c) => ({
-              certificateName: c.certificateName,
-              acquisitionDate: c.acquisitionDate,
-              issuer: c.issuer,
-            })),
-          ),
+          postCertificates(certificatePayload.map(({ certificateId: _id, ...rest }) => rest)),
         );
       }
 
@@ -341,13 +316,7 @@ export default function ResumePage() {
         subRequests.push(putAwards(awardPayload));
       } else if (awardPayload.length > 0) {
         subRequests.push(
-          postAwards(
-            awardPayload.map((a) => ({
-              awardName: a.awardName,
-              awardDate: a.awardDate,
-              issuer: a.issuer,
-            })),
-          ),
+          postAwards(awardPayload.map(({ awardId: _id, ...rest }) => rest)),
         );
       }
 
@@ -355,7 +324,19 @@ export default function ResumePage() {
       const hasFailure = results.some((r) => r.status === 'rejected');
 
       if (hasFailure) {
-        setSubmitError('오류가 발생했습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+        try {
+          const fresh = await getApplicantsAll();
+          hasSavedAwardsRef.current = (fresh.data.AwardDTO ?? []).length > 0;
+          hasSavedCertificatesRef.current = (fresh.data.CertificateDTO ?? []).length > 0;
+          hasSavedEducationsRef.current = (fresh.data.EducationDTO ?? []).length > 0;
+          hasSavedExperiencesRef.current = (fresh.data.WorkExperienceDTO ?? []).length > 0;
+          reset(mapApplicantsToResumeForm(fresh.data));
+        } catch {
+          // 재조회 실패 시 ref가 미갱신 상태이므로 재시도 대신 새로고침을 유도한다
+          setSubmitError('오류가 발생했습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+          return;
+        }
+        setSubmitError('오류가 발생했습니다. 다시 시도해주세요.');
         return;
       }
 
@@ -425,24 +406,28 @@ export default function ResumePage() {
       <PersonalInfoSection control={control} photoUrl={photoUrl} setValue={setValue} />
       <EducationSection
         fields={education.fields}
+        control={control}
         register={register}
         append={education.append}
         remove={education.remove}
       />
       <CertificationSection
         fields={certifications.fields}
+        control={control}
         register={register}
         append={certifications.append}
         remove={certifications.remove}
       />
       <AwardSection
         fields={awards.fields}
+        control={control}
         register={register}
         append={awards.append}
         remove={awards.remove}
       />
       <CareerSection
         fields={careers.fields}
+        control={control}
         register={register}
         append={careers.append}
         remove={careers.remove}

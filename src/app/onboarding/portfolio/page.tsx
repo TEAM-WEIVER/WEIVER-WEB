@@ -47,6 +47,7 @@ export default function PortfolioPage() {
     handleSubmit,
     control,
     setValue,
+    watch,
     formState: { isValid },
   } = useForm<PortfolioData>({
     resolver: zodResolver(portfolioSchema),
@@ -87,13 +88,13 @@ export default function PortfolioPage() {
     loadPortfolio();
   }, [setValue]);
 
-  const isSubmitEnabled =
-    isValid &&
-    !portfolioFile.fileError &&
-    (portfolioFile.uploadedFile !== null || portfolioId != null);
+  const [githubUrl, notionUrl, otherUrl] = watch(['githubUrl', 'notionUrl', 'otherUrl']);
+  const hasContent =
+    !!portfolioFile.uploadedFile || !!existingFile || !!githubUrl || !!notionUrl || !!otherUrl;
+  const isSubmitEnabled = isValid && !portfolioFile.fileError && hasContent;
 
   const onSubmit = async (data: PortfolioData) => {
-    if (!portfolioFile.uploadedFile && portfolioId == null) return;
+    if (!hasContent) return;
 
     setIsSubmitting(true);
     setSubmitError(null);

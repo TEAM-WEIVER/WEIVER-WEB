@@ -1,4 +1,5 @@
 import type { FieldArrayWithId, UseFormRegister } from 'react-hook-form';
+import { useWatch, type Control } from 'react-hook-form';
 
 import { formControlClass, nativeSelectClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -20,12 +21,15 @@ const EMPTY_CAREER = {
 
 interface CareerSectionProps {
   fields: FieldArrayWithId<ResumeData, 'careers', 'id'>[];
+  control: Control<ResumeData>;
   register: UseFormRegister<ResumeData>;
   append: (value: typeof EMPTY_CAREER) => void;
   remove: (index: number) => void;
 }
 
-export function CareerSection({ fields, register, append, remove }: CareerSectionProps) {
+export function CareerSection({ fields, control, register, append, remove }: CareerSectionProps) {
+  const watchedCareers = useWatch({ control, name: 'careers' });
+
   return (
     <RepeatableSection
       title="경력사항"
@@ -37,7 +41,7 @@ export function CareerSection({ fields, register, append, remove }: CareerSectio
           key={field.id}
           className="bg-bg-tertiary relative flex flex-col gap-2 rounded-[10px] p-6"
         >
-          {fields.length > 1 || field.company ? (
+          {fields.length > 1 || watchedCareers?.[index]?.company ? (
             <RemoveButton label="경력 삭제" onClick={() => remove(index)} />
           ) : null}
           <div className="flex gap-3.5">
