@@ -3,15 +3,9 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
-import { getApplicantProfileOverview } from '@/lib/applicant-profile-api';
-import { ApiError } from '@/lib/api-client';
 import { reissueAccessToken } from '@/lib/auth-api';
 import { getAccessToken, getAuthRole } from '@/lib/auth-token';
-import {
-  type ProtectedArea,
-  getOnboardingProgressRedirectPath,
-  getRoleRedirectPath,
-} from '@/lib/protected-routing';
+import { type ProtectedArea, getRoleRedirectPath } from '@/lib/protected-routing';
 
 interface ProtectedRouteGuardProps {
   area: ProtectedArea;
@@ -44,26 +38,6 @@ export function ProtectedRouteGuard({ area, children }: ProtectedRouteGuardProps
       if (roleRedirectPath) {
         router.replace(roleRedirectPath);
         return;
-      }
-
-      if (area === 'onboarding') {
-        try {
-          const overview = await getApplicantProfileOverview();
-          const progressRedirectPath = getOnboardingProgressRedirectPath(
-            pathname,
-            overview.progress,
-          );
-
-          if (progressRedirectPath) {
-            router.replace(progressRedirectPath);
-            return;
-          }
-        } catch (error) {
-          if (error instanceof ApiError && error.status === 401) {
-            router.replace('/login');
-            return;
-          }
-        }
       }
 
       if (isMounted) setIsAllowed(true);

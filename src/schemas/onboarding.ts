@@ -85,6 +85,7 @@ export const resumeSchema = z.object({
   email: z.string().email('올바른 이메일 형식을 입력해주세요.').or(z.literal('')),
   phone: z.string().min(1, '전화번호를 입력해주세요.'),
   address: z.string().min(1, '주소를 입력해주세요.'),
+  birthday: z.string().optional(),
   education: z.array(z.union([educationSchema, emptyEducationSchema])),
   certifications: z.array(z.union([certificationSchema, emptyCertificationSchema])),
   awards: z.array(z.union([awardSchema, emptyAwardSchema])),
