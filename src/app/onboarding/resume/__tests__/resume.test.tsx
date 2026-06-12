@@ -43,6 +43,13 @@ vi.mock('@/lib/onboarding-api', () => ({
 describe('이력서 온보딩 페이지', () => {
   beforeEach(() => {
     navigationMock.push.mockClear();
+    vi.stubGlobal(
+      'URL',
+      Object.assign(URL, {
+        createObjectURL: vi.fn(() => 'blob:profile-preview'),
+        revokeObjectURL: vi.fn(),
+      }),
+    );
     vi.mocked(saveApplicantInfo).mockResolvedValue({
       status: 'success',
       code: 200,
@@ -120,6 +127,7 @@ describe('이력서 온보딩 페이지', () => {
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
@@ -135,6 +143,29 @@ describe('이력서 온보딩 페이지', () => {
     expect(screen.getByPlaceholderText('경기도 안산시 상록구 한양대학로 55')).toHaveValue(
       '경기도 안산시 상록구 한양대학로 55',
     );
+  });
+
+  it('증명사진을 선택하면 미리보기를 표시하고 개인정보 저장 FormData에 파일을 담는다', async () => {
+    const user = userEvent.setup();
+    render(<ResumePage />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('본명을 입력해주세요.')).toHaveValue('김민채');
+    });
+
+    const imageFile = new File(['profile'], 'profile.png', { type: 'image/png' });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(fileInput, imageFile);
+
+    expect(screen.getByAltText('증명사진 미리보기')).toHaveAttribute('src', 'blob:profile-preview');
+
+    await user.click(screen.getByRole('button', { name: '다음' }));
+
+    await waitFor(() => {
+      expect(saveApplicantInfo).toHaveBeenCalled();
+    });
+    const formData = vi.mocked(saveApplicantInfo).mock.calls[0][0];
+    expect(formData.get('profileImage')).toBe(imageFile);
   });
 
   it('기존 경력이 없으면 다음 클릭 시 경력 최초 저장 POST를 보낸다', async () => {

@@ -105,6 +105,7 @@ function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
     phone: applicant?.phoneNumber ?? '',
     birthday: applicant?.birthday ?? '',
     address: applicant?.address ?? '',
+    profileImage: undefined,
     education:
       educations.length > 0
         ? educations.map((e) => ({
@@ -155,6 +156,7 @@ function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
 export default function ResumePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const hasSavedAwardsRef = useRef(false);
   const hasSavedCertificatesRef = useRef(false);
@@ -170,6 +172,7 @@ export default function ResumePage() {
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { isValid },
   } = useForm<ResumeData>({
     resolver: zodResolver(resumeSchema),
@@ -179,6 +182,7 @@ export default function ResumePage() {
       birthday: '',
       phone: '',
       address: '',
+      profileImage: undefined,
       education: [{ ...EMPTY_EDUCATION }],
       certifications: [{ ...EMPTY_CERTIFICATION }],
       awards: [{ ...EMPTY_AWARD }],
@@ -203,6 +207,7 @@ export default function ResumePage() {
         hasSavedCertificatesRef.current = (response.data.CertificateDTO ?? []).length > 0;
         hasSavedEducationsRef.current = (response.data.EducationDTO ?? []).length > 0;
         hasSavedExperiencesRef.current = (response.data.WorkExperienceDTO ?? []).length > 0;
+        setPhotoUrl(response.data.ApplicantDTO?.photoUrl ?? null);
         const resumeForm = mapApplicantsToResumeForm(response.data);
         reset(resumeForm);
       } catch (err) {
@@ -238,6 +243,9 @@ export default function ResumePage() {
         'requestDTO',
         new Blob([JSON.stringify(requestDTO)], { type: 'application/json' }),
       );
+      if (data.profileImage) {
+        formData.append('profileImage', data.profileImage);
+      }
 
       await saveApplicantInfo(formData);
 
@@ -414,7 +422,7 @@ export default function ResumePage() {
         </div>
       }
     >
-      <PersonalInfoSection control={control} />
+      <PersonalInfoSection control={control} photoUrl={photoUrl} setValue={setValue} />
       <EducationSection
         fields={education.fields}
         register={register}
