@@ -1,4 +1,5 @@
 ---
+color: red
 name: coverage-auditor
 description: Vitest 커버리지 분석 및 미달 영역 보완 요청
 tools: Bash, Read

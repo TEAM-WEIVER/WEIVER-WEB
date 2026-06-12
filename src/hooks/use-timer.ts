@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 export function useTimer(initialSeconds: number) {
   const [endTime, setEndTime] = useState<number | null>(null);
   const [remaining, setRemaining] = useState(0);
+  const [isExpired, setIsExpired] = useState(false);
 
   const isRunning = endTime !== null && remaining > 0;
 
@@ -14,6 +15,7 @@ export function useTimer(initialSeconds: number) {
       setRemaining(diff);
       if (diff === 0) {
         setEndTime(null);
+        setIsExpired(true);
       }
     };
 
@@ -25,14 +27,16 @@ export function useTimer(initialSeconds: number) {
   const start = useCallback(() => {
     setEndTime(Date.now() + initialSeconds * 1000);
     setRemaining(initialSeconds);
+    setIsExpired(false);
   }, [initialSeconds]);
 
   const reset = useCallback(() => {
     setEndTime(null);
     setRemaining(0);
+    setIsExpired(false);
   }, []);
 
   const formatted = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
 
-  return { seconds: remaining, formatted, isRunning, start, reset };
+  return { seconds: remaining, formatted, isRunning, isExpired, start, reset };
 }

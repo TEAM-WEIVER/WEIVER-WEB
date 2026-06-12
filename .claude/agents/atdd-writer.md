@@ -1,4 +1,5 @@
 ---
+color: green
 name: atdd-writer
 description: AC의 Given/When/Then을 Playwright 인수 테스트 코드로 변환. HTML 목업은 구조 참고용이며, 셀렉터는 AC의 사용자 행동 기준으로 독립 작성한다. MSW 목 핸들러도 함께 작성한다.
 tools: Read, Write, Bash, WebFetch

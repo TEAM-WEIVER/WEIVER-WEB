@@ -1,4 +1,5 @@
 ---
+color: red
 name: design-reviewer
 description: 구현 결과와 디자인 스펙(컴포넌트 스펙, shadcn/ui 활용) 대조 검토
 tools: Read, Bash, Write

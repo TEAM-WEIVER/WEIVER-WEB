@@ -1,4 +1,5 @@
 ---
+color: green
 name: designer
 description: US/AC를 기반으로 HTML 목업 생성. 구조·접근성 중심으로 작성하고 스타일은 나중에 붙인다.
 tools: Read, Write

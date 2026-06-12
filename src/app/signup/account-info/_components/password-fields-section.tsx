@@ -26,9 +26,11 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
           <Label className="text-text-primary">비밀번호를 입력해주세요.</Label>
           <div className="relative">
             <Input
+              id="password"
               type={showPassword ? 'text' : 'password'}
               {...register('password')}
-              placeholder="영문, 숫자, 특수문자 조합 6-14자"
+              placeholder="영문, 숫자, 특수문자 조합 8-64자"
+              aria-label="비밀번호"
               className="pr-14"
             />
             <button
@@ -43,20 +45,23 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
           </div>
         </div>
         <PasswordRules password={password} />
+        <FieldError>{errors.password?.message}</FieldError>
       </div>
 
       <div className="flex flex-col gap-2">
         <Label className="text-text-primary">비밀번호를 확인해주세요.</Label>
         <div className="relative">
           <Input
+            id="passwordConfirm"
             type={showPasswordConfirm ? 'text' : 'password'}
             {...register('passwordConfirm')}
             placeholder="위에서 입력한 비밀번호를 입력해주세요."
+            aria-label="비밀번호 확인"
             className="pr-14"
           />
           <button
             type="button"
-            aria-label={showPasswordConfirm ? '비밀번호 확인 숨기기' : '비밀번호 확인 보기'}
+            aria-label={showPasswordConfirm ? '비밀번호 확인 필드 숨기기' : '비밀번호 확인 필드 표시'}
             aria-pressed={showPasswordConfirm}
             onClick={() => setShowPasswordConfirm((current) => !current)}
             className="text-text-disabled hover:text-text-tertiary absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer transition-colors"

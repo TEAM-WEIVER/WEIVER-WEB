@@ -1,4 +1,5 @@
 ---
+color: yellow
 name: planner
 description: US(User Story) + AC(Acceptance Criteria) 기반 기획 산출물 작성. API 스펙을 조회해 AC에 맞는 엔드포인트를 함께 기록한다.
 tools: Read, Write, WebFetch

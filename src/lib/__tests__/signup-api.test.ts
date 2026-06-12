@@ -12,6 +12,8 @@ vi.mock('../api-client', () => ({
   apiRequest: vi.fn(),
 }));
 
+const fetchMock = vi.fn();
+
 describe('signup-api', () => {
   beforeEach(() => {
     vi.mocked(apiRequest).mockResolvedValue({
@@ -20,10 +22,12 @@ describe('signup-api', () => {
       data: {},
       message: 'OK',
     });
+    vi.stubGlobal('fetch', fetchMock);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('회원가입 1단계 계정 정보 등록 요청을 서버 스펙에 맞게 보낸다', async () => {
@@ -71,15 +75,16 @@ describe('signup-api', () => {
     });
   });
 
-  it('회원가입 2단계 약관 동의 요청을 서버 스펙에 맞게 보낸다', async () => {
-    vi.mocked(apiRequest).mockResolvedValueOnce({
+  it('회원가입 2단계 약관 동의 요청을 내부 Route Handler로 보낸다', async () => {
+    const mockResponseBody = {
       status: 'OK',
       code: 200,
-      data: {
-        role: 'APPLICANT',
-        accessToken: 'access-token',
-      },
+      data: { role: 'APPLICANT' },
       message: 'OK',
+    };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(mockResponseBody),
     });
 
     await expect(
@@ -97,19 +102,12 @@ describe('signup-api', () => {
           marketingConsent: false,
         },
       }),
-    ).resolves.toEqual({
-      status: 'OK',
-      code: 200,
-      data: {
-        role: 'APPLICANT',
-        accessToken: 'access-token',
-      },
-      message: 'OK',
-    });
+    ).resolves.toEqual(mockResponseBody);
 
-    expect(apiRequest).toHaveBeenCalledWith('/api/auth/applicants/signup/agreements', {
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/signup/complete', {
       method: 'POST',
-      body: {
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         signupToken: 'signup-token',
         agreements: {
           termsOfService: true,
@@ -119,7 +117,7 @@ describe('signup-api', () => {
           sensitiveDataConsent: true,
           marketingConsent: false,
         },
-      },
+      }),
     });
   });
 
