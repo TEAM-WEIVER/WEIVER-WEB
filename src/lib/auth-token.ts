@@ -39,6 +39,10 @@ export function setAccessToken(token: string) {
   accessToken = token;
 }
 
+export function setAuthRole(role: UserRole) {
+  setStoredAuthRole(role);
+}
+
 export function setAuthSession(token: string, role: UserRole) {
   setAccessToken(token);
   setStoredAuthRole(role);

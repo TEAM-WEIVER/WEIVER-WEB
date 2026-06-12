@@ -1,4 +1,5 @@
 ---
+color: green
 name: next-dev
 description: AC와 디자인 스펙을 기반으로 Next.js 코드 구현
 tools: Read, Write, Edit, Bash

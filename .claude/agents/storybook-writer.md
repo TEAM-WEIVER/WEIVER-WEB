@@ -1,4 +1,5 @@
 ---
+color: green
 name: storybook-writer
 description: UI 컴포넌트의 Storybook 스토리 자동 작성
 tools: Read, Write, Bash

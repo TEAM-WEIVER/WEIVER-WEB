@@ -16,11 +16,18 @@ function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
   );
 }
 
-export function RemoveButton({ onClick }: { onClick: () => void }) {
+export function RemoveButton({
+  onClick,
+  label = '항목 삭제',
+}: {
+  onClick: () => void;
+  label?: string;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-label={label}
       className="text-text-disabled hover:bg-primary-200 hover:text-text-tertiary absolute top-3 right-3 rounded-full p-1 transition-colors"
     >
       <X size={18} />

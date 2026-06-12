@@ -1,4 +1,5 @@
 ---
+color: green
 name: api-mocker
 description: 백엔드 API 연동 전 MSW(Mock Service Worker) 기반 목 작성으로 프론트 독립 개발 지원. API 스펙(https://api.piuda.site/v3/api-docs)을 조회해 실제 응답 구조를 반영한다.
 tools: Read, Write, Bash, WebFetch

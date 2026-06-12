@@ -254,11 +254,73 @@ describe('apiRequest', () => {
     expect((fetchMock.mock.calls[0][1].headers as Headers).get('Authorization')).toBe(
       'Bearer expired-access-token',
     );
+    expect(fetchMock.mock.calls[2][1]).toEqual(
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+      }),
+    );
     expect((fetchMock.mock.calls[2][1].headers as Headers).get('Authorization')).toBeNull();
     expect((fetchMock.mock.calls[2][1].headers as Headers).get('X-XSRF-TOKEN')).toBe('csrf-token');
     expect((fetchMock.mock.calls[3][1].headers as Headers).get('Authorization')).toBe(
       'Bearer new-access-token',
     );
     expect(getAccessToken()).toBe('new-access-token');
+  });
+
+  it('동시에 발생한 accessToken 재발급 요청을 하나의 네트워크 요청으로 합친다', async () => {
+    vi.resetModules();
+
+    const reissueResponse = {
+      status: 'OK',
+      code: 200,
+      data: { accessToken: 'deduped-access-token' },
+      message: 'OK',
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: 'OK',
+            code: 200,
+            data: { csrfToken: 'csrf-token' },
+            message: 'OK',
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(reissueResponse), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { getAccessToken } = await import('../auth-token');
+    const { reissueAccessTokenWithRefreshCookie } = await import('../api-client');
+
+    await expect(
+      Promise.all([
+        reissueAccessTokenWithRefreshCookie(),
+        reissueAccessTokenWithRefreshCookie(),
+      ]),
+    ).resolves.toEqual([reissueResponse, reissueResponse]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.piuda.site/api/auth/csrf');
+    expect(fetchMock.mock.calls[1][0]).toBe('https://api.piuda.site/api/auth/reissue');
+    expect(fetchMock.mock.calls[1][1]).toEqual(
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+      }),
+    );
+    expect((fetchMock.mock.calls[1][1].headers as Headers).get('X-XSRF-TOKEN')).toBe('csrf-token');
+    expect(getAccessToken()).toBe('deduped-access-token');
   });
 });

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiError, apiRequest } from '../api-client';
+import { apiRequest } from '../api-client';
 import { getApplicantProfileOverview } from '../applicant-profile-api';
 
 vi.mock('../api-client', async (importOriginal) => ({
@@ -8,42 +8,23 @@ vi.mock('../api-client', async (importOriginal) => ({
   apiRequest: vi.fn(),
 }));
 
-const applicantInfo = {
-  ApplicantDTO: {
-    photoUrl: null,
-    name: '피우다',
-    birthday: null,
-    phoneNumber: '010-0000-0000',
-    email: 'personal@gmail.com',
-  },
-  EducationDTO: [{ educationId: 1 }],
-  AwardDTO: [],
-  WorkExperienceDTO: [],
-  CertificateDTO: [],
-};
-
 describe('applicant-profile-api', () => {
   beforeEach(() => {
     vi.mocked(apiRequest).mockImplementation((path) => {
-      if (path === '/api/applicants') {
-        return Promise.resolve({ status: 'OK', code: 200, data: applicantInfo, message: 'OK' });
-      }
-
-      if (path === '/api/essay-answers') {
+      if (path === '/api/applicants/document-status') {
         return Promise.resolve({
           status: 'OK',
           code: 200,
-          data: { answerId: 1, answer: '자기소개서 답변' },
+          data: {
+            resumeCompleted: true,
+            essayCompleted: true,
+            portfolioCompleted: true,
+          },
           message: 'OK',
         });
       }
 
-      return Promise.resolve({
-        status: 'OK',
-        code: 200,
-        data: { portfolioId: 1 },
-        message: 'OK',
-      });
+      return Promise.reject(new Error(`unexpected request: ${path}`));
     });
   });
 
@@ -51,9 +32,8 @@ describe('applicant-profile-api', () => {
     vi.clearAllMocks();
   });
 
-  it('지원자 프로필 각 단계를 병렬 조회해 완성도를 반환한다', async () => {
+  it('지원자 제출 서류 작성 상태를 단일 API로 조회해 완성도를 반환한다', async () => {
     await expect(getApplicantProfileOverview()).resolves.toEqual({
-      applicant: applicantInfo.ApplicantDTO,
       progress: {
         resume: true,
         'cover-letter': true,
@@ -61,23 +41,26 @@ describe('applicant-profile-api', () => {
       },
     });
 
-    expect(apiRequest).toHaveBeenCalledWith('/api/applicants');
-    expect(apiRequest).toHaveBeenCalledWith('/api/essay-answers');
-    expect(apiRequest).toHaveBeenCalledWith('/api/portfolios');
+    expect(apiRequest).toHaveBeenCalledTimes(1);
+    expect(apiRequest).toHaveBeenCalledWith('/api/applicants/document-status');
   });
 
-  it('자기소개서와 포트폴리오가 없으면 미완료로 반환한다', async () => {
+  it('제출 서류가 미완료이면 미완료로 반환한다', async () => {
     vi.mocked(apiRequest).mockImplementation((path) => {
-      if (path === '/api/applicants') {
+      if (path === '/api/applicants/document-status') {
         return Promise.resolve({
           status: 'OK',
           code: 200,
-          data: { ...applicantInfo, EducationDTO: [] },
+          data: {
+            resumeCompleted: false,
+            essayCompleted: false,
+            portfolioCompleted: false,
+          },
           message: 'OK',
         });
       }
 
-      return Promise.reject(new ApiError('missing profile section', 404));
+      return Promise.reject(new Error(`unexpected request: ${path}`));
     });
 
     await expect(getApplicantProfileOverview()).resolves.toMatchObject({
