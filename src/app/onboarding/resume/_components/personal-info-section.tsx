@@ -1,5 +1,5 @@
 import { Image as ImageIcon } from 'lucide-react';
-import type { UseFormRegister } from 'react-hook-form';
+import { Controller, type Control } from 'react-hook-form';
 
 import { formControlClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,11 @@ import type { ResumeData } from '@/schemas/onboarding';
 
 import { SectionTitle } from './section-title';
 
-export function PersonalInfoSection({ register }: { register: UseFormRegister<ResumeData> }) {
+interface PersonalInfoSectionProps {
+  control: Control<ResumeData>;
+}
+
+export function PersonalInfoSection({ control }: PersonalInfoSectionProps) {
   return (
     <div className="flex flex-col gap-6">
       <SectionTitle title="개인 정보" required />
@@ -26,45 +30,80 @@ export function PersonalInfoSection({ register }: { register: UseFormRegister<Re
         <div className="grid flex-1 grid-cols-3 gap-x-6 gap-y-2.5">
           <div className="flex min-w-0 flex-col gap-2">
             <Label className="text-text-secondary">이름</Label>
-            <Input
-              {...register('name')}
-              placeholder="본명을 입력해주세요."
-              className={formControlClass}
+            <Controller
+              control={control}
+              name="name"
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  value={field.value ?? ''}
+                  placeholder="본명을 입력해주세요."
+                  className={formControlClass}
+                />
+              )}
             />
           </div>
           <div className="flex min-w-0 flex-col gap-2">
             <Label className="text-text-secondary">생년월일</Label>
-            <Input
-              {...register('birthday')}
-              inputMode="numeric"
-              placeholder="2000-01-01"
-              className={formControlClass}
+            <Controller
+              control={control}
+              name="birthday"
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  value={field.value ?? ''}
+                  inputMode="numeric"
+                  placeholder="2000-01-01"
+                  className={formControlClass}
+                />
+              )}
             />
           </div>
           <div className="flex min-w-0 flex-col gap-2">
             <Label className="text-text-secondary">이메일</Label>
-            <Input
-              {...register('email')}
-              type="email"
-              placeholder="weiver@example.com"
-              className={formControlClass}
+            <Controller
+              control={control}
+              name="email"
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  value={field.value ?? ''}
+                  type="email"
+                  placeholder="weiver@example.com"
+                  className={formControlClass}
+                />
+              )}
             />
           </div>
           <div className="flex min-w-0 flex-col gap-2">
             <Label className="text-text-secondary">전화번호</Label>
-            <Input
-              {...register('phone')}
-              type="tel"
-              placeholder="010-1234-5678"
-              className={formControlClass}
+            <Controller
+              control={control}
+              name="phone"
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  value={field.value ?? ''}
+                  type="tel"
+                  placeholder="010-1234-5678"
+                  className={formControlClass}
+                />
+              )}
             />
           </div>
           <div className="col-span-2 flex min-w-0 flex-col gap-2">
             <Label className="text-text-secondary">주소</Label>
-            <Input
-              {...register('address')}
-              placeholder="경기도 안산시 상록구 한양대학로 55"
-              className={formControlClass}
+            <Controller
+              control={control}
+              name="address"
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  value={field.value ?? ''}
+                  placeholder="경기도 안산시 상록구 한양대학로 55"
+                  className={formControlClass}
+                />
+              )}
             />
           </div>
         </div>

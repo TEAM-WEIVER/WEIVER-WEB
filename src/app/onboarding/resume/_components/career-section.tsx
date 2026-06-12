@@ -8,6 +8,8 @@ import type { ResumeData } from '@/schemas/onboarding';
 import { RemoveButton, RepeatableSection } from './repeatable-section';
 
 const EMPTY_CAREER = {
+  workExperienceId: undefined,
+  isRecognized: undefined,
   company: '',
   startDate: '',
   endDate: '',
@@ -35,7 +37,9 @@ export function CareerSection({ fields, register, append, remove }: CareerSectio
           key={field.id}
           className="bg-bg-tertiary relative flex flex-col gap-2 rounded-[10px] p-6"
         >
-          {fields.length > 1 ? <RemoveButton onClick={() => remove(index)} /> : null}
+          {fields.length > 1 || field.company ? (
+            <RemoveButton label="경력 삭제" onClick={() => remove(index)} />
+          ) : null}
           <div className="flex gap-3.5">
             <div className="flex flex-1 flex-col gap-2">
               <Label className="text-text-secondary">경력명</Label>
@@ -49,7 +53,7 @@ export function CareerSection({ fields, register, append, remove }: CareerSectio
               <Label className="text-text-secondary">입사일</Label>
               <Input
                 {...register(`careers.${index}.startDate`)}
-                placeholder="YYYY.MM.DD"
+                placeholder="YYYY-MM-DD"
                 className={formControlClass}
               />
             </div>
@@ -57,7 +61,7 @@ export function CareerSection({ fields, register, append, remove }: CareerSectio
               <Label className="text-text-secondary">퇴사일</Label>
               <Input
                 {...register(`careers.${index}.endDate`)}
-                placeholder="YYYY.MM.DD"
+                placeholder="YYYY-MM-DD"
                 className={formControlClass}
               />
             </div>
@@ -66,9 +70,10 @@ export function CareerSection({ fields, register, append, remove }: CareerSectio
               <select {...register(`careers.${index}.type`)} className={nativeSelectClass}>
                 <option value="">경력형태</option>
                 <option value="정규직">정규직</option>
-                <option value="계약직">계약직</option>
                 <option value="인턴">인턴</option>
+                <option value="계약직">계약직</option>
                 <option value="프리랜서">프리랜서</option>
+                <option value="병역특례">병역특례</option>
                 <option value="아르바이트">아르바이트</option>
               </select>
             </div>

@@ -8,6 +8,7 @@ import type { ResumeData } from '@/schemas/onboarding';
 import { RemoveButton, RepeatableSection } from './repeatable-section';
 
 const EMPTY_EDUCATION = {
+  educationId: undefined,
   type: '',
   school: '',
   major: '',
@@ -36,7 +37,9 @@ export function EducationSection({ fields, register, append, remove }: Education
           key={field.id}
           className="bg-bg-tertiary relative flex flex-col gap-2 rounded-[10px] p-6"
         >
-          {fields.length > 1 ? <RemoveButton onClick={() => remove(index)} /> : null}
+          {fields.length > 1 || field.school || field.type ? (
+            <RemoveButton label="학력 삭제" onClick={() => remove(index)} />
+          ) : null}
           <div className="flex gap-3.5">
             <div className="flex w-[164px] flex-col gap-2">
               <Label className="text-text-secondary">학력구분</Label>
@@ -79,7 +82,7 @@ export function EducationSection({ fields, register, append, remove }: Education
               <Label className="text-text-secondary">입학년월</Label>
               <Input
                 {...register(`education.${index}.enrollmentDate`)}
-                placeholder="YYYY.MM"
+                placeholder="YYYY-MM"
                 className={formControlClass}
               />
             </div>
@@ -87,7 +90,7 @@ export function EducationSection({ fields, register, append, remove }: Education
               <Label className="text-text-secondary">졸업년월</Label>
               <Input
                 {...register(`education.${index}.graduationDate`)}
-                placeholder="YYYY.MM"
+                placeholder="YYYY-MM"
                 className={formControlClass}
               />
             </div>
@@ -99,7 +102,6 @@ export function EducationSection({ fields, register, append, remove }: Education
                 <option value="휴학중">휴학중</option>
                 <option value="졸업">졸업</option>
                 <option value="졸업예정">졸업예정</option>
-                <option value="중퇴">중퇴</option>
               </select>
             </div>
           </div>

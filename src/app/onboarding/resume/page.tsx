@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -16,11 +16,15 @@ import {
 } from '@/lib/onboarding-flow';
 import {
   getApplicantsAll,
+  postAwards,
+  postCertificates,
+  postEducations,
+  postExperiences,
+  putAwards,
+  putCertificates,
+  putEducations,
+  putExperiences,
   saveApplicantInfo,
-  saveAwards,
-  saveCertificates,
-  saveEducations,
-  saveExperiences,
   type ApplicantsAllData,
 } from '@/lib/onboarding-api';
 import { resumeSchema, type ResumeData } from '@/schemas/onboarding';
@@ -64,14 +68,24 @@ const EDUCATION_STATUS_ENUM_TO_LABEL: Record<string, string> = {
   GRADUATED: '졸업',
   GRADUATION_POSTPONED: '졸업예정',
 };
+const DEGREE_LABEL_TO_ENUM: Record<string, string> = Object.fromEntries(
+  Object.entries(DEGREE_ENUM_TO_LABEL).map(([value, label]) => [label, value]),
+);
+const EDUCATION_STATUS_LABEL_TO_ENUM: Record<string, string> = Object.fromEntries(
+  Object.entries(EDUCATION_STATUS_ENUM_TO_LABEL).map(([value, label]) => [label, value]),
+);
 
 const EMPLOYMENT_TYPE_ENUM_TO_LABEL: Record<string, string> = {
   FULL_TIME: '정규직',
   CONTRACT: '계약직',
   INTERN: '인턴',
   FREELANCER: '프리랜서',
+  MILITARY_SERVICE_EXEMPTION: '병역특례',
   PART_TIME: '아르바이트',
 };
+const EMPLOYMENT_TYPE_LABEL_TO_ENUM: Record<string, string> = Object.fromEntries(
+  Object.entries(EMPLOYMENT_TYPE_ENUM_TO_LABEL).map(([value, label]) => [label, value]),
+);
 
 function mapEnum(value: string | null | undefined, table: Record<string, string>) {
   if (!value) return '';
@@ -80,10 +94,10 @@ function mapEnum(value: string | null | undefined, table: Record<string, string>
 
 function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
   const applicant = data.ApplicantDTO;
-  const educations = data.EducationDTO;
-  const careers = data.WorkExperienceDTO;
-  const certificates = data.CertificateDTO;
-  const awards = data.AwardDTO;
+  const educations = data.EducationDTO ?? [];
+  const careers = data.WorkExperienceDTO ?? [];
+  const certificates = data.CertificateDTO ?? [];
+  const awards = data.AwardDTO ?? [];
 
   return {
     name: applicant?.name ?? '',
@@ -94,6 +108,7 @@ function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
     education:
       educations.length > 0
         ? educations.map((e) => ({
+            educationId: e.educationId,
             type: mapEnum(e.degree, DEGREE_ENUM_TO_LABEL),
             school: e.schoolName ?? '',
             major: e.major ?? '',
@@ -106,6 +121,8 @@ function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
     careers:
       careers.length > 0
         ? careers.map((c) => ({
+            workExperienceId: c.experienceId,
+            isRecognized: c.isRecognized ?? true,
             company: c.companyName ?? '',
             startDate: c.startDate ?? '',
             endDate: c.endDate ?? '',
@@ -117,6 +134,7 @@ function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
     certifications:
       certificates.length > 0
         ? certificates.map((c) => ({
+            certificateId: c.certificateId,
             name: c.certificateName ?? '',
             acquiredDate: c.acquisitionDate ?? '',
             issuer: c.issuer ?? '',
@@ -125,6 +143,7 @@ function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
     awards:
       awards.length > 0
         ? awards.map((a) => ({
+            awardId: a.awardId,
             name: a.awardName ?? '',
             date: a.awardDate ?? '',
             issuer: a.issuer ?? '',
@@ -137,6 +156,10 @@ export default function ResumePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const hasSavedAwardsRef = useRef(false);
+  const hasSavedCertificatesRef = useRef(false);
+  const hasSavedEducationsRef = useRef(false);
+  const hasSavedExperiencesRef = useRef(false);
 
   const stepNumber = getOnboardingStepNumber(CURRENT_STEP);
   const stepTitle = getOnboardingStepTitle(CURRENT_STEP);
@@ -176,7 +199,12 @@ export default function ResumePage() {
       try {
         const response = await getApplicantsAll();
         if (cancelled) return;
-        reset(mapApplicantsToResumeForm(response.data));
+        hasSavedAwardsRef.current = (response.data.AwardDTO ?? []).length > 0;
+        hasSavedCertificatesRef.current = (response.data.CertificateDTO ?? []).length > 0;
+        hasSavedEducationsRef.current = (response.data.EducationDTO ?? []).length > 0;
+        hasSavedExperiencesRef.current = (response.data.WorkExperienceDTO ?? []).length > 0;
+        const resumeForm = mapApplicantsToResumeForm(response.data);
+        reset(resumeForm);
       } catch (err) {
         console.error('[resume] getApplicantsAll 실패:', err);
       }
@@ -216,16 +244,28 @@ export default function ResumePage() {
       const subRequests: Promise<unknown>[] = [];
 
       const validEducations = data.education.filter((e) => !isEmptyEducation(e));
-      if (validEducations.length > 0) {
+      const educationPayload = validEducations.map((e) => ({
+        educationId: e.educationId,
+        degreeType: e.type ? (DEGREE_LABEL_TO_ENUM[e.type] ?? e.type) : '',
+        schoolName: e.school,
+        major: e.major,
+        gpa: e.gpa ? Number(e.gpa) : undefined,
+        startDate: e.enrollmentDate,
+        endDate: e.graduationDate,
+        status: e.status ? (EDUCATION_STATUS_LABEL_TO_ENUM[e.status] ?? e.status) : undefined,
+      }));
+      if (hasSavedEducationsRef.current) {
+        subRequests.push(putEducations(educationPayload));
+      } else if (educationPayload.length > 0) {
         subRequests.push(
-          saveEducations(
-            validEducations.map((e) => ({
-              degreeType: e.type,
-              schoolName: e.school,
+          postEducations(
+            educationPayload.map((e) => ({
+              degreeType: e.degreeType,
+              schoolName: e.schoolName,
               major: e.major,
               gpa: e.gpa,
-              startDate: e.enrollmentDate,
-              endDate: e.graduationDate,
+              startDate: e.startDate,
+              endDate: e.endDate,
               status: e.status,
             })),
           ),
@@ -233,28 +273,49 @@ export default function ResumePage() {
       }
 
       const validCareers = data.careers.filter((c) => !isEmptyCareer(c));
-      if (validCareers.length > 0) {
+      const careerPayload = validCareers.map((c) => ({
+        workExperienceId: c.workExperienceId,
+        companyName: c.company,
+        startDate: c.startDate,
+        endDate: c.endDate,
+        employmentType: c.type ? (EMPLOYMENT_TYPE_LABEL_TO_ENUM[c.type] ?? c.type) : undefined,
+        position: c.position,
+        duties: c.duty,
+        isRecognized: c.isRecognized ?? true,
+      }));
+      if (hasSavedExperiencesRef.current) {
+        subRequests.push(putExperiences(careerPayload));
+      } else if (careerPayload.length > 0) {
         subRequests.push(
-          saveExperiences(
-            validCareers.map((c) => ({
-              companyName: c.company,
+          postExperiences(
+            careerPayload.map((c) => ({
+              companyName: c.companyName,
               startDate: c.startDate,
               endDate: c.endDate,
-              employmentType: c.type,
+              employmentType: c.employmentType,
               position: c.position,
-              duties: c.duty,
+              duties: c.duties,
+              isRecognized: c.isRecognized,
             })),
           ),
         );
       }
 
       const validCertifications = data.certifications.filter((c) => !isEmptyCertification(c));
-      if (validCertifications.length > 0) {
+      const certificatePayload = validCertifications.map((c) => ({
+        certificateId: c.certificateId,
+        certificateName: c.name,
+        acquisitionDate: c.acquiredDate,
+        issuer: c.issuer,
+      }));
+      if (hasSavedCertificatesRef.current) {
+        subRequests.push(putCertificates(certificatePayload));
+      } else if (certificatePayload.length > 0) {
         subRequests.push(
-          saveCertificates(
-            validCertifications.map((c) => ({
-              certificateName: c.name,
-              acquisitionDate: c.acquiredDate,
+          postCertificates(
+            certificatePayload.map((c) => ({
+              certificateName: c.certificateName,
+              acquisitionDate: c.acquisitionDate,
               issuer: c.issuer,
             })),
           ),
@@ -262,12 +323,20 @@ export default function ResumePage() {
       }
 
       const validAwards = data.awards.filter((a) => !isEmptyAward(a));
-      if (validAwards.length > 0) {
+      const awardPayload = validAwards.map((a) => ({
+        awardId: a.awardId,
+        awardName: a.name,
+        awardDate: a.date,
+        issuer: a.issuer,
+      }));
+      if (hasSavedAwardsRef.current) {
+        subRequests.push(putAwards(awardPayload));
+      } else if (awardPayload.length > 0) {
         subRequests.push(
-          saveAwards(
-            validAwards.map((a) => ({
-              awardName: a.name,
-              awardDate: a.date,
+          postAwards(
+            awardPayload.map((a) => ({
+              awardName: a.awardName,
+              awardDate: a.awardDate,
               issuer: a.issuer,
             })),
           ),
@@ -303,7 +372,11 @@ export default function ResumePage() {
       footer={
         <div className="flex flex-col gap-3">
           {submitError && (
-            <div role="alert" aria-live="assertive" className="bg-error/10 border-error text-error rounded-lg border px-4 py-3 text-sm">
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="bg-error/10 border-error text-error rounded-lg border px-4 py-3 text-sm"
+            >
               {submitError}
             </div>
           )}
@@ -341,7 +414,7 @@ export default function ResumePage() {
         </div>
       }
     >
-      <PersonalInfoSection register={register} />
+      <PersonalInfoSection control={control} />
       <EducationSection
         fields={education.fields}
         register={register}

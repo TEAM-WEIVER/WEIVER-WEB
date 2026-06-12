@@ -26,11 +26,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, variant, ...props }, ref) => {
     return (
       <input
+        {...props}
         ref={ref}
         type={type}
         data-slot="input"
         className={cn(inputVariants({ variant }), className)}
-        {...props}
       />
     );
   },

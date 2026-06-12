@@ -3,6 +3,7 @@ import { z } from 'zod';
 /* ─── 학력 ─── */
 
 export const educationSchema = z.object({
+  educationId: z.number().optional(),
   type: z.string().min(1, '학력구분을 선택해주세요.'),
   school: z.string().min(1, '학교명을 입력해주세요.'),
   major: z.string().optional(),
@@ -13,6 +14,7 @@ export const educationSchema = z.object({
 });
 
 const emptyEducationSchema = z.object({
+  educationId: z.number().optional(),
   type: z.literal(''),
   school: z.literal(''),
   major: z.literal(''),
@@ -27,12 +29,14 @@ export type EducationData = z.infer<typeof educationSchema>;
 /* ─── 자격증 ─── */
 
 export const certificationSchema = z.object({
+  certificateId: z.number().optional(),
   acquiredDate: z.string().optional(),
   name: z.string().min(1, '자격증명을 입력해주세요.'),
   issuer: z.string().optional(),
 });
 
 const emptyCertificationSchema = z.object({
+  certificateId: z.number().optional(),
   acquiredDate: z.literal(''),
   name: z.literal(''),
   issuer: z.literal(''),
@@ -43,12 +47,14 @@ export type CertificationData = z.infer<typeof certificationSchema>;
 /* ─── 수상이력 ─── */
 
 export const awardSchema = z.object({
+  awardId: z.number().optional(),
   date: z.string().optional(),
   name: z.string().min(1, '수상명을 입력해주세요.'),
   issuer: z.string().optional(),
 });
 
 const emptyAwardSchema = z.object({
+  awardId: z.number().optional(),
   date: z.literal(''),
   name: z.literal(''),
   issuer: z.literal(''),
@@ -59,6 +65,8 @@ export type AwardData = z.infer<typeof awardSchema>;
 /* ─── 경력사항 ─── */
 
 export const careerSchema = z.object({
+  workExperienceId: z.number().optional(),
+  isRecognized: z.boolean().optional(),
   company: z.string().min(1, '경력명을 입력해주세요.'),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -68,6 +76,8 @@ export const careerSchema = z.object({
 });
 
 const emptyCareerSchema = z.object({
+  workExperienceId: z.number().optional(),
+  isRecognized: z.boolean().optional(),
   company: z.literal(''),
   startDate: z.literal(''),
   endDate: z.literal(''),

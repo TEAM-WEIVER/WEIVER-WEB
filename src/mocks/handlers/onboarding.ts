@@ -184,6 +184,22 @@ export const onboardingReturningUserHandlers = [
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 
+  http.put('https://api.piuda.site/api/applicants/education', () => {
+    return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
+  }),
+
+  http.put('https://api.piuda.site/api/applicants/experience', () => {
+    return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
+  }),
+
+  http.put('https://api.piuda.site/api/applicants/certificate', () => {
+    return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
+  }),
+
+  http.put('https://api.piuda.site/api/applicants/award', () => {
+    return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
+  }),
+
   // 자기소개서 기존 데이터 조회 (re-fill용)
   http.get('https://api.piuda.site/api/essay-answers', () => {
     return HttpResponse.json({
@@ -253,11 +269,23 @@ export const onboardingResumePartialErrorHandlers = [
   http.post('https://api.piuda.site/api/applicants/experience', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
+  http.put('https://api.piuda.site/api/applicants/experience', () => {
+    return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
+  }),
+  http.put('https://api.piuda.site/api/applicants/education', () => {
+    return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
+  }),
   http.post('https://api.piuda.site/api/applicants/certificate', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
+  http.put('https://api.piuda.site/api/applicants/certificate', () => {
+    return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
+  }),
   http.post('https://api.piuda.site/api/applicants/award', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
+  }),
+  http.put('https://api.piuda.site/api/applicants/award', () => {
+    return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
   }),
 ];
 
