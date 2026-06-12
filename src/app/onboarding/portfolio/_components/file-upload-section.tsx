@@ -2,11 +2,18 @@ import type { ChangeEvent, DragEvent, RefObject } from 'react';
 
 import { FileDropzone } from './file-dropzone';
 import { SectionTitle } from './section-title';
-import { UploadedFilePreview } from './uploaded-file-preview';
+import { ExistingPortfolioFilePreview, UploadedFilePreview } from './uploaded-file-preview';
+
+interface ExistingPortfolioFile {
+  fileName: string;
+  fileSize: number | null;
+  downloadUrl: string;
+}
 
 interface FileUploadSectionProps {
   fileInputRef: RefObject<HTMLInputElement | null>;
   uploadedFile: File | null;
+  existingFile: ExistingPortfolioFile | null;
   fileError: string;
   isDragging: boolean;
   onBrowse: () => void;
@@ -20,6 +27,7 @@ interface FileUploadSectionProps {
 export function FileUploadSection({
   fileInputRef,
   uploadedFile,
+  existingFile,
   fileError,
   isDragging,
   onBrowse,
@@ -37,13 +45,29 @@ export function FileUploadSection({
         <input
           ref={fileInputRef}
           type="file"
-          accept="application/pdf,.pdf"
+          accept="application/pdf,application/zip,.pdf,.zip"
           onChange={onFileChange}
           className="hidden"
         />
 
         {uploadedFile ? (
           <UploadedFilePreview file={uploadedFile} onRemove={onRemove} />
+        ) : existingFile ? (
+          <div className="flex flex-col gap-3">
+            <ExistingPortfolioFilePreview
+              fileName={existingFile.fileName}
+              fileSize={existingFile.fileSize}
+              downloadUrl={existingFile.downloadUrl}
+            />
+            <FileDropzone
+              isDragging={isDragging}
+              error={fileError}
+              onBrowse={onBrowse}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+            />
+          </div>
         ) : (
           <FileDropzone
             isDragging={isDragging}

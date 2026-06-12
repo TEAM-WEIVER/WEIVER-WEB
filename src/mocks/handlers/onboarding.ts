@@ -221,7 +221,7 @@ export const onboardingReturningUserHandlers = [
       status: 'OK',
       code: 200,
       data: {
-        portfolioId: 'portfolio-001',
+        portfolioId: 1,
         downloadUrl: 'https://example.com/portfolio.pdf',
         fileName: 'portfolio.pdf',
         fileType: 'PDF',

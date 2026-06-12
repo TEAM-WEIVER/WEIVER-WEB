@@ -19,7 +19,7 @@ export interface EssayAnswerData {
 }
 
 export interface PortfolioData {
-  portfolioId: string | null;
+  portfolioId: number | null;
   downloadUrl: string | null;
   fileName: string | null;
   fileType: string | null;
@@ -227,11 +227,11 @@ export function putAwards(awards: AwardUpdateDTO[]) {
 }
 
 export function postPortfolio(formData: FormData) {
-  return apiRequest<ApiResponse<null>>('/api/portfolios', { method: 'POST', body: formData });
+  return apiRequest<ApiResponse<string>>('/api/portfolios', { method: 'POST', body: formData });
 }
 
-export function patchPortfolio(portfolioId: string, formData: FormData) {
-  return apiRequest<ApiResponse<null>>(`/api/portfolios/${portfolioId}`, {
+export function patchPortfolio(portfolioId: number, formData: FormData) {
+  return apiRequest<ApiResponse<string>>(`/api/portfolios/${portfolioId}`, {
     method: 'PATCH',
     body: formData,
   });

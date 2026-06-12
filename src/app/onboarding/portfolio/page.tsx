@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -14,11 +14,7 @@ import {
   getOnboardingStepTitle,
   getPrevOnboardingStep,
 } from '@/lib/onboarding-flow';
-import {
-  getPortfolio,
-  postPortfolio,
-  patchPortfolio,
-} from '@/lib/onboarding-api';
+import { getPortfolio, patchPortfolio, postPortfolio } from '@/lib/onboarding-api';
 import { portfolioSchema, type PortfolioData } from '@/schemas/onboarding';
 
 import { OnboardingStepShell } from '../_components/onboarding-step-shell';
@@ -29,12 +25,18 @@ import { usePortfolioFile } from './_hooks/use-portfolio-file';
 
 const CURRENT_STEP = 'portfolio' as const;
 
+interface ExistingPortfolioFile {
+  fileName: string;
+  fileSize: number | null;
+  downloadUrl: string;
+}
+
 export default function PortfolioPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const portfolioCompletedRef = useRef(false);
-  const portfolioIdRef = useRef<string | null>(null);
+  const [portfolioId, setPortfolioId] = useState<number | null>(null);
+  const [existingFile, setExistingFile] = useState<ExistingPortfolioFile | null>(null);
 
   const stepNumber = getOnboardingStepNumber(CURRENT_STEP);
   const stepTitle = getOnboardingStepTitle(CURRENT_STEP);
@@ -68,8 +70,14 @@ export default function PortfolioPage() {
         if (portfolio.urlTech) setValue('notionUrl', portfolio.urlTech);
         if (portfolio.urlEtc) setValue('otherUrl', portfolio.urlEtc);
         if (portfolio.portfolioId) {
-          portfolioCompletedRef.current = true;
-          portfolioIdRef.current = portfolio.portfolioId;
+          setPortfolioId(portfolio.portfolioId);
+        }
+        if (portfolio.downloadUrl && portfolio.fileName) {
+          setExistingFile({
+            fileName: portfolio.fileName,
+            fileSize: portfolio.fileSize,
+            downloadUrl: portfolio.downloadUrl,
+          });
         }
       } catch {
         // 로드 실패 시 빈 폼으로 진행
@@ -79,10 +87,13 @@ export default function PortfolioPage() {
     loadPortfolio();
   }, [setValue]);
 
-  const isSubmitEnabled = isValid && portfolioFile.uploadedFile !== null && !portfolioFile.fileError;
+  const isSubmitEnabled =
+    isValid &&
+    !portfolioFile.fileError &&
+    (portfolioFile.uploadedFile !== null || portfolioId != null);
 
   const onSubmit = async (data: PortfolioData) => {
-    if (!portfolioFile.uploadedFile) return;
+    if (!portfolioFile.uploadedFile && portfolioId == null) return;
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -98,10 +109,12 @@ export default function PortfolioPage() {
         'requestDTO',
         new Blob([JSON.stringify(requestDTO)], { type: 'application/json' }),
       );
-      formData.append('portfolio', portfolioFile.uploadedFile);
+      if (portfolioFile.uploadedFile) {
+        formData.append('portfolio', portfolioFile.uploadedFile);
+      }
 
-      if (portfolioCompletedRef.current && portfolioIdRef.current) {
-        await patchPortfolio(portfolioIdRef.current, formData);
+      if (portfolioId != null) {
+        await patchPortfolio(portfolioId, formData);
       } else {
         await postPortfolio(formData);
       }
@@ -186,6 +199,7 @@ export default function PortfolioPage() {
       <FileUploadSection
         fileInputRef={portfolioFile.fileInputRef}
         uploadedFile={portfolioFile.uploadedFile}
+        existingFile={existingFile}
         fileError={portfolioFile.fileError}
         isDragging={portfolioFile.isDragging}
         onBrowse={portfolioFile.openFileDialog}

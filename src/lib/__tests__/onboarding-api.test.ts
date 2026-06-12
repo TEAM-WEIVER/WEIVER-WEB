@@ -6,6 +6,8 @@ import {
   postCertificates,
   postEducations,
   postExperiences,
+  postPortfolio,
+  patchPortfolio,
   putAwards,
   putCertificates,
   putEducations,
@@ -214,4 +216,25 @@ describe('onboarding-api', () => {
     });
   });
 
+  it('포트폴리오 최초 저장은 multipart FormData로 POST 요청을 보낸다', async () => {
+    const formData = new FormData();
+
+    await postPortfolio(formData);
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/portfolios', {
+      method: 'POST',
+      body: formData,
+    });
+  });
+
+  it('포트폴리오 수정은 number portfolioId 경로로 PATCH 요청을 보낸다', async () => {
+    const formData = new FormData();
+
+    await patchPortfolio(1, formData);
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/portfolios/1', {
+      method: 'PATCH',
+      body: formData,
+    });
+  });
 });
