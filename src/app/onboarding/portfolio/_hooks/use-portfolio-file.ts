@@ -1,20 +1,25 @@
 import type { ChangeEvent, DragEvent } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
-const PDF_MIME_TYPE = 'application/pdf';
-const MAX_PDF_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
-function isPdfFile(file: File) {
-  return file.type === PDF_MIME_TYPE || file.name.toLowerCase().endsWith('.pdf');
+function isAllowedFile(file: File) {
+  const name = file.name.toLowerCase();
+  const isPdf = file.type === 'application/pdf' || name.endsWith('.pdf');
+  const isZip =
+    file.type === 'application/zip' ||
+    file.type === 'application/x-zip-compressed' ||
+    name.endsWith('.zip');
+  return isPdf || isZip;
 }
 
 function validatePortfolioFile(file: File) {
-  if (!isPdfFile(file)) {
-    return 'PDF 파일만 업로드할 수 있습니다.';
+  if (!isAllowedFile(file)) {
+    return 'PDF 또는 ZIP 파일만 업로드할 수 있습니다.';
   }
 
-  if (file.size > MAX_PDF_FILE_SIZE) {
-    return '10MB 이하의 PDF 파일만 업로드할 수 있습니다.';
+  if (file.size > MAX_FILE_SIZE) {
+    return '파일 크기는 20MB 이하여야 합니다.';
   }
 
   return '';
