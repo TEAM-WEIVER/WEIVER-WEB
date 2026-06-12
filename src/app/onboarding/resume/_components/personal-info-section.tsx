@@ -43,7 +43,7 @@ export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInf
               <ImageIcon size={24} className="text-text-tertiary" />
               <div className="flex flex-col items-center gap-1 text-center">
                 <span className="text-body2 text-text-tertiary">증명사진 업로드</span>
-                <span className="text-caption text-text-disabled">JPG, PNG 2MB 이하</span>
+                <span className="text-caption text-text-disabled">JPG, PNG 1MB 이하</span>
               </div>
             </div>
           )}
