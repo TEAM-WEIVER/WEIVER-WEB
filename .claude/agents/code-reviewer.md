@@ -1,4 +1,5 @@
 ---
+color: red
 name: code-reviewer
 description: 코드 품질·타입 안전성·컨벤션·보안 검토. 리뷰 결과를 docs/reviews/에 저장
 tools: Read, Bash, Write

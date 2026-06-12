@@ -1,4 +1,5 @@
 ---
+color: yellow
 name: git-ops
 description: 이슈 생성, 브랜치 생성, PR 생성, 머지 등 Git/GitHub 작업 자동화
 tools: Bash

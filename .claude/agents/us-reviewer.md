@@ -1,4 +1,5 @@
 ---
+color: red
 name: us-reviewer
 description: US/AC의 완결성과 구현 가능성 검토. Critical/Major 이슈 발견 시 planner에게 재작성 요청
 tools: Read, Write
