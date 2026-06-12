@@ -23,8 +23,8 @@ export function PersonalInfoSection({ register }: { register: UseFormRegister<Re
           <input type="file" accept="image/jpeg,image/png" className="hidden" />
         </label>
 
-        <div className="flex flex-1 flex-wrap gap-x-6 gap-y-2.5">
-          <div className="flex w-[388px] flex-col gap-2">
+        <div className="grid flex-1 grid-cols-3 gap-x-6 gap-y-2.5">
+          <div className="flex min-w-0 flex-col gap-2">
             <Label className="text-text-secondary">이름</Label>
             <Input
               {...register('name')}
@@ -32,28 +32,38 @@ export function PersonalInfoSection({ register }: { register: UseFormRegister<Re
               className={formControlClass}
             />
           </div>
-          <div className="flex flex-1 flex-col gap-2">
+          <div className="flex min-w-0 flex-col gap-2">
+            <Label className="text-text-secondary">생년월일</Label>
+            <Input
+              {...register('birthday')}
+              inputMode="numeric"
+              placeholder="2000-01-01"
+              className={formControlClass}
+            />
+          </div>
+          <div className="flex min-w-0 flex-col gap-2">
             <Label className="text-text-secondary">이메일</Label>
             <Input
               {...register('email')}
-              placeholder="personal@gmail.com"
-              disabled
+              type="email"
+              placeholder="weiver@example.com"
               className={formControlClass}
             />
           </div>
-          <div className="flex w-[388px] flex-col gap-2">
+          <div className="flex min-w-0 flex-col gap-2">
             <Label className="text-text-secondary">전화번호</Label>
             <Input
               {...register('phone')}
-              placeholder="숫자만 입력해주세요."
+              type="tel"
+              placeholder="010-1234-5678"
               className={formControlClass}
             />
           </div>
-          <div className="flex flex-1 flex-col gap-2">
+          <div className="col-span-2 flex min-w-0 flex-col gap-2">
             <Label className="text-text-secondary">주소</Label>
             <Input
               {...register('address')}
-              placeholder="거주지를 입력해주세요."
+              placeholder="경기도 안산시 상록구 한양대학로 55"
               className={formControlClass}
             />
           </div>
