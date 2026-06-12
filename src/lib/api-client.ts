@@ -167,7 +167,9 @@ export async function apiRequest<TResponse>(
   const requestHeaders = new Headers(headers);
 
   const isFormData = body instanceof FormData;
-  if (body !== undefined && !isFormData && !requestHeaders.has('Content-Type')) {
+  if (isFormData) {
+    requestHeaders.delete('Content-Type');
+  } else if (body !== undefined && !requestHeaders.has('Content-Type')) {
     requestHeaders.set('Content-Type', 'application/json');
   }
 
