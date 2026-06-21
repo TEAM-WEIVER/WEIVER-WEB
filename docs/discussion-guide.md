@@ -1,10 +1,10 @@
 # 다자(多者) 토론 운영 가이드 — Claude × Codex × Gemini (+ N)
 
-> **이 문서는 Claude Code 세션의 다자(多者) 토론 운영 매뉴얼**이다. Claude(오케스트레이터)가 codex·gemini 등 외부 AI와 인터랙티브 토론을 시작·운영할 수 있어야 한다. **기본 참여자는 Claude + Codex + Gemini이며, 같은 패턴(pane 추가 + 시그널 네이밍)으로 N명까지 확장 가능**하다. 사용자가 언제든 같은 pane에 끼어들 수 있는 구조가 필수.
+> **이 문서는 Claude Code 세션의 다자(多者) 토론 운영 매뉴얼**이다. Claude(오케스트레이터)가 codex·antigravity 등 외부 AI와 인터랙티브 토론을 시작·운영할 수 있어야 한다. **기본 참여자는 Claude + Codex + Gemini이며, 같은 패턴(pane 추가 + 시그널 네이밍)으로 N명까지 확장 가능**하다. 사용자가 언제든 같은 pane에 끼어들 수 있는 구조가 필수.
 >
 > **cmux 조작 기본기**(surface/pane, split, send/send-key, read-screen, identify)는 별도 문서 [`cmux-guide.md`](./cmux-guide.md)를 참조한다. 이 문서는 그 기본기 위에서 **토론을 어떻게 굴리는가**에 집중한다.
 >
-> **환경**: macOS · cmux 0.63+ · codex 0.120+ · gemini 0.40+ · Claude Code (run_in_background 지원)
+> **환경**: macOS · cmux 0.63+ · codex 0.120+ · antigravity 0.45+ · Claude Code (run_in_background 지원)
 
 ---
 
@@ -17,26 +17,26 @@
 │  │  - cmux send/send-key       │  │  - Claude/사용자 공용     │   │
 │  │  - bg Bash로 시그널 대기     │  │  - 멀티턴 컨텍스트 유지   │   │
 │  │  - 사용자와 직접 대화        │  └──────────────────────────┘   │
-│  │                             │  ┌── surface:GM (gemini) ───┐   │
-│  │                             │  │  gemini CLI (TUI)         │   │
-│  │                             │  │  - Claude/사용자 공용     │   │
-│  └─────────────────────────────┘  └──────────────────────────┘   │
+│  │                             │  ┌── surface:GM (antigravity) ┐   │
+│  │                             │  │  Antigravity CLI (TUI)     │   │
+│  │                             │  │  - Claude/사용자 공용      │   │
+│  └─────────────────────────────┘  └───────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────┘
-        ↕ 양방향 통신 = cmux send + 파일 시그널 (codex/gemini 동일 패턴)
+        ↕ 양방향 통신 = cmux send + 파일 시그널 (codex/antigravity 동일 패턴)
 ```
 
 **핵심 원칙**:
 
 0. **역할 분리 — 토큰 낭비 방지**: 프롬프트 파일 작성·슬러그 생성·결과 파일 저장은 **Claude(오케스트레이터)가 직접** 처리한다. 서브에이전트에는 "디스패치 + 대기 + 화면 수집"만 위임한다. 오케스트레이션 전체를 서브에이전트에 넘기면 read-screen 반복·파일 I/O가 누적되어 불필요한 토큰이 소비된다.
 
-1. codex/gemini pane은 모두 **Claude + 사용자 공용 인터랙티브 세션**. Claude가 자동 디스패치하는 동시에 사용자가 직접 끼어들 수 있어야 함.
-2. **인터랙티브 디폴트** — `codex` / `gemini` TUI를 세션 내내 살려둠 (`exit` 금지, 컨텍스트 손실).
-3. **처음부터 자동 권한 부여로 기동** — codex/gemini를 권한 확인(approval) 없이 호출한다(§3). 토론의 응답 완료 시그널이 shell 명령이라 매번 승인이 뜨면 자동화가 깨지기 때문. 사용자 부담 0회.
+1. codex/antigravity pane은 모두 **Claude + 사용자 공용 인터랙티브 세션**. Claude가 자동 디스패치하는 동시에 사용자가 직접 끼어들 수 있어야 함.
+2. **인터랙티브 디폴트** — `codex` / `antigravity` TUI를 세션 내내 살려둠 (`exit` 금지, 컨텍스트 손실).
+3. **처음부터 자동 권한 부여로 기동** — codex/antigravity를 권한 확인(approval) 없이 호출한다(§3). 토론의 응답 완료 시그널이 shell 명령이라 매번 승인이 뜨면 자동화가 깨지기 때문. 사용자 부담 0회.
 4. Claude → 외부 AI: `cmux send --surface surface:XX '...'` + `cmux send-key --surface surface:XX enter`
 5. 외부 AI → Claude: 응답 끝에 `touch .cmux/{model}-rN.done` + `cmux send --surface surface:CL '...'` 시그널 (§4.1)
 6. Claude 측 대기: `run_in_background: true` Bash + `until [ -f signal ] && ! grep -qE '<작업중패턴>' ; do sleep 3; done` (자동 알림 푸시, 폴링 X)
 7. **시그널·프롬프트·출력은 프로젝트 내부 `.cmux/` 폴더**에 둔다. `/tmp`처럼 OS tmp 영역을 쓰지 않는다 — 프로젝트별 격리 + git 추적 차단(`.gitignore`)이 목적.
-8. **토론 ≠ 검증.** 참여 모델(claude·codex·gemini…)은 모두 LLM이라 실패 모드가 **상관(correlated)**된다. 합의는 분산은 줄여도 편향은 못 줄인다 → 기본값이면 "서로 돕는 협력자"가 되어 *확신에 찬 오답*으로 수렴. **§9의 4대 장치로 토론을 협력에서 검증으로 전환**한다. 본 매뉴얼의 가장 중요한 품질 원칙.
+8. **토론 ≠ 검증.** 참여 모델(claude·codex·antigravity…)은 모두 LLM이라 실패 모드가 **상관(correlated)**된다. 합의는 분산은 줄여도 편향은 못 줄인다 → 기본값이면 "서로 돕는 협력자"가 되어 *확신에 찬 오답*으로 수렴. **§9의 4대 장치로 토론을 협력에서 검증으로 전환**한다. 본 매뉴얼의 가장 중요한 품질 원칙.
 
 ---
 
@@ -45,7 +45,7 @@
 ```bash
 cmux --version       # 0.63+   (cmux 기본기는 cmux-guide.md)
 codex --version      # 0.120+
-gemini --version     # 0.40+
+antigravity --version     # 0.45+
 cmux identify        # 현재 Claude pane surface/workspace 확인 → surface:CL
 # ★ 토론마다 전용 폴더 — 주제별 격리(다른 주제가 이전 기록을 덮어쓰지 않음) + 영구 보존
 SLUG=<주제-kebab-슬러그>            # 예: tenth-man-independence
@@ -63,20 +63,20 @@ mkdir -p .cmux/debates/$SLUG       # 이 토론의 모든 산출물(board·프�
 cmux 분할·이름 지정 명령의 의미는 [`cmux-guide.md`](./cmux-guide.md) 참조. 여기서는 토론 전용 배치 + **승인 없이 기동**이 핵심이다.
 
 ```bash
-# 1) Claude 좌측 전체 + 우측을 codex/gemini 위아래로 분할
+# 1) Claude 좌측 전체 + 우측을 codex/antigravity 위아래로 분할
 cmux new-split right --workspace workspace:N                       # → surface:CX (codex)
-cmux new-split down  --workspace workspace:N --surface surface:CX  # → surface:GM (gemini)
+cmux new-split down  --workspace workspace:N --surface surface:CX  # → surface:GM (antigravity)
 
 # 2) 탭 이름
 cmux rename-tab --surface surface:CL claude
 cmux rename-tab --surface surface:CX codex
-cmux rename-tab --surface surface:GM gemini
+cmux rename-tab --surface surface:GM antigravity
 
 # 3) ★ 자동 권한 부여로 TUI 기동 (승인 프롬프트 없음 = Claude 즉시 디스패치 가능) ★
 #    codex: shell 포함 전부 자동, 단 워크스페이스 밖 쓰기는 sandbox로 차단
 cmux send --surface surface:CX 'codex --sandbox workspace-write --ask-for-approval never' && cmux send-key --surface surface:CX enter
-#    gemini: YOLO (모든 도구 자동, shell 포함)
-cmux send --surface surface:GM 'gemini -y' && cmux send-key --surface surface:GM enter
+#    antigravity: YOLO (모든 도구 자동, shell 포함)
+cmux send --surface surface:GM 'antigravity' && cmux send-key --surface surface:GM enter
 
 # 4) 약 10~15초 후 부트스트랩 확인 (run_in_background 권장)
 cmux read-screen --surface surface:CX --lines 20 | tail -10
@@ -90,13 +90,13 @@ cmux read-screen --surface surface:GM --lines 20 | tail -10
 ```
 ┌───── claude (좌측) ────┐ ┌─── codex (우측 상단) ──┐
 │                       │ ├──────────────────────┤
-│                       │ │  gemini (우측 하단)    │
+│                       │ │  antigravity (우측 하단) │
 └───────────────────────┘ └──────────────────────┘
 ```
 
 > ➕ **참여자 확장**: 4번째 이상도 동일 패턴 — `new-split`로 pane 추가 → 자동 권한으로 기동 → 시그널 파일명을 참여자별 `{model}`로 구분(`.cmux/{model}-rN.done`). 렌즈(§9.2)도 새 참여자에 직교로 배정.
 > ⚠️ 16:9 미만 모니터에서 다중 pane(기본 3개)은 너무 좁아짐 → 참여자를 줄이거나 별도 워크스페이스로 분리.
-> ⚠️ **gemini 첫 기동 trust 프롬프트**: 신뢰 안 된 폴더면 `-y`여도 "Do you trust the files in this folder?"가 뜨고 선택 시 CLI가 재시작될 수 있다(§7-#10). 자동화 전제라면 워크스페이스를 미리 trust 처리하거나, 첫 라운드는 시그널 누락을 가정하고 pane 직접 회수(§4.3).
+> ⚠️ **antigravity 첫 기동 trust 프롬프트**: 신뢰 안 된 폴더면 "Do you trust the files in this folder?"가 뜨고 선택 시 CLI가 재시작될 수 있다(§7-#10). 자동화 전제라면 워크스페이스를 미리 trust 처리하거나, 첫 라운드는 시그널 누락을 가정하고 pane 직접 회수(§4.3).
 > ⚠️ codex 자동 기동 옵션명은 버전(0.130+) 기준. 다르면 `~/.codex/config.toml`에 sandbox/approval을 미리 설정.
 
 ---
@@ -119,9 +119,9 @@ cmux send-key --surface surface:CL enter
 
 ````
 
-`{model}` = `codex` 또는 `gemini`. Claude 워처가 같은 시그널 파일을 감시.
+`{model}` = `codex` 또는 `antigravity`. Claude 워처가 같은 시그널 파일을 감시.
 
-⚠️ **codex 타이밍 버그** (gemini는 덜 빈번): "답변 완료 후"로는 부족. codex가 reasoning 직후 시그널을 답변 print **전**에 보낼 수 있음. 반드시 **"답변 텍스트를 완전히 출력한 후"**라고 강조 + §4.2의 병행 감지 사용.
+⚠️ **codex 타이밍 버그** (antigravity는 덜 빈번): "답변 완료 후"로는 부족. codex가 reasoning 직후 시그널을 답변 print **전**에 보낼 수 있음. 반드시 **"답변 텍스트를 완전히 출력한 후"**라고 강조 + §4.2의 병행 감지 사용.
 
 ### 4.2 프롬프트 전송 + 응답 대기
 
@@ -130,8 +130,8 @@ cmux send-key --surface surface:CL enter
 cmux send --surface surface:CX "$(cat .cmux/codex-prompt-r${TURN}.txt)"
 cmux send-key --surface surface:CX enter
 
-# gemini는 큰 paste 시 cmux send timeout 위험 → @path 패턴 강력 권장
-cmux send --surface surface:GM "@.cmux/gemini-prompt-r${TURN}.txt 의 지시대로 작업. 응답 완료 프로토콜 포함."
+# antigravity는 큰 paste 시 cmux send timeout 위험 → @path 패턴 강력 권장
+cmux send --surface surface:GM "@.cmux/antigravity-prompt-r${TURN}.txt 의 지시대로 작업. 응답 완료 프로토콜 포함."
 cmux send-key --surface surface:GM enter
 
 # Claude 측 대기 (run_in_background: true 필수, 직접 sleep 차단)
@@ -139,15 +139,15 @@ cmux send-key --surface surface:GM enter
 until [ -f .cmux/codex-r${TURN}.done ] && ! cmux read-screen --surface surface:CX --lines 30 | grep -q 'Working ('; do
   sleep 3
 done
-# gemini
-until [ -f .cmux/gemini-r${TURN}.done ] && ! cmux read-screen --surface surface:GM --lines 30 | grep -qE 'Thinking|esc to cancel'; do
+# antigravity
+until [ -f .cmux/antigravity-r${TURN}.done ] && ! cmux read-screen --surface surface:GM --lines 30 | grep -qE 'Thinking|esc to cancel'; do
   sleep 3
 done
 ````
 
 bg job 종료 시 Claude Code가 자동 `<task-notification>` 푸시. **Claude는 폴링 X**.
 
-⚠️ **시그널 누락 대비 워처(권장)** — codex가 실행 누락하거나 gemini가 재시작되면 `.done`이 안 생겨 무한 대기한다. 최대 대기 캡으로 탈출 → §4.3 직접 회수.
+⚠️ **시그널 누락 대비 워처(권장)** — codex가 실행 누락하거나 antigravity가 재시작되면 `.done`이 안 생겨 무한 대기한다. 최대 대기 캡으로 탈출 → §4.3 직접 회수.
 
 ```bash
 # done OR idle 지속 → 탈출. 5분(100*3s) 캡.
@@ -158,7 +158,7 @@ done
 # 탈출 후 .done 없으면 시그널 누락 → cmux read-screen으로 직접 회수 (§4.3)
 ```
 
-⚠️ **`.done` 조기 오발신(premature signal) 대비 — pane idle-streak 워처(실측 권장)**: 모델이 _완료 전에_ 응답 완료 프로토콜 shell을 먼저 실행해 `.done`이 생겼는데 pane은 아직 `Working/Thinking`인 경우가 있다(실측: gemini R2). `.done` 단독 신뢰 금지 → **작업중 패턴이 연속 N회 사라질 때만** 완료로 판정.
+⚠️ **`.done` 조기 오발신(premature signal) 대비 — pane idle-streak 워처(실측 권장)**: 모델이 _완료 전에_ 응답 완료 프로토콜 shell을 먼저 실행해 `.done`이 생겼는데 pane은 아직 `Working/Thinking`인 경우가 있다(실측: antigravity R2). `.done` 단독 신뢰 금지 → **작업중 패턴이 연속 N회 사라질 때만** 완료로 판정.
 
 ```bash
 # .done 무시, pane idle이 연속 2회일 때 완료. 캡 140*4s≈9분.
@@ -183,7 +183,7 @@ cmux read-screen --surface surface:CX --scrollback --lines 1500 | tail -200
 
 ### 4.4 사용자 직접 대화 (인터랙티브의 핵심 효용)
 
-Claude가 디스패치 안 한 시점에도 codex/gemini pane은 살아있음. 사용자가 ⌘+숫자 또는 클릭으로 포커스 이동 후 직접 키 입력 → **같은 세션에 자유롭게 대화**, 컨텍스트 누적.
+Claude가 디스패치 안 한 시점에도 codex/antigravity pane은 살아있음. 사용자가 ⌘+숫자 또는 클릭으로 포커스 이동 후 직접 키 입력 → **같은 세션에 자유롭게 대화**, 컨텍스트 누적.
 
 **충돌 방지**: Claude가 `cmux send` + enter 친 직후에 사용자가 끼어드는 게 안전. Claude는 send 시작 전 pane이 idle인지 `read-screen` 한 번 체크하면 더 안전.
 
@@ -202,7 +202,7 @@ Claude가 디스패치 안 한 시점에도 codex/gemini pane은 살아있음. �
 
 ```bash
 .cmux/board.md   # append-only 전사. 형식: "## R{n} · {speaker}\n<발언>\n"
-.cmux/turn        # 현재 발언권 보유자 한 줄 (codex|gemini|claude|done) — Claude가 세팅
+.cmux/turn        # 현재 발언권 보유자 한 줄 (codex|antigravity|claude|done) — Claude가 세팅
 ```
 
 **각 참여자에게 한 번 주는 규칙 프롬프트** (이후 Claude는 트리거만):
@@ -233,19 +233,19 @@ cmux send-key --surface surface:CX enter
 
 ---
 
-## 5. codex vs gemini 차이 (토론 운영 시 알아야 할 것)
+## 5. codex vs antigravity 차이 (토론 운영 시 알아야 할 것)
 
-| 항목                   | codex                                                      | gemini                                     |
+| 항목                   | codex                                                      | antigravity                                |
 | ---------------------- | ---------------------------------------------------------- | ------------------------------------------ |
-| 인터랙티브 진입        | `codex`                                                    | `gemini`                                   |
-| 자동 권한 기동         | `codex --sandbox workspace-write --ask-for-approval never` | `gemini -y` (YOLO)                         |
-| Headless               | `codex exec "..."`                                         | `gemini -p "..."` (또는 `-i`로 인터랙티브) |
+| 인터랙티브 진입        | `codex`                                                    | `antigravity`                              |
+| 자동 권한 기동         | `codex --sandbox workspace-write --ask-for-approval never` | `antigravity` (YOLO)                       |
+| Headless               | `codex exec "..."`                                         | `antigravity -p "..."` (또는 `-i`로 인터랙티브) |
 | 작업 중 패턴           | `Working (Ns • esc to interrupt)`                          | `Thinking... (Ns)` 또는 `esc to cancel`    |
 | 멀티라인 paste         | 안정                                                       | **timeout 가능** → `@<path>` 첨부 필수     |
 | 파일 첨부              | 도구 호출로 read                                           | `@<path>` 입력란 직접 (예: `@.cmux/...`)   |
 | Reasoning ≠ print 버그 | **빈번**(시그널 조기 전송)                                 | 덜 빈번(대신 trust 재시작 이슈)            |
 
-**실전 권장**: 분량 큰 프롬프트는 두 모델 모두 **`@<file>` + 짧은 지시문**. gemini는 필수, codex는 안정성 보강.
+**실전 권장**: 분량 큰 프롬프트는 두 모델 모두 **`@<file>` + 짧은 지시문**. antigravity는 필수, codex는 안정성 보강.
 
 ---
 
@@ -263,11 +263,11 @@ cmux send-key --surface surface:CX enter
 - 사용자가 언제든 pane에 직접 끼어들어 진행 가로채기 가능 (§4.4).
 - sensitive 운영이 필요하면 B/C로 전환.
 
-**B (첫 1회만).** 기본 모드로 기동(`codex`/`gemini`) → 첫 `cmux send` 때 pane에 approval → 사용자가 직접 `p` ("don't ask again for `cmux send`") → 세션 내내 allowlist. 그 후 자동.
+**B (첫 1회만).** 기본 모드로 기동(`codex`/`antigravity`) → 첫 `cmux send` 때 pane에 approval → 사용자가 직접 `p` ("don't ask again for `cmux send`") → 세션 내내 allowlist. 그 후 자동.
 
 **C (매번).** 기본 모드 + `p` 안 누름 → 매 `cmux send`마다 승인. 자동화 불가.
 
-> **절충안 부적합**: `gemini --approval-mode auto_edit`(shell만 묻기)는 응답 완료 프로토콜의 `touch`·`cmux send`가 shell이라 매 라운드 승인이 떠 토론 자동화가 깨진다. 단발 read/edit에만.
+> **절충안 부적합**: `antigravity --approval-mode auto_edit`(shell만 묻기)는 응답 완료 프로토콜의 `touch`·`cmux send`가 shell이라 매 라운드 승인이 떠 토론 자동화가 깨진다. 단발 read/edit에만.
 >
 > **Claude의 권한 한계**: Claude가 `cmux send-key p`로 'p'를 대신 누르는 것은 이론상 가능하나 **비권장**(사용자 권한 부여를 AI가 대행 → 통제권 손상). 자동화 원하면 옵션 A.
 
@@ -276,18 +276,18 @@ cmux send-key --surface surface:CX enter
 ## 7. 알려진 이슈 (운영 중 자주 hit)
 
 1. **`sleep 60` 직접 실행 금지** — Claude Code 런타임 차단. 반드시 `run_in_background: true` + `until` 루프.
-2. **gemini 큰 paste timeout** — 수백 줄+ 프롬프트는 `@<path>` 첨부 필수.
+2. **antigravity 큰 paste timeout** — 수백 줄+ 프롬프트는 `@<path>` 첨부 필수.
 3. **codex reasoning ≠ print 타이밍 버그** — 프롬프트에 "출력 완료 후에만" 강조 + 병행 감지(§4.2).
 4. **`read-screen` 부족한 `--lines`** — TUI wrap으로 시각상 10줄이 60줄 저장. `--lines 1500~3000` 권장.
 5. **TUI 종료 금지** — `exit` 시 컨텍스트 손실. 세션 내내 유지.
 6. **첫 `cmux send` 승인 누락**(옵션 B/C 사용 시) — 외부 AI가 approval 대기로 정지. "pane에서 `p` 눌러주세요" 안내. (옵션 A면 발생 안 함)
 7. **잔여 입력 + wrapper 송신 합쳐짐** — 송신 직전 빈 enter 또는 `clear`.
 8. **Claude 디스패치 vs 사용자 직접 입력 충돌** — Claude의 send + enter 완료 후 사용자가 끼어들기.
-9. **gemini skill 충돌 경고**(0.41) — 첫 기동 시 표시돼도 무시 가능.
-10. **gemini 첫 기동 trust 프롬프트 → CLI 재시작** — 신뢰 안 된 폴더에서 "Do you trust the files in this folder?" → 선택 시 CLI 재시작(버전 갱신 포함)되며 진행 중 응답/시그널이 깨진다. 대응: 워크스페이스 미리 trust, 또는 첫 라운드는 시그널 누락 가정 + §4.3 직접 회수.
-11. **gemini가 엉뚱한 형제 파일을 읽음** — 비슷한 이름(`magazine.html` vs `magazine-draft.html`)이 있으면 지정 파일 대신 다른 걸 읽고 비평(실측됨). 대응: 프롬프트에 **정확한 경로를 못박고 "지정 파일만 읽어라"** 명시 + 회수 시 `ReadFile` 로그로 확인.
-12. **외부 AI 시그널 누락으로 워처 무한 대기** — codex 실행 누락(#3) / gemini 재시작(#10)이면 `.done` 미생성. §4.2 **최대 대기 캡 워처**로 방어 후 직접 회수.
-13. **`.done` 조기 오발신(premature signal)** — 반대로, 모델이 _완료 전에_ 프로토콜 shell을 먼저 실행해 `.done`은 있는데 pane은 아직 작업중인 경우(실측: gemini R2, `Thinking 9분+`인데 `.done` 존재). `.done` 단독 판정 금지 → §4.2 **idle-streak 워처**(작업중 패턴 연속 사라짐)로 판정. 산출물(파일/칠판) 존재도 함께 확인.
+9. **antigravity skill 충돌 경고**(0.41) — 첫 기동 시 표시돼도 무시 가능.
+10. **antigravity 첫 기동 trust 프롬프트 → CLI 재시작** — 신뢰 안 된 폴더에서 "Do you trust the files in this folder?" → 선택 시 CLI 재시작(버전 갱신 포함)되며 진행 중 응답/시그널이 깨진다. 대응: 워크스페이스 미리 trust, 또는 첫 라운드는 시그널 누락 가정 + §4.3 직접 회수.
+11. **antigravity가 엉뚱한 형제 파일을 읽음** — 비슷한 이름(`magazine.html` vs `magazine-draft.html`)이 있으면 지정 파일 대신 다른 걸 읽고 비평(실측됨). 대응: 프롬프트에 **정확한 경로를 못박고 "지정 파일만 읽어라"** 명시 + 회수 시 `ReadFile` 로그로 확인.
+12. **외부 AI 시그널 누락으로 워처 무한 대기** — codex 실행 누락(#3) / antigravity 재시작(#10)이면 `.done` 미생성. §4.2 **최대 대기 캡 워처**로 방어 후 직접 회수.
+13. **`.done` 조기 오발신(premature signal)** — 반대로, 모델이 _완료 전에_ 프로토콜 shell을 먼저 실행해 `.done`은 있는데 pane은 아직 작업중인 경우(실측: antigravity R2, `Thinking 9분+`인데 `.done` 존재). `.done` 단독 판정 금지 → §4.2 **idle-streak 워처**(작업중 패턴 연속 사라짐)로 판정. 산출물(파일/칠판) 존재도 함께 확인.
 
 ---
 
@@ -300,8 +300,8 @@ cmux send-key --surface surface:CX enter
 cmux send --surface surface:CX 'codex exec "$(cat .cmux/p.txt)" > .cmux/out.txt 2>&1 ; touch .cmux/codex-r1.done ; cmux send --surface surface:CL "[codex → claude] R1 완료" ; cmux send-key --surface surface:CL enter'
 cmux send-key --surface surface:CX enter
 
-# gemini
-cmux send --surface surface:GM 'gemini -p "$(cat .cmux/p.txt)" > .cmux/out.txt 2>&1 ; touch .cmux/gemini-r1.done ; cmux send --surface surface:CL "[gemini → claude] R1 완료" ; cmux send-key --surface surface:CL enter'
+# antigravity
+cmux send --surface surface:GM 'antigravity -p "$(cat .cmux/p.txt)" > .cmux/out.txt 2>&1 ; touch .cmux/antigravity-r1.done ; cmux send --surface surface:CL "[antigravity → claude] R1 완료" ; cmux send-key --surface surface:CL enter'
 cmux send-key --surface surface:GM enter
 
 # Claude 워처
@@ -315,7 +315,7 @@ cat .cmux/out.txt
 
 ## 9. 토론을 진짜 검증으로 만들기 — 거짓 합의(false consensus) 방지
 
-> **문제 정의**: 참여 모델(claude·codex·gemini…)은 모두 LLM이라 훈련 분포·추론 습관·실패 모드가 크게 겹친다. 다자 토론은 *N명의 독립 전문가*가 아니라 **상관계수 높은 N개의 샘플러**다. 어떤 오개념이 "LLM에게 자연스러운" 종류라면 전원이 자신 있게 동의하고, 그 합의가 **가짜 안심**을 준다. 합의는 분산을 줄이지 편향을 줄이지 않는다. 참여자를 늘려도 상관된 표본만 늘 뿐이므로, 아래 4개 장치로 토론을 *협력*에서 *검증*으로 전환한다.
+> **문제 정의**: 참여 모델(claude·codex·antigravity…)은 모두 LLM이라 훈련 분포·추론 습관·실패 모드가 크게 겹친다. 다자 토론은 *N명의 독립 전문가*가 아니라 **상관계수 높은 N개의 샘플러**다. 어떤 오개념이 "LLM에게 자연스러운" 종류라면 전원이 자신 있게 동의하고, 그 합의가 **가짜 안심**을 준다. 합의는 분산을 줄이지 편향을 줄이지 않는다. 참여자를 늘려도 상관된 표본만 늘 뿐이므로, 아래 4개 장치로 토론을 *협력*에서 *검증*으로 전환한다.
 
 ### 9.1 적대적 인센티브 — 협력자(X) → 검사(prosecutor)(O)
 
@@ -368,7 +368,7 @@ cat .cmux/out.txt
 
 - 읽기는 자동 레이어(9.1~9.4)가 거른 뒤로 최대한 미룬다 — **단, 책임(서명)은 위임 불가.** 최종 산출물에 대해 "소유할 만큼의 이해"는 인간이 확보.
 - ⚠️ **유창하게 잘 다듬어진 산출물일수록 감사가 더 어렵다** — 매끄러움이 경계를 풀고 이음매를 가린다. 최종 읽기 때 "이음매·숨은 가정·외부 의존·미검증 항목"을 표적 점검.
-- ⚠️ **self-approval 금지**: claude(메인 세션)가 자기 초안을 자기가 검토하면 상관 최댓값이다. 검토는 반드시 별도 lane(codex/gemini/서브에이전트)으로 분리.
+- ⚠️ **self-approval 금지**: claude(메인 세션)가 자기 초안을 자기가 검토하면 상관 최댓값이다. 검토는 반드시 별도 lane(codex/antigravity/서브에이전트)으로 분리.
 
 ### 9.6 운영 체크리스트
 
@@ -400,10 +400,10 @@ cat .cmux/out.txt
 ## TL;DR (Claude가 5초 안에 봐야 할 것)
 
 1. cmux 기본 조작은 [`cmux-guide.md`](./cmux-guide.md). 이 문서는 그 위에서 토론을 굴린다.
-2. `cmux identify` → surface:CL → `new-split right`/`down`으로 CX/GM → `mkdir -p .cmux/debates/$SLUG`(주제별 격리·보존, §2) → **자동 권한 기동**: `codex --sandbox workspace-write --ask-for-approval never` + `gemini -y` (승인 프롬프트 없음 = 기본값)
+2. `cmux identify` → surface:CL → `new-split right`/`down`으로 CX/GM → `mkdir -p .cmux/debates/$SLUG`(주제별 격리·보존, §2) → **자동 권한 기동**: `codex --sandbox workspace-write --ask-for-approval never` + `antigravity` (승인 프롬프트 없음 = 기본값)
 3. 프롬프트 끝에 **응답 완료 프로토콜**(`touch .cmux/{model}-rN.done` + `cmux send → CL`) 항상 포함. 진짜 토론은 **공유 칠판 모드(§4.5)** — relay 대신 `.cmux/board.md` 공유 + `.cmux/turn` 토큰, Claude는 진행자.
-4. 큰 프롬프트는 **`@<path>` 첨부**(gemini 필수, codex 보강).
-5. 대기는 **`run_in_background: true` + 최대 대기 캡 워처**. codex 작업중=`Working (`, gemini 작업중=`Thinking|esc to cancel`. 시그널 누락 시 §4.3 직접 회수.
+4. 큰 프롬프트는 **`@<path>` 첨부**(antigravity 필수, codex 보강).
+5. 대기는 **`run_in_background: true` + 최대 대기 캡 워처**. codex 작업중=`Working (`, antigravity 작업중=`Thinking|esc to cancel`. 시그널 누락 시 §4.3 직접 회수.
 6. 시그널·프롬프트·출력은 모두 **`.cmux/`** (OS `/tmp` 금지).
 7. 사용자도 같은 pane에 직접 입력 가능 → Claude 디스패치 + enter 후 끼어들기.
 8. **토론 ≠ 검증** — §9 4대 장치 필수: ① 반증 의무(기본 FAIL) ② 직교 렌즈 ③ **비-LLM 오라클 정박**(실행/테스트/출처) ④ 다수결+무결함 K라운드. self-approval 금지.
