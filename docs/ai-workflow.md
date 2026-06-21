@@ -209,7 +209,7 @@
 
 ### 환경
 
-- cmux 0.64+ / codex 0.138+ / gemini 0.45+ ✅
+- cmux 0.64+ / codex 0.138+ / antigravity 0.45+ ✅
 
 ---
 

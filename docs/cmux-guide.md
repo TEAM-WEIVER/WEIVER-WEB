@@ -2,7 +2,7 @@
 
 > cmux로 여러 CLI(TUI 포함)를 pane으로 띄우고 **Claude Code가 프로그램적으로 제어**하기 위한 조작 매뉴얼이다. 순수 cmux 기본기만 다룬다.
 >
-> codex/gemini 다자 토론 같은 **구체 활용**은 별도 문서 [`discussion-guide.md`](./discussion-guide.md)를 참조한다 — 토론을 위해 pane을 활용하는 모든 절차(자동 권한 기동, 응답 완료 프로토콜, 워처, 검증 방법론)는 거기에 있다.
+> codex/antigravity 다자 토론 같은 **구체 활용**은 별도 문서 [`discussion-guide.md`](./discussion-guide.md)를 참조한다 — 토론을 위해 pane을 활용하는 모든 절차(자동 권한 기동, 응답 완료 프로토콜, 워처, 검증 방법론)는 거기에 있다.
 >
 > **환경**: macOS · cmux 0.63+ · Claude Code (run_in_background 지원)
 
@@ -101,4 +101,4 @@ until <조건>; do sleep 3; done
 4. 읽기: `cmux read-screen --surface S --scrollback --lines 1500` (lines 넉넉히).
 5. 대기: foreground `sleep` 금지 → `run_in_background: true` + `until` (+ 최대 반복 캡).
 6. 항상 `--surface`(=`--pane` 비권장), TUI `exit` 금지.
-7. **codex/gemini 토론 등 구체 활용 → [`discussion-guide.md`](./discussion-guide.md).**
+7. **codex/antigravity 토론 등 구체 활용 → [`discussion-guide.md`](./discussion-guide.md).**
