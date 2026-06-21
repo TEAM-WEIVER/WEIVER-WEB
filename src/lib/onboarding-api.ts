@@ -13,9 +13,17 @@ export interface DocumentStatus {
   portfolioCompleted: boolean;
 }
 
-export interface EssayAnswerData {
-  answerId: string | null;
-  answer: string | null;
+export interface EssayAnswer {
+  answerId: number;
+  questionId: number;
+  sequence: number;
+  question: string;
+  maxLength: number;
+  answer: string;
+}
+
+export interface EssayAnswersData {
+  answers: EssayAnswer[];
 }
 
 export interface PortfolioData {
@@ -96,21 +104,21 @@ export function getApplicantsAll() {
   return applicantsAllPromise;
 }
 
-export function getEssayAnswer() {
-  return apiRequest<ApiResponse<EssayAnswerData>>('/api/essay-answers');
+export function getEssayAnswers() {
+  return apiRequest<ApiResponse<EssayAnswersData>>('/api/essay-answers');
 }
 
-export function postEssayAnswer(answer: string) {
+export function postEssayAnswers(answers: { questionId: number; answer: string }[]) {
   return apiRequest<ApiResponse<null>>('/api/essay-answers', {
     method: 'POST',
-    body: { answer },
+    body: { answers },
   });
 }
 
-export function patchEssayAnswer(answerId: string, answer: string) {
-  return apiRequest<ApiResponse<null>>(`/api/essay-answers/${answerId}`, {
-    method: 'PATCH',
-    body: { answer },
+export function putEssayAnswers(answers: { answerId: number; answer: string }[]) {
+  return apiRequest<ApiResponse<null>>('/api/essay-answers', {
+    method: 'PUT',
+    body: { answers },
   });
 }
 

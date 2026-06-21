@@ -121,19 +121,19 @@ export const onboardingNewUserHandlers = [
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 
-  // 자기소개서 조회 (신규: 호출 불필요하지만 혹시 호출될 경우 대비)
+  // 자기소개서 조회 (신규: 첫 방문 → 빈 배열)
   http.get('https://api.piuda.site/api/essay-answers', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
-      data: { answerId: null, answer: '' },
+      data: { answers: [] },
       message: 'OK',
     });
   }),
 
   // 자기소개서 신규 저장
   http.post('https://api.piuda.site/api/essay-answers', () => {
-    return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
+    return HttpResponse.json({ status: 'OK', code: 200, data: {}, message: 'OK' });
   }),
 
   // 포트폴리오 조회 (신규: 호출 불필요하지만 혹시 호출될 경우 대비)
@@ -200,19 +200,48 @@ export const onboardingReturningUserHandlers = [
     return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
   }),
 
-  // 자기소개서 기존 데이터 조회 (re-fill용)
+  // 자기소개서 기존 데이터 조회 (re-fill용) — 신규 API 스펙 배열 구조
   http.get('https://api.piuda.site/api/essay-answers', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
-      data: { answerId: 'essay-answer-001', answer: '기존 자기소개서 내용입니다.' },
+      data: {
+        answers: [
+          {
+            answerId: 1,
+            questionId: 1,
+            sequence: 1,
+            question:
+              '원하는 분야에 관심을 갖게 된 계기와 자신 있는 이유(그동안의 노력, 경험, 강점 포함) 등에 대해 구체적으로 설명해주세요.',
+            maxLength: 1000,
+            answer: '기존 첫 번째 자기소개서 내용입니다.',
+          },
+          {
+            answerId: 2,
+            questionId: 2,
+            sequence: 2,
+            question:
+              '가장 열정을 가지고 임했던 프로젝트(목표/과제 등)를 소개해주시고, 해당 프로젝트의 수행 과정 및 결과에 대해 기재해주세요.',
+            maxLength: 1000,
+            answer: '기존 두 번째 자기소개서 내용입니다.',
+          },
+          {
+            answerId: 3,
+            questionId: 3,
+            sequence: 3,
+            question: '입사 후 회사에서 이루고 싶은 꿈을 적어주세요.',
+            maxLength: 500,
+            answer: '기존 세 번째 자기소개서 내용입니다.',
+          },
+        ],
+      },
       message: 'OK',
     });
   }),
 
-  // 자기소개서 수정
-  http.patch('https://api.piuda.site/api/essay-answers/:answerId', () => {
-    return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
+  // 자기소개서 수정 — 신규 API 스펙: PUT 전체 덮어쓰기
+  http.put('https://api.piuda.site/api/essay-answers', () => {
+    return HttpResponse.json({ status: 'OK', code: 200, data: {}, message: 'OK' });
   }),
 
   // 포트폴리오 기존 데이터 조회 (re-fill용)
@@ -354,6 +383,117 @@ export const onboardingAuthExpiredHandlers = [
     return HttpResponse.json(
       { status: 'UNAUTHORIZED', code: 401, data: null, message: '토큰이 만료되었습니다.' },
       { status: 401 },
+    );
+  }),
+];
+
+// ──────────────────────────────────────────────
+// #42 자기소개서 온보딩 API 연동 전용 핸들러
+// ──────────────────────────────────────────────
+
+// AC1: GET 성공 — 기존 답변 있음 (sequence 정렬 검증용)
+export const essayGetWithDataHandlers = [
+  http.get('https://api.piuda.site/api/essay-answers', () => {
+    return HttpResponse.json({
+      status: 'OK',
+      code: 200,
+      data: {
+        answers: [
+          {
+            answerId: 3,
+            questionId: 3,
+            sequence: 3,
+            question: '입사 후 회사에서 이루고 싶은 꿈을 적어주세요.',
+            maxLength: 500,
+            answer: '세 번째 자기소개서 답변입니다.',
+          },
+          {
+            answerId: 1,
+            questionId: 1,
+            sequence: 1,
+            question:
+              '원하는 분야에 관심을 갖게 된 계기와 자신 있는 이유(그동안의 노력, 경험, 강점 포함) 등에 대해 구체적으로 설명해주세요.',
+            maxLength: 1000,
+            answer: '첫 번째 자기소개서 답변입니다.',
+          },
+          {
+            answerId: 2,
+            questionId: 2,
+            sequence: 2,
+            question:
+              '가장 열정을 가지고 임했던 프로젝트(목표/과제 등)를 소개해주시고, 해당 프로젝트의 수행 과정 및 결과에 대해 기재해주세요.',
+            maxLength: 1000,
+            answer: '두 번째 자기소개서 답변입니다.',
+          },
+        ],
+      },
+      message: 'OK',
+    });
+  }),
+];
+
+// AC2: GET 성공 — 빈 배열 (첫 방문)
+export const essayGetEmptyHandlers = [
+  http.get('https://api.piuda.site/api/essay-answers', () => {
+    return HttpResponse.json({
+      status: 'OK',
+      code: 200,
+      data: { answers: [] },
+      message: 'OK',
+    });
+  }),
+];
+
+// AC7: GET 실패 (500)
+export const essayGetFailHandlers = [
+  http.get('https://api.piuda.site/api/essay-answers', () => {
+    return HttpResponse.json(
+      { status: 'INTERNAL_SERVER_ERROR', code: 500, data: null, message: '서버 오류' },
+      { status: 500 },
+    );
+  }),
+];
+
+// AC3: POST 성공
+export const essayPostSuccessHandlers = [
+  http.post('https://api.piuda.site/api/essay-answers', () => {
+    return HttpResponse.json({
+      status: 'OK',
+      code: 200,
+      data: {},
+      message: 'OK',
+    });
+  }),
+];
+
+// AC6 (POST 실패): POST 500
+export const essayPostFailHandlers = [
+  http.post('https://api.piuda.site/api/essay-answers', () => {
+    return HttpResponse.json(
+      { status: 'INTERNAL_SERVER_ERROR', code: 500, data: null, message: '서버 오류' },
+      { status: 500 },
+    );
+  }),
+];
+
+// AC4: PUT 성공
+export const essayPutSuccessHandlers = [
+  http.put('https://api.piuda.site/api/essay-answers', () => {
+    return HttpResponse.json({
+      status: 'OK',
+      code: 200,
+      data: {},
+      message: 'OK',
+    });
+  }),
+];
+
+// AC6 (PUT 실패): PUT 500
+export const essayPutFailHandlers = [
+  http.put('https://api.piuda.site/api/essay-answers', () => {
+    return HttpResponse.json(
+      { status: 'INTERNAL_SERVER_ERROR', code: 500, data: null, message: '서버 오류' },
+      { status: 500 },
     );
   }),
 ];
