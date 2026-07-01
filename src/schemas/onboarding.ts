@@ -108,9 +108,9 @@ export type ResumeData = z.infer<typeof resumeSchema>;
 /* ─── 자기소개서 (2단계) ─── */
 
 export const coverLetterSchema = z.object({
-  question1: z.string().min(1, '내용을 입력해주세요.').max(1000, '1000자를 초과할 수 없습니다.'),
-  question2: z.string().min(1, '내용을 입력해주세요.').max(1000, '1000자를 초과할 수 없습니다.'),
-  question3: z.string().min(1, '내용을 입력해주세요.').max(500, '500자를 초과할 수 없습니다.'),
+  question1: z.string().max(1000, '1000자를 초과할 수 없습니다.'),
+  question2: z.string().max(1000, '1000자를 초과할 수 없습니다.'),
+  question3: z.string().max(500, '500자를 초과할 수 없습니다.'),
 });
 
 export type CoverLetterData = z.infer<typeof coverLetterSchema>;

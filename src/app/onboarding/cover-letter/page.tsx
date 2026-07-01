@@ -15,11 +15,7 @@ import {
   getPrevOnboardingStep,
   getOnboardingPath,
 } from '@/lib/onboarding-flow';
-import {
-  getEssayAnswer,
-  postEssayAnswer,
-  patchEssayAnswer,
-} from '@/lib/onboarding-api';
+import { getEssayAnswers, postEssayAnswers, putEssayAnswers } from '@/lib/onboarding-api';
 import { coverLetterSchema, type CoverLetterData } from '@/schemas/onboarding';
 
 import { OnboardingStepShell } from '../_components/onboarding-step-shell';
@@ -27,13 +23,16 @@ import { CoverLetterQuestionField } from './_components/cover-letter-question-fi
 import { COVER_LETTER_QUESTIONS } from './_constants/cover-letter-questions';
 
 const CURRENT_STEP = 'cover-letter' as const;
+const FALLBACK_QUESTION_IDS = [1, 2, 3];
 
 export default function CoverLetterPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const essayCompletedRef = useRef(false);
-  const answerIdRef = useRef<string | null>(null);
+  const answerIdsRef = useRef<number[]>([]);
+  const questionIdsRef = useRef<number[]>([]);
 
   const stepNumber = getOnboardingStepNumber(CURRENT_STEP);
   const stepTitle = getOnboardingStepTitle(CURRENT_STEP);
@@ -65,19 +64,29 @@ export default function CoverLetterPage() {
   useEffect(() => {
     async function loadEssayAnswer() {
       try {
-        const essayRes = await getEssayAnswer();
-        if (essayRes.data.answer) {
-          const lines = essayRes.data.answer.split('\n\n---\n\n');
-          if (lines[0]) setValue('question1', lines[0]);
-          if (lines[1]) setValue('question2', lines[1]);
-          if (lines[2]) setValue('question3', lines[2]);
-        }
-        if (essayRes.data.answerId) {
+        const essayRes = await getEssayAnswers();
+        const answers = essayRes.data.answers;
+
+        if (answers && answers.length > 0) {
+          const sorted = [...answers].sort((a, b) => a.sequence - b.sequence);
+
+          if (sorted[0]) setValue('question1', sorted[0].answer);
+          if (sorted[1]) setValue('question2', sorted[1].answer);
+          if (sorted[2]) setValue('question3', sorted[2].answer);
+
+          answerIdsRef.current = sorted.map((a) => a.answerId);
+          questionIdsRef.current = sorted.map((a) => a.questionId);
           essayCompletedRef.current = true;
-          answerIdRef.current = essayRes.data.answerId;
+        } else {
+          essayCompletedRef.current = false;
+          questionIdsRef.current = [];
         }
       } catch {
-        // 로드 실패 시 빈 폼으로 진행 (신규 입력)
+        // GET 실패 시 조용히 처리 — 빈 폼으로 POST 경로 진행 (AC7)
+        essayCompletedRef.current = false;
+        questionIdsRef.current = [];
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -92,13 +101,32 @@ export default function CoverLetterPage() {
     setIsSubmitting(true);
     setSubmitError(null);
 
-    const answer = [data.question1, data.question2, data.question3].join('\n\n---\n\n');
+    const fields = [data.question1, data.question2, data.question3];
 
     try {
-      if (essayCompletedRef.current && answerIdRef.current) {
-        await patchEssayAnswer(answerIdRef.current, answer);
+      // answerIds가 없으면 PUT 대신 POST로 안전하게 전환
+      if (essayCompletedRef.current && answerIdsRef.current.length === 0) {
+        essayCompletedRef.current = false;
+      }
+
+      if (essayCompletedRef.current) {
+        // AC4: PUT — 전체 덮어쓰기
+        const answers = answerIdsRef.current.map((answerId, i) => ({
+          answerId,
+          answer: fields[i] ?? '',
+        }));
+        await putEssayAnswers(answers);
       } else {
-        await postEssayAnswer(answer);
+        // AC3: POST — 최초 저장
+        const qIds =
+          questionIdsRef.current.length > 0
+            ? questionIdsRef.current
+            : FALLBACK_QUESTION_IDS;
+        const answers = fields.map((answer, i) => ({
+          questionId: qIds[i] ?? FALLBACK_QUESTION_IDS[i],
+          answer: answer ?? '',
+        }));
+        await postEssayAnswers(answers);
       }
       navigateNext();
     } catch {
@@ -125,12 +153,22 @@ export default function CoverLetterPage() {
       footer={
         <div className="flex flex-col gap-3">
           {submitError && (
-            <div role="alert" aria-live="assertive" className="bg-error/10 border-error text-error rounded-lg border px-4 py-3 text-sm">
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="bg-error/10 border-error text-error rounded-lg border px-4 py-3 text-sm"
+            >
               {submitError}
             </div>
           )}
           <div className="flex items-center justify-between">
-            <Button type="button" variant="outline" size="xs" onClick={handleBack} disabled={isSubmitting}>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={handleBack}
+              disabled={isSubmitting}
+            >
               <ArrowLeft size={20} />
               이전 단계
             </Button>
@@ -141,7 +179,7 @@ export default function CoverLetterPage() {
                 variant="outline"
                 size="xs"
                 onClick={handleSkip}
-                disabled={isSubmitting}
+                disabled={isLoading || isSubmitting}
                 className="border-error text-error hover:bg-error/5"
               >
                 나중에 작성
@@ -149,9 +187,9 @@ export default function CoverLetterPage() {
               <Button
                 type="submit"
                 size="xs"
-                disabled={!isValid || isSubmitting}
+                disabled={isLoading || !isValid || isSubmitting}
                 aria-busy={isSubmitting}
-                aria-disabled={!isValid || isSubmitting}
+                aria-disabled={isLoading || !isValid || isSubmitting}
               >
                 {isSubmitting ? (
                   <>
