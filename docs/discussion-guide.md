@@ -235,15 +235,15 @@ cmux send-key --surface surface:CX enter
 
 ## 5. codex vs antigravity 차이 (토론 운영 시 알아야 할 것)
 
-| 항목                   | codex                                                      | antigravity                                |
-| ---------------------- | ---------------------------------------------------------- | ------------------------------------------ |
-| 인터랙티브 진입        | `codex`                                                    | `antigravity`                              |
-| 자동 권한 기동         | `codex --sandbox workspace-write --ask-for-approval never` | `antigravity` (YOLO)                       |
+| 항목                   | codex                                                      | antigravity                                     |
+| ---------------------- | ---------------------------------------------------------- | ----------------------------------------------- |
+| 인터랙티브 진입        | `codex`                                                    | `antigravity`                                   |
+| 자동 권한 기동         | `codex --sandbox workspace-write --ask-for-approval never` | `antigravity` (YOLO)                            |
 | Headless               | `codex exec "..."`                                         | `antigravity -p "..."` (또는 `-i`로 인터랙티브) |
-| 작업 중 패턴           | `Working (Ns • esc to interrupt)`                          | `Thinking... (Ns)` 또는 `esc to cancel`    |
-| 멀티라인 paste         | 안정                                                       | **timeout 가능** → `@<path>` 첨부 필수     |
-| 파일 첨부              | 도구 호출로 read                                           | `@<path>` 입력란 직접 (예: `@.cmux/...`)   |
-| Reasoning ≠ print 버그 | **빈번**(시그널 조기 전송)                                 | 덜 빈번(대신 trust 재시작 이슈)            |
+| 작업 중 패턴           | `Working (Ns • esc to interrupt)`                          | `Thinking... (Ns)` 또는 `esc to cancel`         |
+| 멀티라인 paste         | 안정                                                       | **timeout 가능** → `@<path>` 첨부 필수          |
+| 파일 첨부              | 도구 호출로 read                                           | `@<path>` 입력란 직접 (예: `@.cmux/...`)        |
+| Reasoning ≠ print 버그 | **빈번**(시그널 조기 전송)                                 | 덜 빈번(대신 trust 재시작 이슈)                 |
 
 **실전 권장**: 분량 큰 프롬프트는 두 모델 모두 **`@<file>` + 짧은 지시문**. antigravity는 필수, codex는 안정성 보강.
 

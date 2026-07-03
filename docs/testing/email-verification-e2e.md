@@ -67,10 +67,10 @@ then verify email and issue verificationToken
 
 기존 API를 그대로 사용한다.
 
-| 단계 | 메서드 | 엔드포인트 | 요청 | 응답 |
-| --- | --- | --- | --- | --- |
-| 인증번호 전송 | POST | `/api/auth/applicants/email/send` | `{ email }` | 기존 성공 응답 |
-| 인증번호 검증 | POST | `/api/auth/applicants/email/verify` | `{ email, code }` | `{ verificationToken }` |
+| 단계          | 메서드 | 엔드포인트                          | 요청              | 응답                    |
+| ------------- | ------ | ----------------------------------- | ----------------- | ----------------------- |
+| 인증번호 전송 | POST   | `/api/auth/applicants/email/send`   | `{ email }`       | 기존 성공 응답          |
+| 인증번호 검증 | POST   | `/api/auth/applicants/email/verify` | `{ email, code }` | `{ verificationToken }` |
 
 테스트 전용 토큰 발급 API는 기본안으로 사용하지 않는다.
 
