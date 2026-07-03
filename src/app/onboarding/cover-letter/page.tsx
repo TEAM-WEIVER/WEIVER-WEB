@@ -119,9 +119,7 @@ export default function CoverLetterPage() {
       } else {
         // AC3: POST — 최초 저장
         const qIds =
-          questionIdsRef.current.length > 0
-            ? questionIdsRef.current
-            : FALLBACK_QUESTION_IDS;
+          questionIdsRef.current.length > 0 ? questionIdsRef.current : FALLBACK_QUESTION_IDS;
         const answers = fields.map((answer, i) => ({
           questionId: qIds[i] ?? FALLBACK_QUESTION_IDS[i],
           answer: answer ?? '',
