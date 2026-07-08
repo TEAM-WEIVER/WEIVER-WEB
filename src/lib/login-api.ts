@@ -31,7 +31,7 @@ export async function loginCompany(payload: CompanyLoginPayload) {
   return apiRequest<ApiResponse<CompanyLoginData>>('/api/auth/companies/login', {
     method: 'POST',
     body: {
-      id: payload.id,
+      loginId: payload.id,
       password: payload.password,
     },
   });
