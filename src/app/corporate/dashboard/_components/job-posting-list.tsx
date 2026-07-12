@@ -1,4 +1,5 @@
 import { MessageSquareText, MoreVertical, Plus } from 'lucide-react';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import type { JobPostingsDetails } from '@/schemas/corporate/dashboard';
@@ -36,8 +37,8 @@ export function JobPostingList({ postings }: JobPostingListProps) {
               </button>
             ))}
           </div>
-          <Button type="button" size="xs" className="h-[42px] rounded-[10px]">
-            새 공고 작성
+          <Button asChild size="xs" className="h-[42px] rounded-[10px]">
+            <Link href="/corporate/recruitment/new">새 공고 작성</Link>
           </Button>
         </div>
       </div>
