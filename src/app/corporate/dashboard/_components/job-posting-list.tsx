@@ -47,9 +47,12 @@ export function JobPostingList({ postings }: JobPostingListProps) {
         {postings.map((posting) => (
           <article
             key={posting.jdId}
-            className="border-border-light flex min-h-[108px] items-center justify-between border-t px-6 py-6 lg:px-[34px]"
+            className="border-border-light hover:bg-bg-secondary flex min-h-[108px] items-center justify-between border-t px-6 py-6 transition-colors lg:px-[34px]"
           >
-            <div className="flex min-w-0 flex-col gap-2">
+            <Link
+              href={`/corporate/recruitment/${posting.jdId}`}
+              className="flex min-w-0 flex-1 flex-col gap-2"
+            >
               <div className="flex min-w-0 items-center gap-3">
                 <h3 className="text-h4 text-text-primary truncate">{posting.title}</h3>
                 <StatusTag status={posting.status} />
@@ -60,7 +63,7 @@ export function JobPostingList({ postings }: JobPostingListProps) {
                   {posting.jobCategory} / {posting.detailedJob}
                 </span>
               </div>
-            </div>
+            </Link>
 
             <div className="flex shrink-0 items-center gap-6 sm:gap-[34px]">
               <div className="border-border-default bg-bg-tertiary flex flex-col items-center rounded-lg border p-2 text-center text-black">
