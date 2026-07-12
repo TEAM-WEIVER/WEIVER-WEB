@@ -113,7 +113,7 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
-function ApplicantTable() {
+function ApplicantTable({ jdId }: { jdId: string }) {
   return (
     <div className="w-full overflow-x-auto">
       <div className="min-w-[1208px]">
@@ -136,7 +136,15 @@ function ApplicantTable() {
           const isLast = index === APPLICANTS.length - 1;
 
           return (
-            <div key={applicant.id} className="grid grid-cols-[174px_220px_220px_423px_171px]">
+            <div
+              key={applicant.id}
+              className="relative grid grid-cols-[174px_220px_220px_423px_171px]"
+            >
+              <Link
+                href={`/corporate/recruitment/${jdId}/applicants/${applicant.id}/report`}
+                aria-label={`${applicant.name} 상세 리포트 보기`}
+                className="absolute inset-0 z-10"
+              />
               <div
                 className={cn(
                   'border-border-light bg-bg-primary flex h-[82px] items-center border-b border-l px-6',
@@ -169,7 +177,7 @@ function ApplicantTable() {
               </div>
               <div
                 className={cn(
-                  'border-border-light bg-bg-primary flex h-[82px] items-center justify-center border-r border-b px-6',
+                  'border-border-light bg-bg-primary relative z-20 flex h-[82px] items-center justify-center border-r border-b px-6',
                   isLast && 'rounded-br-[20px]',
                 )}
               >
@@ -221,7 +229,7 @@ function Pagination() {
   );
 }
 
-export function ApplicantListView() {
+export function ApplicantListView({ jdId }: { jdId: string }) {
   return (
     <div className="-mx-6 flex min-h-[calc(100vh-68px)] flex-col gap-6 lg:-mx-20">
       <header className="bg-bg-primary flex flex-col">
@@ -267,7 +275,7 @@ export function ApplicantListView() {
       </header>
 
       <main className="mx-auto flex w-full max-w-[1208px] flex-col items-end gap-6">
-        <ApplicantTable />
+        <ApplicantTable jdId={jdId} />
         <Pagination />
       </main>
     </div>
