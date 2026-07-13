@@ -20,7 +20,7 @@ export const MOCK_CARD_SUMMARY: CardSummary = {
   card: {
     skillScore: 88,
     note: '',
-    culturefitStyle: '추진형 실행가',
+    culturefitStyle: '공격적 혁신가',
     skillTags: ['Jira', 'Excel', 'Figma', 'Photoshop'],
   },
 };
@@ -190,37 +190,47 @@ export const MOCK_SKILL_SCRIPTS: Record<string, SkillScriptItem[]> = {
 };
 
 export const MOCK_CULTURE_FIT: CultureFit = {
-  matchStatus: '높음',
-  culturefitStyle: '추진형 실행가',
+  matchStatus: '높은 매칭률',
+  culturefitStyle: '공격적 혁신가',
   topTwoAxes: [
-    { name: '자율 · 혁신', percentage: 91 },
-    { name: '성과 · 영향', percentage: 86 },
+    { name: '자율 · 혁신', percentage: 84 },
+    { name: '성과 · 영향', percentage: 76 },
   ],
   aiSummary:
-    '새로운 문제를 빠르게 구조화하고 실행으로 옮기는 성향이 강합니다. 목표와 우선순위가 명확한 환경에서 높은 몰입도를 보이며, 피드백을 바탕으로 산출물을 개선하는 방식에 익숙합니다.',
+    '명확한 목표가 주어지면 스스로 실행 방식을 설계하고, 빠르게 행동해 결과를 만들어내는 지원자입니다. 기존 방식에 머무르기보다 새로운 해결책을 시도하며, 도전적인 목표와 성과가 분명한 환경에서 높은 몰입도를 보입니다.',
   axesDetails: [
     {
       name: '자율 · 혁신',
-      percentage: 91,
+      percentage: 84,
       subTraits: [
-        { name: '주도성', percentage: 93 },
-        { name: '실험성', percentage: 88 },
+        { name: '자기방향성', percentage: 88 },
+        { name: '자극추구', percentage: 79 },
+        { name: '보편주의', percentage: 64 },
       ],
     },
     {
       name: '성과 · 영향',
-      percentage: 86,
+      percentage: 76,
       subTraits: [
-        { name: '목표지향', percentage: 89 },
-        { name: '완결성', percentage: 83 },
+        { name: '성취', percentage: 82 },
+        { name: '권력', percentage: 69 },
+      ],
+    },
+    {
+      name: '안정 · 질서',
+      percentage: 38,
+      subTraits: [
+        { name: '안전', percentage: 46 },
+        { name: '전통', percentage: 31 },
+        { name: '순응', percentage: 36 },
       ],
     },
     {
       name: '관계 · 공동체',
-      percentage: 74,
+      percentage: 61,
       subTraits: [
-        { name: '협업', percentage: 81 },
-        { name: '공감', percentage: 68 },
+        { name: '호의', percentage: 67 },
+        { name: '보편주의', percentage: 55 },
       ],
     },
   ],

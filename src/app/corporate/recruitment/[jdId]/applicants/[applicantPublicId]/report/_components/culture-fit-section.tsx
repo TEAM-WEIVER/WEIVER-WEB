@@ -1,73 +1,111 @@
-import { Rocket } from 'lucide-react';
+import { NotebookText, Rocket } from 'lucide-react';
 
-import type { CultureFit } from '@/schemas/corporate/report';
+import { Button } from '@/components/ui/button';
+import type { AxisDetail, CultureFit } from '@/schemas/corporate/report';
 
-import { ProgressBar, ReportCard, ReportSectionTitle } from './report-card';
+import { ProgressBar } from './report-card';
+
+function CultureSummaryCard({ cultureFit }: { cultureFit: CultureFit }) {
+  const topAxes = cultureFit.topTwoAxes ?? [];
+
+  return (
+    <section className="border-border-light bg-bg-primary flex min-h-[232px] flex-col gap-4 rounded-[20px] border p-6">
+      <div className="flex items-center justify-between gap-6">
+        <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex flex-col gap-2">
+            <span className="border-border-default bg-primary-200 text-body2 text-text-primary inline-flex h-7 w-fit items-center rounded-md border px-2">
+              {cultureFit.matchStatus ?? '높은 매칭률'}
+            </span>
+            <h2 className="text-h3 text-text-secondary">{cultureFit.culturefitStyle}</h2>
+          </div>
+
+          <div className="text-body2 text-text-primary flex flex-wrap items-center">
+            {topAxes.map((axis, index) => (
+              <div
+                key={axis.name}
+                className={[
+                  'flex items-center gap-2',
+                  index > 0 ? 'border-border-default ml-2 border-l pl-2' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <span className="text-text-tertiary">{axis.name}</span>
+                <span>{axis.percentage}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-primary-200 flex size-[62px] shrink-0 items-center justify-center rounded-lg">
+          <Rocket className="text-primary-700 size-[42px]" />
+        </div>
+      </div>
+
+      <div className="border-border-light bg-bg-secondary rounded-[14px] border p-5">
+        <p className="text-body2 text-text-tertiary leading-5">{cultureFit.aiSummary}</p>
+      </div>
+    </section>
+  );
+}
+
+function TraitChip({ name, percentage }: { name: string; percentage: number }) {
+  return (
+    <div className="border-border-light bg-bg-secondary min-w-[84px] rounded-lg border px-3 py-2.5">
+      <p className="text-body2 text-text-tertiary">{name}</p>
+      <p className="text-body2 text-text-primary">{percentage}%</p>
+    </div>
+  );
+}
+
+function CultureAxisCard({ axis }: { axis: AxisDetail }) {
+  const isLowScore = axis.percentage < 65;
+
+  return (
+    <article className="border-border-light bg-bg-primary rounded-[20px] border p-6">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-end justify-between gap-4">
+            <h3 className="text-body1 text-text-secondary">{axis.name}</h3>
+            <p className={isLowScore ? 'text-h3 text-text-disabled' : 'text-h3 text-text-primary'}>
+              {axis.percentage}%
+            </p>
+          </div>
+          <ProgressBar
+            value={axis.percentage}
+            barClassName={isLowScore ? 'bg-text-disabled' : 'bg-primary-700'}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          {(axis.subTraits ?? []).map((trait) => (
+            <TraitChip key={trait.name} name={trait.name} percentage={trait.percentage} />
+          ))}
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="border-border-light bg-bg-tertiary text-text-secondary hover:bg-primary-200 h-[42px] w-full rounded-lg shadow-none"
+        >
+          <NotebookText className="text-text-disabled size-[18px]" />
+          AI 스크립트 확인하기
+        </Button>
+      </div>
+    </article>
+  );
+}
 
 export function CultureFitSection({ cultureFit }: { cultureFit: CultureFit }) {
   return (
     <div className="flex flex-col gap-6">
-      <ReportCard className="flex flex-col gap-6">
-        <div className="flex items-center justify-between gap-6">
-          <ReportSectionTitle
-            title="컬처핏 분석"
-            description="지원자의 업무 성향과 조직 문화 적합도를 분석합니다."
-          />
-          <span className="border-info bg-bg-tertiary text-body1 text-text-primary inline-flex h-10 items-center rounded-lg border px-4">
-            적합도 {cultureFit.matchStatus}
-          </span>
-        </div>
+      <CultureSummaryCard cultureFit={cultureFit} />
 
-        <div className="border-border-light bg-bg-secondary flex items-center gap-5 rounded-xl border p-5">
-          <div className="bg-primary-200 flex size-14 shrink-0 items-center justify-center rounded-lg">
-            <Rocket className="text-primary-700 size-8" />
-          </div>
-          <div className="flex min-w-0 flex-col gap-1">
-            <p className="text-caption text-text-tertiary">컬처핏 스타일</p>
-            <h3 className="text-h3 text-text-primary">{cultureFit.culturefitStyle}</h3>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {(cultureFit.topTwoAxes ?? []).map((axis) => (
-            <div
-              key={axis.name}
-              className="border-border-light bg-bg-secondary rounded-xl border p-5"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-body1 text-text-secondary">{axis.name}</p>
-                <p className="text-body2 text-text-tertiary">{axis.percentage}%</p>
-              </div>
-              <ProgressBar value={axis.percentage} />
-            </div>
-          ))}
-        </div>
-      </ReportCard>
-
-      <ReportCard className="flex flex-col gap-5">
-        <ReportSectionTitle title="성향 상세" />
+      <div className="grid grid-cols-1 gap-[23px] md:grid-cols-2">
         {(cultureFit.axesDetails ?? []).map((axis) => (
-          <div key={axis.name} className="border-border-light rounded-xl border p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-body1 text-text-primary">{axis.name}</p>
-              <p className="text-body2 text-text-tertiary">{axis.percentage}%</p>
-            </div>
-            <ProgressBar value={axis.percentage} />
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {(axis.subTraits ?? []).map((trait) => (
-                <div
-                  key={trait.name}
-                  className="bg-bg-tertiary flex items-center justify-between rounded-lg px-4 py-3"
-                >
-                  <span className="text-body2 text-text-secondary">{trait.name}</span>
-                  <span className="text-caption text-text-tertiary">{trait.percentage}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <CultureAxisCard key={axis.name} axis={axis} />
         ))}
-        <p className="text-body1 text-text-secondary leading-7">{cultureFit.aiSummary}</p>
-      </ReportCard>
+      </div>
     </div>
   );
 }
