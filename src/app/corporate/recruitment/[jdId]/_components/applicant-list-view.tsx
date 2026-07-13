@@ -4,6 +4,8 @@ import { ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+import { ApplicantContactButton } from './applicant-contact-button';
+
 const APPLICANTS = Array.from({ length: 6 }, (_, index) => ({
   id: index + 1,
   name: '홍길동',
@@ -181,9 +183,7 @@ function ApplicantTable({ jdId }: { jdId: string }) {
                   isLast && 'rounded-br-[20px]',
                 )}
               >
-                <Button type="button" size="xs" className="h-10 rounded-[10px]">
-                  지원자 컨택하기
-                </Button>
+                <ApplicantContactButton />
               </div>
             </div>
           );

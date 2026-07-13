@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import { ChevronRight, Mail, Phone, Trash2 } from 'lucide-react';
+import { ChevronRight, Mail, Phone } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import type { CardSummary } from '@/schemas/corporate/report';
 
+import { ReportHeaderActions } from './report-header-actions';
 import { ReportTabs, type ReportTab } from './report-tabs';
 
 type ReportHeaderProps = {
@@ -57,20 +57,7 @@ export function ReportHeader({ activeTab, cardSummary, jdId }: ReportHeaderProps
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="xs"
-              className="border-error text-error hover:bg-error/5 h-[42px] w-[132px] rounded-[10px] bg-transparent shadow-none"
-            >
-              <Trash2 className="size-4" />
-              리포트 삭제하기
-            </Button>
-            <Button type="button" size="xs" className="h-[42px] w-[132px] rounded-[10px]">
-              지원자 컨택하기
-            </Button>
-          </div>
+          <ReportHeaderActions />
         </div>
 
         <ReportTabs activeTab={activeTab} />
