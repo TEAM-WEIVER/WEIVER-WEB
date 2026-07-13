@@ -34,19 +34,38 @@ export function ReportSectionTitle({
   );
 }
 
-export function KeywordTag({ children }: { children: React.ReactNode }) {
+export function KeywordTag({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <span className="border-border-default bg-primary-200 text-body2 text-text-primary inline-flex h-7 items-center rounded-md border px-2">
+    <span
+      className={[
+        'border-border-default bg-primary-200 text-body2 text-text-primary inline-flex h-7 items-center rounded-md border px-2',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       {children}
     </span>
   );
 }
 
-export function ProgressBar({ value }: { value: number }) {
+export function ProgressBar({
+  value,
+  barClassName = 'bg-primary-700',
+}: {
+  value: number;
+  barClassName?: string;
+}) {
   return (
     <div className="bg-bg-tertiary h-2 w-full overflow-hidden rounded-full">
       <div
-        className="bg-primary-700 h-full rounded-full"
+        className={cn('h-full rounded-full', barClassName)}
         style={{ width: `${Math.max(0, Math.min(value, 100))}%` }}
       />
     </div>

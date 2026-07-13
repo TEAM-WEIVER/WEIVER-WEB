@@ -6,6 +6,8 @@ import type {
   SkillFit,
 } from '@/schemas/corporate/report';
 
+import type { SkillScriptItem } from './skill-script-modal';
+
 export const MOCK_CARD_SUMMARY: CardSummary = {
   profile: {
     applicantId: 1,
@@ -21,6 +23,11 @@ export const MOCK_CARD_SUMMARY: CardSummary = {
     culturefitStyle: '추진형 실행가',
     skillTags: ['Jira', 'Excel', 'Figma', 'Photoshop'],
   },
+};
+
+export const MOCK_REPORT_KEYWORDS = {
+  strengths: ['User Experience', '엑셀활용능력', '데이터분석능력'],
+  weaknesses: ['PPT활용불가', '영어실력부족'],
 };
 
 export const MOCK_AI_SUMMARY: AiSummary = {
@@ -52,16 +59,133 @@ export const MOCK_AI_SUMMARY: AiSummary = {
 
 export const MOCK_SKILL_FIT: SkillFit = {
   matchingRate: 88,
-  skillTags: ['Jira', 'Excel', 'Figma', 'Photoshop', 'React', 'Notion'],
-  aiAbilitySummary:
-    '요구 기술 중 협업 도구와 디자인 핸드오프 역량이 강하게 나타납니다. 개발 구현 경험도 확인되어 기획, 디자인, 개발 사이의 커뮤니케이션 비용을 줄이는 역할에 적합합니다.',
+  skillTags: ['Jira', 'Excel', 'Figma', 'Photoshop'],
+  aiAbilitySummary: '우선순위 역량 중 1순위, 3순위 역량이 성장가능성 92%, 논리성 96%로 일치합니다.',
   aiSkillAnalysis: [
     { name: '성장가능성', percentage: 92 },
-    { name: '일관성', percentage: 84 },
-    { name: '문제해결력', percentage: 88 },
-    { name: '논리성', percentage: 78 },
-    { name: '협업 및 팀워크', percentage: 90 },
-    { name: '대처능력', percentage: 82 },
+    { name: '일관성', percentage: 81 },
+    { name: '문제해결력', percentage: 74 },
+    { name: '논리성', percentage: 96 },
+    { name: '협업 및 팀워크', percentage: 64 },
+    { name: '대처능력', percentage: 54 },
+  ],
+};
+
+const DEFAULT_SCRIPT_ANSWER: SkillScriptItem['answer'] = [
+  {
+    text: '이전 프로젝트에서 데이터 파이프라인의 처리 속도가 예상보다 3배 느려지는 문제가 있었습니다. ',
+  },
+  { text: '담당자가 따로 없어', tone: 'success' },
+  {
+    text: ' 제가 직접 원인을 추적했는데, 단순 코드 최적화로는 해결되지 않는 구조적 병목이라는 걸 확인했습니다. 팀에서는 기존 방식을 유지하자는 의견이 많았지만, 저는 ',
+  },
+  { text: '검증되지 않은', tone: 'warning' },
+  { text: ' 배치 처리 구조를 ' },
+  { text: '새로 제안하고 작은 범위에서 먼저 테스트해보겠다고 설득했습니다', tone: 'success' },
+  {
+    text: '. 2주간 프로토타입을 만들어 실제 데이터로 검증한 결과 처리 시간을 약 65% 단축할 수 있었고, 이후 팀 표준 방식으로 채택되었습니다. 안정적인 방식을 벗어나 ',
+  },
+  { text: '불확실성을 감수', tone: 'warning' },
+  { text: '하더라도 더 나은 해결책을 직접 찾아보는 과정에서 가장 큰 성장을 느꼈습니다.' },
+];
+
+export const MOCK_SKILL_SCRIPTS: Record<string, SkillScriptItem[]> = {
+  성장가능성: [
+    {
+      id: 'growth-1',
+      question: 'Q1. 복잡한 기술적 문제를 해결한 경험에 대해서 구체적으로 설명해주세요.',
+      tags: [
+        { label: '자기방향성', tone: 'success' },
+        { label: '자극추구', tone: 'warning' },
+      ],
+      answer: DEFAULT_SCRIPT_ANSWER,
+    },
+    {
+      id: 'growth-2',
+      question: 'Q2. 새로운 방식을 시도해서 성과를 만든 경험이 있나요?',
+      tags: [{ label: '자기방향성', tone: 'success' }],
+      answer: [
+        { text: '초기 요구사항이 명확하지 않은 상황에서 사용자의 반복 문의를 직접 분류했고, ' },
+        { text: '문제의 원인을 먼저 구조화한 뒤', tone: 'success' },
+        {
+          text: ' 작은 개선안을 빠르게 배포했습니다. 이후 문의량이 줄어드는 것을 확인하며 다음 개선 범위를 정했습니다.',
+        },
+      ],
+    },
+    {
+      id: 'growth-3',
+      question: 'Q3. 본인이 부족했던 부분을 어떻게 개선했는지 설명해주세요.',
+      tags: [
+        { label: '자극추구', tone: 'warning' },
+        { label: '보편주의', tone: 'success' },
+      ],
+      answer: [
+        { text: '처음에는 빠른 결과를 내는 데 집중해 문서화가 부족했습니다. 회고 후에는 ' },
+        { text: '팀원이 재사용할 수 있는 기준', tone: 'success' },
+        {
+          text: '을 남기는 방식으로 일하는 습관을 바꿨고, 불확실한 실험도 공유 가능한 형태로 정리했습니다.',
+        },
+      ],
+    },
+  ],
+  일관성: [
+    {
+      id: 'consistency-1',
+      question: 'Q1. 긴 기간 동안 꾸준히 유지한 업무 방식이 있나요?',
+      tags: [{ label: '지속성', tone: 'success' }],
+      answer: [
+        { text: '매주 배포 후 지표와 사용자 피드백을 확인했고, ' },
+        { text: '동일한 기준으로 개선 우선순위를 기록', tone: 'success' },
+        { text: '했습니다. 이 방식 덕분에 단기 이슈에 흔들리지 않고 개선 흐름을 유지했습니다.' },
+      ],
+    },
+  ],
+  문제해결력: [
+    {
+      id: 'problem-1',
+      question: 'Q1. 복잡한 문제를 해결할 때 어떤 순서로 접근하나요?',
+      tags: [
+        { label: '문제정의', tone: 'success' },
+        { label: '가설검증', tone: 'warning' },
+      ],
+      answer: DEFAULT_SCRIPT_ANSWER,
+    },
+  ],
+  논리성: [
+    {
+      id: 'logic-1',
+      question: 'Q1. 의사결정을 설득하기 위해 어떤 근거를 사용했나요?',
+      tags: [{ label: '구조화', tone: 'success' }],
+      answer: [
+        { text: '개선안을 제안할 때 감각적인 주장보다 ' },
+        { text: '지표, 사용자 사례, 구현 비용을 나누어 비교', tone: 'success' },
+        { text: '했습니다. 덕분에 팀이 선택지를 빠르게 판단할 수 있었습니다.' },
+      ],
+    },
+  ],
+  '협업 및 팀워크': [
+    {
+      id: 'teamwork-1',
+      question: 'Q1. 팀과 함께 문제를 해결한 경험을 설명해주세요.',
+      tags: [{ label: '협업', tone: 'success' }],
+      answer: [
+        { text: '디자인과 개발 사이에 해석 차이가 있을 때 ' },
+        { text: '공통 용어와 기준을 먼저 맞추고', tone: 'success' },
+        { text: ' 각자의 제약을 문서화해 재작업을 줄였습니다.' },
+      ],
+    },
+  ],
+  대처능력: [
+    {
+      id: 'response-1',
+      question: 'Q1. 갑작스러운 변경 요청을 어떻게 처리했나요?',
+      tags: [{ label: '우선순위', tone: 'warning' }],
+      answer: [
+        { text: '요구사항이 바뀌었을 때 전체를 바로 수정하기보다 ' },
+        { text: '영향 범위를 먼저 분리', tone: 'success' },
+        { text: '하고, 당장 필요한 변경과 다음 배포로 넘길 변경을 나눠 대응했습니다.' },
+      ],
+    },
   ],
 };
 

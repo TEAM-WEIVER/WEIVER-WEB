@@ -5,6 +5,8 @@ import {
   MOCK_CARD_SUMMARY,
   MOCK_CULTURE_FIT,
   MOCK_DOCUMENTS,
+  MOCK_REPORT_KEYWORDS,
+  MOCK_SKILL_SCRIPTS,
   MOCK_SKILL_FIT,
 } from './report-fixtures';
 import { ReportHeader } from './report-header';
@@ -20,7 +22,7 @@ type ApplicantReportViewProps = {
 
 function ReportContent({ activeTab }: { activeTab: ReportTab }) {
   if (activeTab === 'skill-fit') {
-    return <SkillFitSection skillFit={MOCK_SKILL_FIT} />;
+    return <SkillFitSection skillFit={MOCK_SKILL_FIT} scriptsByCompetency={MOCK_SKILL_SCRIPTS} />;
   }
 
   if (activeTab === 'culture-fit') {
@@ -43,7 +45,7 @@ export function ApplicantReportView({ activeTab, jdId }: ApplicantReportViewProp
         <div className="min-w-0">
           <ReportContent activeTab={activeTab} />
         </div>
-        <ReportSidePanel cardSummary={MOCK_CARD_SUMMARY} />
+        <ReportSidePanel cardSummary={MOCK_CARD_SUMMARY} keywords={MOCK_REPORT_KEYWORDS} />
       </main>
     </div>
   );
