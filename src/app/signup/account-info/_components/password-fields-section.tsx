@@ -61,7 +61,9 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
           />
           <button
             type="button"
-            aria-label={showPasswordConfirm ? '비밀번호 확인 필드 숨기기' : '비밀번호 확인 필드 표시'}
+            aria-label={
+              showPasswordConfirm ? '비밀번호 확인 필드 숨기기' : '비밀번호 확인 필드 표시'
+            }
             aria-pressed={showPasswordConfirm}
             onClick={() => setShowPasswordConfirm((current) => !current)}
             className="text-text-disabled hover:text-text-tertiary absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer transition-colors"

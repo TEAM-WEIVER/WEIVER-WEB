@@ -27,7 +27,13 @@ interface EducationSectionProps {
   remove: (index: number) => void;
 }
 
-export function EducationSection({ fields, control, register, append, remove }: EducationSectionProps) {
+export function EducationSection({
+  fields,
+  control,
+  register,
+  append,
+  remove,
+}: EducationSectionProps) {
   const watchedEducation = useWatch({ control, name: 'education' });
 
   return (
@@ -41,7 +47,9 @@ export function EducationSection({ fields, control, register, append, remove }: 
           key={field.id}
           className="bg-bg-tertiary relative flex flex-col gap-2 rounded-[10px] p-6"
         >
-          {fields.length > 1 || watchedEducation?.[index]?.school || watchedEducation?.[index]?.type ? (
+          {fields.length > 1 ||
+          watchedEducation?.[index]?.school ||
+          watchedEducation?.[index]?.type ? (
             <RemoveButton label="학력 삭제" onClick={() => remove(index)} />
           ) : null}
           <div className="flex gap-3.5">

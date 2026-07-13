@@ -60,22 +60,22 @@ US: 구직자로서, 자기소개서 온보딩 페이지에서 작성한 내용�
 
 ## API 연동
 
-| AC  | 메서드 | 엔드포인트          | 요청                                                                                         | 응답                          |
-| --- | ------ | ------------------- | -------------------------------------------------------------------------------------------- | ----------------------------- |
-| AC1, AC2, AC7 | GET    | /api/essay-answers  | —                                                                                            | `{ data: { answers: [...] } }` |
-| AC3 | POST   | /api/essay-answers  | `{ answers: [{ questionId: number, answer: string }, ...] }` (3개 문항 필수)                | `{ data: {} }`                |
-| AC4 | PUT    | /api/essay-answers  | `{ answers: [{ answerId: number, answer: string }, ...] }` (3개 문항 필수, 전체 덮어쓰기)  | `{ data: {} }`                |
+| AC            | 메서드 | 엔드포인트         | 요청                                                                                      | 응답                           |
+| ------------- | ------ | ------------------ | ----------------------------------------------------------------------------------------- | ------------------------------ |
+| AC1, AC2, AC7 | GET    | /api/essay-answers | —                                                                                         | `{ data: { answers: [...] } }` |
+| AC3           | POST   | /api/essay-answers | `{ answers: [{ questionId: number, answer: string }, ...] }` (3개 문항 필수)              | `{ data: {} }`                 |
+| AC4           | PUT    | /api/essay-answers | `{ answers: [{ answerId: number, answer: string }, ...] }` (3개 문항 필수, 전체 덮어쓰기) | `{ data: {} }`                 |
 
 ### 주의: 현재 코드와 실제 API 스펙 불일치
 
 현재 `onboarding-api.ts`는 다음 패턴으로 구현되어 있으나 **실제 API 스펙과 다르다.**
 
-| 항목 | 현재 코드 (잘못됨) | 실제 API 스펙 (수정 필요) |
-|------|-------------------|--------------------------|
-| GET 응답 파싱 | `essayRes.data.answer` (단일 문자열, `\n\n---\n\n` 구분) | `essayRes.data.answers` (배열, `answerId`·`questionId`·`sequence`·`answer` 포함) |
-| POST 요청 body | `{ answer: string }` (단일 문자열) | `{ answers: [{ questionId, answer }] }` (배열, 3개 필수) |
-| 수정 API | `PATCH /api/essay-answers/:answerId` (단일 문항 개별 수정) | `PUT /api/essay-answers` (배열 전체 덮어쓰기, answerId 포함) |
-| `EssayAnswerData` 인터페이스 | `{ answerId: string \| null, answer: string \| null }` | `{ answers: [{ answerId, questionId, sequence, question, maxLength, answer }] }` |
+| 항목                         | 현재 코드 (잘못됨)                                         | 실제 API 스펙 (수정 필요)                                                        |
+| ---------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| GET 응답 파싱                | `essayRes.data.answer` (단일 문자열, `\n\n---\n\n` 구분)   | `essayRes.data.answers` (배열, `answerId`·`questionId`·`sequence`·`answer` 포함) |
+| POST 요청 body               | `{ answer: string }` (단일 문자열)                         | `{ answers: [{ questionId, answer }] }` (배열, 3개 필수)                         |
+| 수정 API                     | `PATCH /api/essay-answers/:answerId` (단일 문항 개별 수정) | `PUT /api/essay-answers` (배열 전체 덮어쓰기, answerId 포함)                     |
+| `EssayAnswerData` 인터페이스 | `{ answerId: string \| null, answer: string \| null }`     | `{ answers: [{ answerId, questionId, sequence, question, maxLength, answer }] }` |
 
 **이번 이슈(#42)의 핵심 작업은 위 불일치를 수정하는 것이다.**
 

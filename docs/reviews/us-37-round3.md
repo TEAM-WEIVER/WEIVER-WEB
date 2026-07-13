@@ -7,15 +7,18 @@
 ## Round 2 Critical 해소 확인
 
 ### Critical #1 — 빈 배열 PUT (의도 명시)
+
 - **resume/page.tsx:265** — `// 빈 배열 PUT = 전체 삭제 의도 (사용자가 항목을 모두 제거한 경우)` 주석 추가로 해소.
   동일 패턴이 careers(285), certifications(300), awards(315)에는 주석이 없으나, 265행 주석이 전체 패턴을 설명하는 것으로 읽힌다. 허용 범위.
 
 ### Critical #2 — Option B 재조회 실패 시 중복 POST
+
 - **resume/page.tsx:334–338** — `catch` 블록에서 "페이지를 새로고침 후 다시 시도해주세요." 메시지 + `return`으로 즉시 탈출. ref 미갱신 상태에서 사용자 재시도를 차단함. 해소.
 
 ## Round 2 Major 해소 확인
 
 ### Major — portfolio onSubmit 가드
+
 - **portfolio/page.tsx:97** — `if (!hasContent) return` 추가. 해소.
 
 ---

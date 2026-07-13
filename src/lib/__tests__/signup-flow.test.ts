@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { getFirstStep, getNextStep, getPrevStep, getSignupFlow, getStepNumber } from '../signup-flow';
+import {
+  getFirstStep,
+  getNextStep,
+  getPrevStep,
+  getSignupFlow,
+  getStepNumber,
+} from '../signup-flow';
 
 describe('signup-flow', () => {
   it('getSignupFlow()는 회원가입 단계 배열을 반환한다', () => {

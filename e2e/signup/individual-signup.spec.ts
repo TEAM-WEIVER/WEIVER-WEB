@@ -329,9 +329,7 @@ test('AC8-b: 잘못된 인증번호 입력 후 확인 클릭 시 에러 메시�
   await verifyCode(page, '000000');
 
   // Then — 에러 메시지 표시
-  await expect(
-    page.getByText('인증번호가 올바르지 않습니다. 다시 확인해주세요.'),
-  ).toBeVisible();
+  await expect(page.getByText('인증번호가 올바르지 않습니다. 다시 확인해주세요.')).toBeVisible();
 
   // Then — "인증 완료" 상태 미표시
   await expect(page.getByText('인증 완료')).toBeHidden();

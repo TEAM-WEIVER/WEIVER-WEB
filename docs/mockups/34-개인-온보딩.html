@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -66,27 +66,105 @@
     -->
     <style>
       /* 레이아웃 파악용 최소 스타일 — Tailwind 클래스 없음 */
-      body { font-family: sans-serif; max-width: 720px; margin: 0 auto; padding: 24px; }
-      section { border: 1px solid #ccc; border-radius: 8px; padding: 20px; margin-bottom: 32px; }
-      section > h2 { margin-top: 0; font-size: 1rem; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; }
-      fieldset { border: 1px dashed #aaa; padding: 12px; margin-bottom: 12px; }
-      legend { font-weight: bold; font-size: 0.9rem; }
-      label { display: block; margin-bottom: 4px; font-size: 0.875rem; }
-      input[type="text"], input[type="email"], input[type="tel"], input[type="date"],
-      input[type="url"], textarea, select { display: block; width: 100%; box-sizing: border-box; padding: 6px 8px; margin-bottom: 4px; }
-      .error-message { color: #c0392b; font-size: 0.8rem; }
-      .error-banner { background: #fdecea; border: 1px solid #c0392b; padding: 10px 14px; border-radius: 4px; margin-bottom: 12px; color: #c0392b; }
-      .success-hint { color: #27ae60; font-size: 0.8rem; }
-      .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #999; border-top-color: #333; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
-      @keyframes spin { to { transform: rotate(360deg); } }
-      .step-nav { display: flex; gap: 8px; }
-      .redirect-banner { background: #fff3cd; border: 1px solid #f0ad4e; padding: 10px 14px; border-radius: 4px; color: #856404; }
-      .char-counter { font-size: 0.8rem; color: #555; text-align: right; }
+      body {
+        font-family: sans-serif;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      section {
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 32px;
+      }
+      section > h2 {
+        margin-top: 0;
+        font-size: 1rem;
+        background: #f0f0f0;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+      fieldset {
+        border: 1px dashed #aaa;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+      legend {
+        font-weight: bold;
+        font-size: 0.9rem;
+      }
+      label {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 0.875rem;
+      }
+      input[type='text'],
+      input[type='email'],
+      input[type='tel'],
+      input[type='date'],
+      input[type='url'],
+      textarea,
+      select {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px 8px;
+        margin-bottom: 4px;
+      }
+      .error-message {
+        color: #c0392b;
+        font-size: 0.8rem;
+      }
+      .error-banner {
+        background: #fdecea;
+        border: 1px solid #c0392b;
+        padding: 10px 14px;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        color: #c0392b;
+      }
+      .success-hint {
+        color: #27ae60;
+        font-size: 0.8rem;
+      }
+      .spinner {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid #999;
+        border-top-color: #333;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        vertical-align: middle;
+        margin-right: 6px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .step-nav {
+        display: flex;
+        gap: 8px;
+      }
+      .redirect-banner {
+        background: #fff3cd;
+        border: 1px solid #f0ad4e;
+        padding: 10px 14px;
+        border-radius: 4px;
+        color: #856404;
+      }
+      .char-counter {
+        font-size: 0.8rem;
+        color: #555;
+        text-align: right;
+      }
     </style>
   </head>
   <body>
     <h1>온보딩 목업 — #34</h1>
-    <p style="color:#555; font-size:0.875rem;">
+    <p style="color: #555; font-size: 0.875rem">
       각 섹션은 독립된 AC 상태를 나타냅니다. 실제 구현에서는 라우트·조건부 렌더링으로 분리됩니다.
     </p>
 
@@ -164,16 +242,34 @@
             <option value="DOCTOR">박사</option>
           </select>
           <label for="resume-school">학교명</label>
-          <input type="text" id="resume-school" name="schoolName" placeholder="OO대학교" value="OO대학교" />
+          <input
+            type="text"
+            id="resume-school"
+            name="schoolName"
+            placeholder="OO대학교"
+            value="OO대학교"
+          />
           <label for="resume-major">전공</label>
-          <input type="text" id="resume-major" name="major" placeholder="컴퓨터공학과" value="컴퓨터공학과" />
+          <input
+            type="text"
+            id="resume-major"
+            name="major"
+            placeholder="컴퓨터공학과"
+            value="컴퓨터공학과"
+          />
         </fieldset>
 
         <!-- 경력 (선택) -->
         <fieldset>
           <legend>경력 (선택)</legend>
           <label for="resume-company">회사명</label>
-          <input type="text" id="resume-company" name="companyName" placeholder="OO회사" value="OO회사" />
+          <input
+            type="text"
+            id="resume-company"
+            name="companyName"
+            placeholder="OO회사"
+            value="OO회사"
+          />
           <label for="resume-emp-type">고용형태</label>
           <select id="resume-emp-type" name="employmentType">
             <option value="">선택</option>
@@ -184,14 +280,26 @@
           <label for="resume-start-date">재직 시작일</label>
           <input type="date" id="resume-start-date" name="startDate" value="2022-03-01" />
           <label for="resume-position">직책/직무</label>
-          <input type="text" id="resume-position" name="position" placeholder="프론트엔드 개발자" value="프론트엔드 개발자" />
+          <input
+            type="text"
+            id="resume-position"
+            name="position"
+            placeholder="프론트엔드 개발자"
+            value="프론트엔드 개발자"
+          />
         </fieldset>
 
         <!-- 자격증 (선택) -->
         <fieldset>
           <legend>자격증 (선택)</legend>
           <label for="resume-cert-name">자격증명</label>
-          <input type="text" id="resume-cert-name" name="certificateName" placeholder="정보처리기사" value="정보처리기사" />
+          <input
+            type="text"
+            id="resume-cert-name"
+            name="certificateName"
+            placeholder="정보처리기사"
+            value="정보처리기사"
+          />
           <label for="resume-cert-date">취득일</label>
           <input type="date" id="resume-cert-date" name="acquisitionDate" value="2023-05-20" />
         </fieldset>
@@ -200,7 +308,13 @@
         <fieldset>
           <legend>수상 (선택)</legend>
           <label for="resume-award-name">수상명</label>
-          <input type="text" id="resume-award-name" name="awardName" placeholder="OO 공모전 대상" value="OO 공모전 대상" />
+          <input
+            type="text"
+            id="resume-award-name"
+            name="awardName"
+            placeholder="OO 공모전 대상"
+            value="OO 공모전 대상"
+          />
           <label for="resume-award-date">수상일</label>
           <input type="date" id="resume-award-date" name="awardDate" value="2023-11-10" />
         </fieldset>
@@ -292,12 +406,7 @@
 
       <form novalidate aria-label="이력서 작성 폼">
         <!-- AC3: 결과 피드백 — 폼 상단 에러 배너 -->
-        <div
-          role="alert"
-          aria-live="assertive"
-          class="error-banner"
-          id="resume-api-error"
-        >
+        <div role="alert" aria-live="assertive" class="error-banner" id="resume-api-error">
           일부 정보를 저장하지 못했습니다. 다시 시도해주세요.
         </div>
 
@@ -341,11 +450,11 @@
             aria-describedby="cover-letter-char-count cover-letter-answer-error"
             maxlength="5000"
             placeholder="자유롭게 작성해주세요. (최대 5,000자)"
-          >안녕하세요. 저는 프론트엔드 개발자 지망생 홍길동입니다...</textarea>
+          >
+안녕하세요. 저는 프론트엔드 개발자 지망생 홍길동입니다...</textarea
+          >
           <!-- AC5: 글자수 카운터 -->
-          <p id="cover-letter-char-count" class="char-counter" aria-live="polite">
-            45 / 5,000자
-          </p>
+          <p id="cover-letter-char-count" class="char-counter" aria-live="polite">45 / 5,000자</p>
         </fieldset>
 
         <!-- AC5: 이벤트 발생 영역 / AC8: 나중에 작성 -->
@@ -374,8 +483,15 @@
             aria-required="true"
             aria-invalid="true"
             aria-describedby="cover-letter-over-char-count cover-letter-over-error"
-          >5001자 초과 텍스트 예시...</textarea>
-          <p id="cover-letter-over-char-count" class="char-counter" style="color:#c0392b;" aria-live="polite">
+          >
+5001자 초과 텍스트 예시...</textarea
+          >
+          <p
+            id="cover-letter-over-char-count"
+            class="char-counter"
+            style="color: #c0392b"
+            aria-live="polite"
+          >
             5,001 / 5,000자
           </p>
           <!-- AC6: 결과 피드백 — 인라인 에러 -->
@@ -400,12 +516,7 @@
 
       <form novalidate aria-label="자기소개서 작성 폼">
         <!-- AC7: 결과 피드백 — 폼 상단 에러 배너 -->
-        <div
-          role="alert"
-          aria-live="assertive"
-          class="error-banner"
-          id="cover-letter-api-error"
-        >
+        <div role="alert" aria-live="assertive" class="error-banner" id="cover-letter-api-error">
           저장 중 오류가 발생했습니다. 다시 시도해주세요.
         </div>
 
@@ -418,8 +529,12 @@
             rows="10"
             aria-required="true"
             aria-describedby="cover-letter-ac7-char-count"
-          >안녕하세요. 저는 프론트엔드 개발자 지망생 홍길동입니다...</textarea>
-          <p id="cover-letter-ac7-char-count" class="char-counter" aria-live="polite">45 / 5,000자</p>
+          >
+안녕하세요. 저는 프론트엔드 개발자 지망생 홍길동입니다...</textarea
+          >
+          <p id="cover-letter-ac7-char-count" class="char-counter" aria-live="polite">
+            45 / 5,000자
+          </p>
         </fieldset>
 
         <!-- AC7: 버튼 재활성화 (페이지 이동 없음) -->
@@ -447,11 +562,9 @@
           <div
             role="region"
             aria-label="포트폴리오 파일 업로드 영역"
-            style="border: 2px dashed #aaa; padding: 20px; text-align: center;"
+            style="border: 2px dashed #aaa; padding: 20px; text-align: center"
           >
-            <label for="portfolio-file">
-              PDF 또는 ZIP 파일을 선택하세요. (최대 20MB)
-            </label>
+            <label for="portfolio-file"> PDF 또는 ZIP 파일을 선택하세요. (최대 20MB) </label>
             <input
               type="file"
               id="portfolio-file"
@@ -484,12 +597,7 @@
           />
 
           <label for="portfolio-etc">기타 URL</label>
-          <input
-            type="url"
-            id="portfolio-etc"
-            name="urlEtc"
-            placeholder="https://notion.so/..."
-          />
+          <input type="url" id="portfolio-etc" name="urlEtc" placeholder="https://notion.so/..." />
         </fieldset>
 
         <!-- AC9: 동의 체크박스 (필수) -->
@@ -537,11 +645,9 @@
           <div
             role="region"
             aria-label="포트폴리오 파일 업로드 영역"
-            style="border: 2px dashed #c0392b; padding: 20px; text-align: center;"
+            style="border: 2px dashed #c0392b; padding: 20px; text-align: center"
           >
-            <label for="portfolio-file-ac10">
-              PDF 또는 ZIP 파일을 선택하세요. (최대 20MB)
-            </label>
+            <label for="portfolio-file-ac10"> PDF 또는 ZIP 파일을 선택하세요. (최대 20MB) </label>
             <input
               type="file"
               id="portfolio-file-ac10"
@@ -555,7 +661,7 @@
               PDF 또는 ZIP 파일만 업로드할 수 있습니다.
             </p>
             <!-- 용량 초과 에러 예시 (확장자 에러와 교체 표시) -->
-            <p role="alert" class="error-message" style="display:none;">
+            <p role="alert" class="error-message" style="display: none">
               파일 크기는 20MB 이하여야 합니다.
             </p>
           </div>
@@ -564,11 +670,26 @@
         <fieldset>
           <legend>URL 링크 (선택)</legend>
           <label for="portfolio-github-ac10">GitHub URL</label>
-          <input type="url" id="portfolio-github-ac10" name="urlGithub" placeholder="https://github.com/username" />
+          <input
+            type="url"
+            id="portfolio-github-ac10"
+            name="urlGithub"
+            placeholder="https://github.com/username"
+          />
           <label for="portfolio-tech-ac10">기술 블로그 URL (urlTech)</label>
-          <input type="url" id="portfolio-tech-ac10" name="urlTech" placeholder="https://tech.blog.com" />
+          <input
+            type="url"
+            id="portfolio-tech-ac10"
+            name="urlTech"
+            placeholder="https://tech.blog.com"
+          />
           <label for="portfolio-etc-ac10">기타 URL</label>
-          <input type="url" id="portfolio-etc-ac10" name="urlEtc" placeholder="https://notion.so/..." />
+          <input
+            type="url"
+            id="portfolio-etc-ac10"
+            name="urlEtc"
+            placeholder="https://notion.so/..."
+          />
         </fieldset>
 
         <fieldset>
@@ -600,12 +721,7 @@
 
       <form novalidate aria-label="포트폴리오 작성 폼" enctype="multipart/form-data">
         <!-- AC11: 결과 피드백 — 에러 배너 -->
-        <div
-          role="alert"
-          aria-live="assertive"
-          class="error-banner"
-          id="portfolio-api-error"
-        >
+        <div role="alert" aria-live="assertive" class="error-banner" id="portfolio-api-error">
           업로드 중 오류가 발생했습니다. 다시 시도해주세요.
         </div>
 
@@ -614,7 +730,7 @@
           <div
             role="region"
             aria-label="포트폴리오 파일 업로드 영역"
-            style="border: 2px dashed #aaa; padding: 20px; text-align: center;"
+            style="border: 2px dashed #aaa; padding: 20px; text-align: center"
           >
             <label for="portfolio-file-ac11">PDF 또는 ZIP 파일을 선택하세요. (최대 20MB)</label>
             <input type="file" id="portfolio-file-ac11" name="portfolio" accept=".pdf,.zip" />
@@ -624,7 +740,12 @@
         <fieldset>
           <legend>URL 링크 (선택)</legend>
           <label for="portfolio-github-ac11">GitHub URL</label>
-          <input type="url" id="portfolio-github-ac11" name="urlGithub" value="https://github.com/example" />
+          <input
+            type="url"
+            id="portfolio-github-ac11"
+            name="urlGithub"
+            value="https://github.com/example"
+          />
           <label for="portfolio-tech-ac11">기술 블로그 URL (urlTech)</label>
           <input type="url" id="portfolio-tech-ac11" name="urlTech" />
           <label for="portfolio-etc-ac11">기타 URL</label>
@@ -664,30 +785,18 @@
       <h2>AC13 — 로딩 인디케이터 (공통) — 스피너 + aria-busy</h2>
 
       <!-- 이력서 "다음" 버튼 로딩 예시 -->
-      <div style="margin-bottom: 16px;">
-        <p style="font-size:0.875rem; color:#555;">이력서 "다음" 버튼 로딩 예시:</p>
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          aria-busy="true"
-          aria-label="저장 중"
-        >
+      <div style="margin-bottom: 16px">
+        <p style="font-size: 0.875rem; color: #555">이력서 "다음" 버튼 로딩 예시:</p>
+        <button type="button" disabled aria-disabled="true" aria-busy="true" aria-label="저장 중">
           <span class="spinner" aria-hidden="true"></span>
           저장 중...
         </button>
       </div>
 
       <!-- 자기소개서 "다음" 버튼 로딩 예시 -->
-      <div style="margin-bottom: 16px;">
-        <p style="font-size:0.875rem; color:#555;">자기소개서 "다음" 버튼 로딩 예시:</p>
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          aria-busy="true"
-          aria-label="저장 중"
-        >
+      <div style="margin-bottom: 16px">
+        <p style="font-size: 0.875rem; color: #555">자기소개서 "다음" 버튼 로딩 예시:</p>
+        <button type="button" disabled aria-disabled="true" aria-busy="true" aria-label="저장 중">
           <span class="spinner" aria-hidden="true"></span>
           저장 중...
         </button>
@@ -695,14 +804,8 @@
 
       <!-- 포트폴리오 "제출" 버튼 로딩 예시 -->
       <div>
-        <p style="font-size:0.875rem; color:#555;">포트폴리오 "제출" 버튼 로딩 예시:</p>
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          aria-busy="true"
-          aria-label="업로드 중"
-        >
+        <p style="font-size: 0.875rem; color: #555">포트폴리오 "제출" 버튼 로딩 예시:</p>
+        <button type="button" disabled aria-disabled="true" aria-busy="true" aria-label="업로드 중">
           <span class="spinner" aria-hidden="true"></span>
           업로드 중...
         </button>
@@ -716,22 +819,16 @@
       <h2>AC14 — 인증 만료 리다이렉트 (공통)</h2>
 
       <!-- AC14: 결과 피드백 — refresh 실패 후 /login 리다이렉트 안내 -->
-      <div
-        role="alert"
-        aria-live="assertive"
-        class="redirect-banner"
-        id="auth-expired-banner"
-      >
+      <div role="alert" aria-live="assertive" class="redirect-banner" id="auth-expired-banner">
         <strong>세션이 만료되었습니다.</strong>
         로그인 페이지로 이동합니다.
         <a href="/login" aria-label="로그인 페이지로 이동">로그인하러 가기</a>
       </div>
 
-      <p style="font-size:0.875rem; color:#555;">
-        액세스 토큰 만료 시 api-client 레이어에서 refresh를 시도하고,
-        refresh도 실패(401)하면 위 배너를 표시한 뒤 /login으로 리다이렉트됩니다.
+      <p style="font-size: 0.875rem; color: #555">
+        액세스 토큰 만료 시 api-client 레이어에서 refresh를 시도하고, refresh도 실패(401)하면 위
+        배너를 표시한 뒤 /login으로 리다이렉트됩니다.
       </p>
     </section>
-
   </body>
 </html>
