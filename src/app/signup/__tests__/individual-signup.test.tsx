@@ -245,9 +245,8 @@ describe('개인 회원가입 플로우', () => {
 
     render(<SignupAccountInfoPage />);
 
-    const passwordConfirmInput = screen.getByPlaceholderText(
-      '위에서 입력한 비밀번호를 입력해주세요.',
-    );
+    const passwordConfirmInput =
+      screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.');
     expect(passwordConfirmInput).toHaveAttribute('type', 'password');
 
     const toggleButton = screen.getByRole('button', { name: '비밀번호 확인 필드 표시' });

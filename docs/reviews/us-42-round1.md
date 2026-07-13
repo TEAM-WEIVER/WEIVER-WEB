@@ -26,6 +26,7 @@
 
   POST 요청 시 questionId 결정 규칙("GET 응답 `answers[i].questionId` 우선, 없으면 상수 `[1,2,3]`")이 기획 문서 API 연동 섹션에만 있고 AC2 Then에는 기술되지 않아 AC만 보고 테스트 코드를 작성할 수 없다.
   AC2 Then에 아래 내용을 추가해야 한다.
+
   > "GET 성공 시 `answers[i].questionId` 값을 사용하고, GET 실패·빈 배열인 경우 상수 `[1, 2, 3]`을 fallback으로 사용한다."
 
 - [ ] **M3. AC1 Then — prefill과 answerId 보관이 단일 Then에 혼재**

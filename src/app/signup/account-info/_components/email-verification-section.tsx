@@ -27,7 +27,10 @@ export function EmailVerificationSection({
 
   return (
     <div className="flex flex-col gap-3.5">
-      <FormField label="이메일" error={emailError ? <span id="email-error">{emailError}</span> : undefined}>
+      <FormField
+        label="이메일"
+        error={emailError ? <span id="email-error">{emailError}</span> : undefined}
+      >
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             id="email"

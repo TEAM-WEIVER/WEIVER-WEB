@@ -204,9 +204,7 @@ test.describe('AC8: 자기소개서 API 실패', () => {
     await page.getByRole('button', { name: '다음' }).click();
 
     // Then
-    await expect(
-      page.getByText('저장 중 오류가 발생했습니다. 다시 시도해주세요.'),
-    ).toBeVisible();
+    await expect(page.getByText('저장 중 오류가 발생했습니다. 다시 시도해주세요.')).toBeVisible();
     await expect(page).toHaveURL('/onboarding/cover-letter');
     await expect(page.getByRole('button', { name: '다음' })).toBeEnabled();
   });
@@ -302,9 +300,7 @@ test.describe('AC11: 포트폴리오 파일 유효성 검사', () => {
     });
 
     // Then
-    await expect(
-      page.getByText('PDF 또는 ZIP 파일만 업로드할 수 있습니다.'),
-    ).toBeVisible();
+    await expect(page.getByText('PDF 또는 ZIP 파일만 업로드할 수 있습니다.')).toBeVisible();
     await expect(page.getByRole('button', { name: '제출' })).toBeDisabled();
   });
 
@@ -358,9 +354,7 @@ test.describe('AC12: 포트폴리오 API 실패', () => {
     await page.getByRole('button', { name: '제출' }).click();
 
     // Then
-    await expect(
-      page.getByText('업로드 중 오류가 발생했습니다. 다시 시도해주세요.'),
-    ).toBeVisible();
+    await expect(page.getByText('업로드 중 오류가 발생했습니다. 다시 시도해주세요.')).toBeVisible();
     await expect(page).toHaveURL('/onboarding/portfolio');
     await expect(page.getByRole('button', { name: '제출' })).toBeEnabled();
   });
