@@ -26,6 +26,7 @@ export default function InterviewPage() {
   } = useInterviewStore();
 
   const roundLabel = getRoundLabel(currentQuestionCode);
+  const hasCurrentQuestion = currentQuestion !== null && currentSequence !== null;
 
   const { connect, submitAnswer } = useInterviewWebSocket();
 
@@ -84,8 +85,8 @@ export default function InterviewPage() {
           <InterviewStartScreen onStart={handleStart} isConnecting={status === 'CONNECTING'} />
         )}
 
-        {/* SUBSCRIBED — 질문 대기 중 */}
-        {status === 'SUBSCRIBED' && (
+        {/* SUBSCRIBED — 첫 질문 대기 중 */}
+        {status === 'SUBSCRIBED' && !hasCurrentQuestion && (
           <div className="flex flex-col items-center gap-4 py-16">
             <div className="flex items-center gap-2">
               <svg
@@ -123,18 +124,21 @@ export default function InterviewPage() {
           </div>
         )}
 
-        {/* QUESTION / SUBMITTING / RECONNECTING (질문 표시 유지) — 질문 화면 */}
+        {/* QUESTION / SUBMITTING / SUBSCRIBED / RECONNECTING — 질문 화면 유지 */}
         {(status === 'QUESTION' ||
           status === 'SUBMITTING' ||
-          (status === 'RECONNECTING' && currentQuestion !== null)) &&
-          currentQuestion !== null &&
-          currentSequence !== null && (
+          (status === 'SUBSCRIBED' && hasCurrentQuestion) ||
+          (status === 'RECONNECTING' && hasCurrentQuestion)) &&
+          hasCurrentQuestion && (
             <InterviewQuestionScreen
-              key={currentSequence}
               question={currentQuestion}
               sequence={currentSequence}
               roundLabel={roundLabel}
-              isSubmitting={status === 'SUBMITTING' || status === 'RECONNECTING'}
+              isSubmitting={
+                status === 'SUBMITTING' ||
+                status === 'RECONNECTING' ||
+                status === 'SUBSCRIBED'
+              }
               onSubmit={handleSubmitAnswer}
             />
           )}
