@@ -135,7 +135,6 @@ export default function InterviewPage() {
               sequence={currentSequence}
               roundLabel={roundLabel}
               isSubmitting={status === 'SUBMITTING' || status === 'RECONNECTING'}
-              aiVideoMode={status === 'QUESTION' ? 'listening' : 'questioning'}
               onSubmit={handleSubmitAnswer}
             />
           )}
@@ -148,7 +147,6 @@ export default function InterviewPage() {
             roundLabel={roundLabel}
             isSubmitting={false}
             isFinished
-            aiVideoMode="questioning"
             onSubmit={handleReturnToDashboard}
             onFinish={handleReturnToDashboard}
           />

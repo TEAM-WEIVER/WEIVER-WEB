@@ -6,8 +6,6 @@ import { AlertCircle, ArrowRight, Bot, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
-type AiVideoMode = 'questioning' | 'listening';
-
 interface InterviewQuestionScreenProps {
   question: string;
   sequence: number;
@@ -16,7 +14,6 @@ interface InterviewQuestionScreenProps {
   isFinished?: boolean;
   onSubmit: (answer: string) => void;
   onFinish?: () => void;
-  aiVideoMode?: AiVideoMode;
 }
 
 const MIC_BARS = [
@@ -37,16 +34,48 @@ export function InterviewQuestionScreen({
   isFinished = false,
   onSubmit,
   onFinish,
-  aiVideoMode = 'listening',
 }: InterviewQuestionScreenProps) {
   const [answer, setAnswer] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [cameraStatus, setCameraStatus] = useState<'checking' | 'granted' | 'denied'>('checking');
+  // page.tsx에서 key={currentSequence}로 remount되므로, 마운트 시 초기값으로 TTS 상태를 설정한다.
+  const [isTtsPlaying, setIsTtsPlaying] = useState(() => !isFinished && !!question);
+  const [isTtsDone, setIsTtsDone] = useState(false);
+
+  const effectiveVideoMode: 'questioning' | 'listening' = isTtsPlaying ? 'questioning' : 'listening';
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const aiVideoSrc =
-    aiVideoMode === 'questioning' ? '/interview/questioning.mp4' : '/interview/listening.mp4';
+    effectiveVideoMode === 'questioning' ? '/interview/questioning.mp4' : '/interview/listening.mp4';
+
+  // 마운트 시 TTS 시작 (question/isFinished는 마운트 후 변경되지 않음 — key로 remount됨)
+  useEffect(() => {
+    if (!question || isFinished) return;
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(question);
+    utterance.lang = 'ko-KR';
+    utterance.rate = 0.9;
+
+    utterance.onend = () => {
+      setIsTtsPlaying(false);
+      setIsTtsDone(true);
+    };
+
+    utterance.onerror = () => {
+      setIsTtsPlaying(false);
+      setIsTtsDone(true);
+    };
+
+    window.speechSynthesis.speak(utterance);
+
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (isFinished) return;
@@ -73,6 +102,12 @@ export function InterviewQuestionScreen({
       videoRef.current.srcObject = cameraStreamRef.current;
     }
   }, [cameraStatus]);
+
+  const handleSkipTts = () => {
+    window.speechSynthesis.cancel();
+    setIsTtsPlaying(false);
+    setIsTtsDone(true);
+  };
 
   function handleSubmit() {
     if (isFinished) {
@@ -181,17 +216,27 @@ export function InterviewQuestionScreen({
           {question}
         </p>
 
+        {/* TTS 재생 중 안내 */}
+        {isTtsPlaying && (
+          <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+            <span className="text-sm text-blue-700">면접관이 질문 중입니다...</span>
+            <Button type="button" variant="outline" size="sm" onClick={handleSkipTts}>
+              바로 답변하기
+            </Button>
+          </div>
+        )}
+
         {!isFinished && (
           <div className="flex flex-col gap-2">
             <Textarea
-              placeholder="답변을 입력하세요."
+              placeholder={isTtsPlaying ? '질문이 끝난 후 답변을 입력해 주세요.' : '답변을 입력하세요.'}
               value={answer}
               onChange={(e) => {
                 setAnswer(e.target.value);
                 if (validationError) setValidationError(null);
               }}
-              disabled={isSubmitting}
-              aria-disabled={isSubmitting}
+              disabled={isSubmitting || isTtsPlaying}
+              aria-disabled={isSubmitting || isTtsPlaying}
               aria-invalid={validationError !== null}
               aria-label="답변 입력"
               className="min-h-[140px] resize-none"
@@ -222,14 +267,18 @@ export function InterviewQuestionScreen({
               </div>
             </div>
             <span className="text-sm font-medium text-slate-900">
-              {isFinished ? '면접 응답이 저장되었어요.' : '지원자님이 답변을 하고 있어요.'}
+              {isFinished
+                ? '면접 응답이 저장되었어요.'
+                : isTtsPlaying
+                  ? '면접관이 질문하고 있어요.'
+                  : '지원자님이 답변을 하고 있어요.'}
             </span>
           </div>
 
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isFinished ? false : isSubmitting || isTtsPlaying || !isTtsDone || answer.trim() === ''}
             size="sm"
             className="flex shrink-0 items-center gap-1 bg-slate-200 text-slate-500 hover:bg-slate-300 disabled:opacity-50"
           >
