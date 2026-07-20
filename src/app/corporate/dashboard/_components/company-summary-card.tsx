@@ -1,7 +1,12 @@
-import type { CompanyDashboardProfile } from './dashboard-fixtures';
+import type { CompanyDashboard } from '@/schemas/corporate/dashboard';
 
 type CompanySummaryCardProps = {
   company: CompanyDashboardProfile;
+};
+
+export type CompanyDashboardProfile = CompanyDashboard & {
+  companyName?: string | null;
+  companyType?: string | null;
 };
 
 function InfoTile({ label, value }: { label: string; value: string }) {
@@ -37,11 +42,19 @@ export function CompanySummaryCard({ company }: CompanySummaryCardProps) {
         <div className="flex items-start justify-between">
           <div className="flex min-w-0 items-center gap-6">
             <div className="bg-bg-primary flex size-[88px] shrink-0 items-center justify-center rounded-[10px] text-[48px] leading-none font-black text-black">
-              W
+              {company.companyLogoUrl ? (
+                <span
+                  className="size-full rounded-[10px] bg-cover bg-center"
+                  style={{ backgroundImage: `url(${company.companyLogoUrl})` }}
+                  aria-label={`${company.companyName ?? '기업'} 로고`}
+                />
+              ) : (
+                'W'
+              )}
             </div>
             <div className="flex min-w-0 flex-col gap-1">
-              <h1 className="text-h3 text-text-secondary truncate">{company.companyName}</h1>
-              <p className="text-body2 text-text-tertiary">{company.companyType}</p>
+              <h1 className="text-h3 text-text-secondary truncate">{company.companyName ?? '-'}</h1>
+              <p className="text-body2 text-text-tertiary">{company.companyType ?? '-'}</p>
             </div>
           </div>
         </div>

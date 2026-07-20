@@ -1,12 +1,17 @@
 import { ChevronRight, UsersRound } from 'lucide-react';
+import Link from 'next/link';
 
 import type { Notification } from '@/schemas/corporate/dashboard';
 
 type MatchingNotificationCardProps = {
   notifications: Notification[];
+  onNotificationClick?: (notification: Notification) => void;
 };
 
-export function MatchingNotificationCard({ notifications }: MatchingNotificationCardProps) {
+export function MatchingNotificationCard({
+  notifications,
+  onNotificationClick,
+}: MatchingNotificationCardProps) {
   return (
     <section className="border-border-light bg-bg-primary flex min-h-[286px] flex-col rounded-[20px] border p-6 lg:p-[34px]">
       <div className="border-border-light flex h-[70px] flex-col gap-0.5 border-b">
@@ -15,29 +20,44 @@ export function MatchingNotificationCard({ notifications }: MatchingNotification
       </div>
 
       <div className="flex flex-col">
-        {notifications.map((notification) => (
-          <button
-            key={notification.notificationId}
-            type="button"
-            className="border-border-light hover:bg-bg-secondary flex h-[66px] items-center justify-between border-b px-3.5 text-left transition-colors"
-          >
-            <span className="flex min-w-0 items-center gap-3.5">
-              <span className="bg-primary-200 text-primary-600 relative flex h-[38px] w-[39px] shrink-0 items-center justify-center rounded-md">
-                <UsersRound size={20} className="fill-current" />
-                {!notification.isRead && (
-                  <span className="bg-error absolute -top-0.5 -right-0.5 size-1.5 rounded-full" />
-                )}
-              </span>
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-body2 text-text-primary truncate">
-                  {notification.message ?? '새로운 매칭이 있습니다.'}
+        {notifications.length === 0 ? (
+          <div className="text-body2 text-text-tertiary border-border-light flex h-[66px] items-center justify-center border-b px-3.5">
+            새로운 매칭 알림이 없습니다.
+          </div>
+        ) : (
+          notifications.map((notification) => {
+            const href = notification.jdId
+              ? `/corporate/recruitment/${notification.jdId}`
+              : '/corporate/dashboard';
+
+            return (
+              <Link
+                key={notification.notificationId}
+                href={href}
+                onClick={() => onNotificationClick?.(notification)}
+                className="border-border-light hover:bg-bg-secondary flex h-[66px] items-center justify-between border-b px-3.5 text-left transition-colors"
+              >
+                <span className="flex min-w-0 items-center gap-3.5">
+                  <span className="bg-primary-200 text-primary-600 relative flex h-[38px] w-[39px] shrink-0 items-center justify-center rounded-md">
+                    <UsersRound size={20} className="fill-current" />
+                    {!notification.isRead && (
+                      <span className="bg-error absolute -top-0.5 -right-0.5 size-1.5 rounded-full" />
+                    )}
+                  </span>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="text-body2 text-text-primary truncate">
+                      {notification.message ?? '새로운 매칭이 있습니다.'}
+                    </span>
+                    <span className="text-caption text-text-disabled">
+                      {notification.createdAt}
+                    </span>
+                  </span>
                 </span>
-                <span className="text-caption text-text-disabled">{notification.createdAt}</span>
-              </span>
-            </span>
-            <ChevronRight className="text-primary-300 size-6 shrink-0" />
-          </button>
-        ))}
+                <ChevronRight className="text-primary-300 size-6 shrink-0" />
+              </Link>
+            );
+          })
+        )}
       </div>
     </section>
   );

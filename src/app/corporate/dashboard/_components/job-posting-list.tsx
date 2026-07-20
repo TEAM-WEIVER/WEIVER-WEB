@@ -44,42 +44,48 @@ export function JobPostingList({ postings }: JobPostingListProps) {
       </div>
 
       <div className="flex flex-col">
-        {postings.map((posting) => (
-          <article
-            key={posting.jdId}
-            className="border-border-light hover:bg-bg-secondary flex min-h-[108px] items-center justify-between border-t px-6 py-6 transition-colors lg:px-[34px]"
-          >
-            <Link
-              href={`/corporate/recruitment/${posting.jdId}`}
-              className="flex min-w-0 flex-1 flex-col gap-2"
+        {postings.length === 0 ? (
+          <div className="border-border-light text-body2 text-text-tertiary flex min-h-[108px] items-center justify-center border-t px-6 py-6 lg:px-[34px]">
+            등록된 공고가 없습니다.
+          </div>
+        ) : (
+          postings.map((posting) => (
+            <article
+              key={posting.jdId}
+              className="border-border-light hover:bg-bg-secondary flex min-h-[108px] items-center justify-between border-t px-6 py-6 transition-colors lg:px-[34px]"
             >
-              <div className="flex min-w-0 items-center gap-3">
-                <h3 className="text-h4 text-text-primary truncate">{posting.title}</h3>
-                <StatusTag status={posting.status} />
-              </div>
-              <div className="text-body2 text-text-tertiary flex items-center gap-1.5">
-                <MessageSquareText className="size-[18px] shrink-0 fill-current" />
-                <span className="truncate">
-                  {posting.jobCategory} / {posting.detailedJob}
-                </span>
-              </div>
-            </Link>
-
-            <div className="flex shrink-0 items-center gap-6 sm:gap-[34px]">
-              <div className="border-border-default bg-bg-tertiary flex flex-col items-center rounded-lg border p-2 text-center text-black">
-                <p className="text-h4">{posting.newApplicantCount ?? 0}</p>
-                <p className="text-caption">새로운 지원자</p>
-              </div>
-              <button
-                type="button"
-                aria-label={`${posting.title} ${getStatusLabel(posting.status)} 메뉴`}
-                className="text-primary-700 flex size-6 items-center justify-center"
+              <Link
+                href={`/corporate/recruitment/${posting.jdId}`}
+                className="flex min-w-0 flex-1 flex-col gap-2"
               >
-                <MoreVertical size={24} />
-              </button>
-            </div>
-          </article>
-        ))}
+                <div className="flex min-w-0 items-center gap-3">
+                  <h3 className="text-h4 text-text-primary truncate">{posting.title}</h3>
+                  <StatusTag status={posting.status} />
+                </div>
+                <div className="text-body2 text-text-tertiary flex items-center gap-1.5">
+                  <MessageSquareText className="size-[18px] shrink-0 fill-current" />
+                  <span className="truncate">
+                    {posting.jobCategory} / {posting.detailedJob}
+                  </span>
+                </div>
+              </Link>
+
+              <div className="flex shrink-0 items-center gap-6 sm:gap-[34px]">
+                <div className="border-border-default bg-bg-tertiary flex flex-col items-center rounded-lg border p-2 text-center text-black">
+                  <p className="text-h4">{posting.newApplicantCount ?? 0}</p>
+                  <p className="text-caption">새로운 지원자</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label={`${posting.title} ${getStatusLabel(posting.status)} 메뉴`}
+                  className="text-primary-700 flex size-6 items-center justify-center"
+                >
+                  <MoreVertical size={24} />
+                </button>
+              </div>
+            </article>
+          ))
+        )}
       </div>
 
       <button
