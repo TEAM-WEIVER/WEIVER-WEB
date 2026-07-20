@@ -10,10 +10,23 @@ type ReportHeaderProps = {
   activeTab: ReportTab;
   cardSummary: CardSummary;
   jdId: string;
+  numericJdId: number;
+  applicantPublicId: string;
+  isLoading?: boolean;
+  error?: Error | null;
 };
 
-export function ReportHeader({ activeTab, cardSummary, jdId }: ReportHeaderProps) {
+export function ReportHeader({
+  activeTab,
+  cardSummary,
+  jdId,
+  numericJdId,
+  applicantPublicId,
+  isLoading = false,
+  error = null,
+}: ReportHeaderProps) {
   const profile = cardSummary.profile;
+  const applicantName = error ? '지원자' : (profile?.name ?? '지원자');
 
   return (
     <header className="bg-bg-primary border-border-light border-b">
@@ -33,15 +46,23 @@ export function ReportHeader({ activeTab, cardSummary, jdId }: ReportHeaderProps
         <div className="flex items-center justify-between gap-6 py-8">
           <div className="flex min-w-0 items-center gap-6">
             <div className="bg-primary-200 flex size-[104px] shrink-0 items-center justify-center rounded-full">
-              <span className="text-h1 text-primary-700">{profile?.name?.slice(0, 1) ?? '김'}</span>
+              {isLoading ? (
+                <span className="bg-primary-300 size-12 animate-pulse rounded-full" />
+              ) : (
+                <span className="text-h1 text-primary-700">{applicantName.slice(0, 1)}</span>
+              )}
             </div>
 
             <div className="flex min-w-0 flex-col gap-3">
               <div className="flex items-center gap-3">
                 <span className="border-info bg-bg-tertiary text-body2 text-text-primary inline-flex h-7 items-center rounded-md border px-2">
-                  신입
+                  {profile?.position ?? '경력 정보 없음'}
                 </span>
-                <h1 className="text-h1 text-text-primary">{profile?.name ?? '지원자'}</h1>
+                {isLoading ? (
+                  <div className="bg-bg-tertiary h-11 w-40 animate-pulse rounded" />
+                ) : (
+                  <h1 className="text-h1 text-text-primary">{applicantName}</h1>
+                )}
               </div>
 
               <div className="text-body2 text-text-tertiary flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -57,7 +78,7 @@ export function ReportHeader({ activeTab, cardSummary, jdId }: ReportHeaderProps
             </div>
           </div>
 
-          <ReportHeaderActions />
+          <ReportHeaderActions jdId={numericJdId} applicantPublicId={applicantPublicId} />
         </div>
 
         <ReportTabs activeTab={activeTab} />

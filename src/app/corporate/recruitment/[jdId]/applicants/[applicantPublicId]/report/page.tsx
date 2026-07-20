@@ -15,9 +15,11 @@ export default async function ApplicantReportPage({
   params,
   searchParams,
 }: ApplicantReportPageProps) {
-  const { jdId } = await params;
+  const { jdId, applicantPublicId } = await params;
   const query = await searchParams;
   const activeTab = normalizeReportTab(query?.tab);
 
-  return <ApplicantReportView activeTab={activeTab} jdId={jdId} />;
+  return (
+    <ApplicantReportView activeTab={activeTab} jdId={jdId} applicantPublicId={applicantPublicId} />
+  );
 }

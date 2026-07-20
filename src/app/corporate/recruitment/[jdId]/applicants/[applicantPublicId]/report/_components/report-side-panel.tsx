@@ -8,6 +8,8 @@ import { KeywordTag } from './report-card';
 
 type ReportSidePanelProps = {
   cardSummary: CardSummary;
+  isLoading?: boolean;
+  error?: Error | null;
   keywords?: {
     strengths?: string[];
     weaknesses?: string[];
@@ -48,7 +50,16 @@ function KeywordGroup({
   );
 }
 
-export function ReportSidePanel({ cardSummary, keywords }: ReportSidePanelProps) {
+function SidePanelValueSkeleton() {
+  return <div className="bg-bg-tertiary h-7 w-full animate-pulse rounded" />;
+}
+
+export function ReportSidePanel({
+  cardSummary,
+  isLoading = false,
+  error = null,
+  keywords,
+}: ReportSidePanelProps) {
   const card = cardSummary.card;
 
   return (
@@ -58,9 +69,13 @@ export function ReportSidePanel({ cardSummary, keywords }: ReportSidePanelProps)
           <div className="flex flex-col gap-2">
             <p className="text-body2 text-text-tertiary">스킬핏 점수</p>
             <div className="border-border-default bg-bg-tertiary flex h-[68px] items-center justify-center rounded-lg border">
-              <span className="text-text-secondary text-[32px] leading-10 font-bold">
-                {card?.skillScore ?? '-'}
-              </span>
+              {isLoading ? (
+                <div className="bg-bg-primary h-9 w-12 animate-pulse rounded" />
+              ) : (
+                <span className="text-text-secondary text-[32px] leading-10 font-bold">
+                  {error ? '-' : (card?.skillScore ?? '-')}
+                </span>
+              )}
             </div>
           </div>
 
@@ -70,9 +85,13 @@ export function ReportSidePanel({ cardSummary, keywords }: ReportSidePanelProps)
               <div className="bg-primary-200 flex size-9 shrink-0 items-center justify-center rounded">
                 <Rocket className="text-primary-700 size-6" />
               </div>
-              <p className="text-body1 text-text-primary truncate">
-                {card?.culturefitStyle ?? '-'}
-              </p>
+              {isLoading ? (
+                <SidePanelValueSkeleton />
+              ) : (
+                <p className="text-body1 text-text-primary truncate">
+                  {error ? '-' : (card?.culturefitStyle ?? '-')}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -80,9 +99,15 @@ export function ReportSidePanel({ cardSummary, keywords }: ReportSidePanelProps)
         <div className="mt-6 flex flex-col gap-2">
           <p className="text-body2 text-text-tertiary">기술스택 키워드</p>
           <div className="flex flex-wrap gap-1.5">
-            {(card?.skillTags ?? []).map((tag) => (
-              <KeywordTag key={tag}>{tag}</KeywordTag>
-            ))}
+            {isLoading ? (
+              <>
+                <div className="bg-bg-tertiary h-7 w-14 animate-pulse rounded" />
+                <div className="bg-bg-tertiary h-7 w-20 animate-pulse rounded" />
+                <div className="bg-bg-tertiary h-7 w-16 animate-pulse rounded" />
+              </>
+            ) : (
+              (card?.skillTags ?? []).map((tag) => <KeywordTag key={tag}>{tag}</KeywordTag>)
+            )}
           </div>
         </div>
 
