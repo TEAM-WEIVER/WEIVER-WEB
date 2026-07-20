@@ -1,14 +1,24 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { useApplicants } from '@/hooks/corporate/use-applicant';
 import { cn } from '@/lib/utils';
 import type { ApplicantListItem, ApplicantListResponse } from '@/schemas/corporate/applicant';
 
+import {
+  addTechStackFilter,
+  createDefaultApplicantFilterDraft,
+  CULTURE_STYLE_OPTIONS,
+  MAX_TECH_STACK_FILTERS,
+  removeTechStackFilter,
+  toAppliedApplicantFilters,
+  type ApplicantFilterDraft,
+  type CultureStyleOption,
+} from './applicant-list-filter.utils';
 import { ApplicantContactButton } from './applicant-contact-button';
 
 const APPLICANTS_PAGE_SIZE = 6;
@@ -61,22 +71,87 @@ function SearchField({
   );
 }
 
-function FilterSelect({ label, value }: { label: string; value: string }) {
+function FilterSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: CultureStyleOption;
+  options: readonly CultureStyleOption[];
+  onChange: (value: CultureStyleOption) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLLabelElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [isOpen]);
+
   return (
-    <label className="flex w-[240px] min-w-0 flex-col gap-2">
+    <label ref={rootRef} className="relative flex w-[240px] min-w-0 flex-col gap-2">
       <span className="text-body2 text-text-primary">{label}</span>
       <button
         type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
         className="border-border-light bg-bg-secondary text-body2 text-text-primary flex h-12 w-full items-center justify-between rounded-lg border px-5"
+        onClick={() => setIsOpen((next) => !next)}
       >
         {value}
         <ChevronDown className="text-primary-600 size-6" />
       </button>
+      {isOpen && (
+        <div
+          role="listbox"
+          className="border-border-light bg-bg-primary absolute top-[78px] right-0 left-0 z-30 overflow-hidden rounded-lg border shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
+        >
+          {options.map((option) => {
+            const isSelected = option === value;
+
+            return (
+              <button
+                key={option}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                className={cn(
+                  'text-body2 text-text-primary hover:bg-bg-tertiary flex h-10 w-full items-center justify-between px-5 text-left',
+                  isSelected && 'bg-bg-tertiary',
+                )}
+                onClick={() => {
+                  onChange(option);
+                  setIsOpen(false);
+                }}
+              >
+                {option}
+                {isSelected && <Check className="text-primary-600 size-4" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </label>
   );
 }
 
-function SkillScoreFilter() {
+function SkillScoreFilter({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
   return (
     <div className="flex w-[300px] flex-col gap-[18px]">
       <div className="flex flex-col gap-1">
@@ -88,16 +163,49 @@ function SkillScoreFilter() {
       <div className="flex items-center gap-2.5">
         <div className="relative h-[18px] w-[264px]">
           <div className="bg-primary-200 absolute top-[5px] left-0 h-2 w-full rounded-full" />
-          <div className="bg-primary-700 absolute top-[5px] left-0 h-2 w-[240px] rounded-full" />
-          <div className="bg-primary-700 border-bg-primary absolute top-px left-[240px] size-4 rounded-full border-2" />
+          <div
+            className="bg-primary-700 absolute top-[5px] left-0 h-2 rounded-full"
+            style={{ width: `${value}%` }}
+          />
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={value}
+            aria-label="스킬핏 최소 점수"
+            className="absolute inset-0 h-[18px] w-full cursor-pointer opacity-0"
+            onChange={(event) => onChange(Number(event.target.value))}
+          />
+          <div
+            className="bg-primary-700 border-bg-primary pointer-events-none absolute top-px size-4 rounded-full border-2"
+            style={{ left: `calc(${value}% - 8px)` }}
+          />
         </div>
-        <p className="text-caption text-text-primary">80점</p>
+        <p className="text-caption text-text-primary w-8">{value}점</p>
       </div>
     </div>
   );
 }
 
-function TechStackFilter() {
+function TechStackFilter({
+  techStacks,
+  onChange,
+}: {
+  techStacks: string[];
+  onChange: (techStacks: string[]) => void;
+}) {
+  const [draft, setDraft] = useState('');
+  const [isComposing, setIsComposing] = useState(false);
+
+  const addDraft = () => {
+    const nextTechStacks = addTechStackFilter(techStacks, draft);
+    if (nextTechStacks === techStacks) return;
+
+    onChange(nextTechStacks);
+    setDraft('');
+  };
+
   return (
     <div className="flex w-[473px] flex-col gap-2">
       <div className="flex items-center gap-2">
@@ -106,8 +214,43 @@ function TechStackFilter() {
           공백 클릭 후 Enter하여 추가 (최대 3개 추가 가능)
         </p>
       </div>
-      <div className="border-border-light bg-bg-secondary flex h-12 items-center rounded-lg border p-3">
-        <Tag>React</Tag>
+      <div className="border-border-light bg-bg-secondary flex h-12 items-center gap-2 rounded-lg border p-3">
+        {techStacks.map((techStack) => (
+          <button
+            key={techStack}
+            type="button"
+            className="text-body2 border-border-default bg-primary-200 text-text-primary flex h-7 items-center gap-1.5 rounded-md border px-2"
+            onClick={() => onChange(removeTechStackFilter(techStacks, techStack))}
+          >
+            {techStack}
+            <X className="text-primary-500 size-3.5" />
+          </button>
+        ))}
+        {techStacks.length < MAX_TECH_STACK_FILTERS && (
+          <input
+            value={draft}
+            aria-label="기술 스택 필터"
+            placeholder={techStacks.length > 0 ? '' : '기술 스택 입력'}
+            className="text-body2 text-text-primary placeholder:text-text-disabled min-w-[120px] flex-1 bg-transparent outline-none"
+            onChange={(event) => setDraft(event.target.value)}
+            onCompositionStart={() => setIsComposing(true)}
+            onCompositionEnd={() => setIsComposing(false)}
+            onKeyDown={(event) => {
+              if (isComposing || event.nativeEvent.isComposing) return;
+
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                addDraft();
+              }
+              if (event.key === 'Escape') {
+                setDraft('');
+              }
+            }}
+            onBlur={() => {
+              if (!isComposing) addDraft();
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -385,6 +528,12 @@ export function ApplicantListView({ jdId }: { jdId: string }) {
   const isValidJdId = Number.isFinite(numericJdId) && numericJdId > 0;
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [filterDraft, setFilterDraft] = useState<ApplicantFilterDraft>(
+    createDefaultApplicantFilterDraft,
+  );
+  const [appliedFilters, setAppliedFilters] = useState(() =>
+    toAppliedApplicantFilters(createDefaultApplicantFilterDraft()),
+  );
   const [page, setPage] = useState(0);
   const {
     data: applicantList,
@@ -392,6 +541,9 @@ export function ApplicantListView({ jdId }: { jdId: string }) {
     error,
   } = useApplicants(numericJdId, {
     keyword,
+    skillScoreMin: appliedFilters.skillScoreMin,
+    cultureStyle: appliedFilters.cultureStyle,
+    techStacks: appliedFilters.techStacks,
     page,
     size: APPLICANTS_PAGE_SIZE,
   });
@@ -400,6 +552,28 @@ export function ApplicantListView({ jdId }: { jdId: string }) {
 
   const submitKeyword = () => {
     setKeyword(keywordInput.trim());
+    setPage(0);
+  };
+
+  const updateFilterDraft = <TKey extends keyof ApplicantFilterDraft>(
+    key: TKey,
+    value: ApplicantFilterDraft[TKey],
+  ) => {
+    setFilterDraft((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const applyFilters = () => {
+    setKeyword(keywordInput.trim());
+    setAppliedFilters(toAppliedApplicantFilters(filterDraft));
+    setPage(0);
+  };
+
+  const resetFilters = () => {
+    const nextDraft = createDefaultApplicantFilterDraft();
+    setKeywordInput('');
+    setKeyword('');
+    setFilterDraft(nextDraft);
+    setAppliedFilters(toAppliedApplicantFilters(nextDraft));
     setPage(0);
   };
 
@@ -427,20 +601,27 @@ export function ApplicantListView({ jdId }: { jdId: string }) {
 
         <div className="border-border-light border-b px-20 py-[34px]">
           <div className="mx-auto flex w-full max-w-[1208px] items-center gap-6">
-            <SkillScoreFilter />
-            <FilterSelect label="컬처핏 스타일" value="전체 스타일" />
-            <TechStackFilter />
+            <SkillScoreFilter
+              value={filterDraft.skillScoreMin}
+              onChange={(value) => updateFilterDraft('skillScoreMin', value)}
+            />
+            <FilterSelect
+              label="컬처핏 스타일"
+              value={filterDraft.cultureStyle}
+              options={CULTURE_STYLE_OPTIONS}
+              onChange={(value) => updateFilterDraft('cultureStyle', value)}
+            />
+            <TechStackFilter
+              techStacks={filterDraft.techStacks}
+              onChange={(techStacks) => updateFilterDraft('techStacks', techStacks)}
+            />
             <div className="ml-auto flex w-[123px] flex-col gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="xs"
                 className="border-border-default bg-bg-primary h-[42px] rounded-[10px] shadow-none"
-                onClick={() => {
-                  setKeywordInput('');
-                  setKeyword('');
-                  setPage(0);
-                }}
+                onClick={resetFilters}
               >
                 필터 초기화
               </Button>
@@ -448,7 +629,7 @@ export function ApplicantListView({ jdId }: { jdId: string }) {
                 type="button"
                 size="xs"
                 className="h-[42px] rounded-[10px]"
-                onClick={submitKeyword}
+                onClick={applyFilters}
               >
                 필터 적용
               </Button>
