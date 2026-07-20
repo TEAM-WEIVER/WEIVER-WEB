@@ -2,11 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import {
-  getApplicants,
-  getApplicantDetail,
-  sendContactMail,
-} from '@/services/corporate/applicant';
+import { getApplicants, getApplicantDetail, sendContactMail } from '@/services/corporate/applicant';
 import type { ApplicantListResponse, ApplicantDetail } from '@/schemas/corporate/applicant';
 
 /* ─── useApplicants ─── */
@@ -34,6 +30,17 @@ export function useApplicants(jdId: number, params?: ApplicantsParams) {
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!Number.isFinite(jdId) || jdId <= 0) {
+      setData(null);
+      setError(new Error('Invalid job posting id'));
+      setIsLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setIsLoading(true);
 
     getApplicants(jdId, { keyword, skillScoreMin, cultureStyle, techStacks, page, size })
       .then((res) => {

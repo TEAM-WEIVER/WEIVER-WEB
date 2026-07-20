@@ -1,20 +1,17 @@
+'use client';
+
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useApplicants } from '@/hooks/corporate/use-applicant';
 import { cn } from '@/lib/utils';
+import type { ApplicantListItem, ApplicantListResponse } from '@/schemas/corporate/applicant';
 
 import { ApplicantContactButton } from './applicant-contact-button';
 
-const APPLICANTS = Array.from({ length: 6 }, (_, index) => ({
-  id: index + 1,
-  name: '홍길동',
-  experience: '신입',
-  skillScore: 88,
-  cultureStyle: '추진형 실행가',
-  cultureDescription: '자율 · 혁신 + 성과 · 공동체',
-  techStacks: ['Jira', 'Excel', 'Figma', 'Photoshop'],
-}));
+const APPLICANTS_PAGE_SIZE = 6;
 
 function Tag({
   children,
@@ -35,13 +32,29 @@ function Tag({
   );
 }
 
-function SearchField() {
+function SearchField({
+  value,
+  onChange,
+  onSubmit,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+}) {
   return (
     <label className="border-border-light bg-bg-tertiary text-text-disabled flex h-[42px] w-[332px] items-center gap-3.5 rounded-xl border px-5">
       <Search size={18} />
       <input
         aria-label="지원자 검색"
         placeholder="지원자 검색..."
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            onSubmit();
+          }
+        }}
         className="text-body2 text-text-primary placeholder:text-text-disabled min-w-0 flex-1 bg-transparent outline-none"
       />
     </label>
@@ -100,22 +113,86 @@ function TechStackFilter() {
   );
 }
 
-function ApplicantAvatar() {
+function ApplicantAvatar({
+  profileImageUrl,
+  applicantName,
+}: {
+  profileImageUrl?: string | null;
+  applicantName: string;
+}) {
+  if (profileImageUrl) {
+    return (
+      <div
+        className="size-[54px] shrink-0 rounded-full bg-cover bg-center"
+        style={{ backgroundImage: `url(${profileImageUrl})` }}
+        aria-label={`${applicantName} 프로필 이미지`}
+        role="img"
+      />
+    );
+  }
+
   return <div className="size-[54px] shrink-0 rounded-full bg-[#d9d9d9]" aria-hidden />;
 }
 
-function ScoreBar({ score }: { score: number }) {
+function ScoreBar({ score }: { score?: number | null }) {
+  const normalizedScore = Math.min(Math.max(score ?? 0, 0), 100);
+
   return (
     <div className="flex items-center gap-3">
-      <p className="text-body1 text-text-secondary w-10">{score}점</p>
+      <p className="text-body1 text-text-secondary w-10">{normalizedScore}점</p>
       <div className="bg-bg-tertiary h-2 w-[120px] rounded-full">
-        <div className="bg-primary-700 h-2 rounded-full" style={{ width: `${score}%` }} />
+        <div className="bg-primary-700 h-2 rounded-full" style={{ width: `${normalizedScore}%` }} />
       </div>
     </div>
   );
 }
 
-function ApplicantTable({ jdId }: { jdId: string }) {
+function ApplicantTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: APPLICANTS_PAGE_SIZE }, (_, index) => (
+        <div key={index} className="grid animate-pulse grid-cols-[174px_220px_220px_423px_171px]">
+          {Array.from({ length: 5 }, (_, cellIndex) => (
+            <div
+              key={cellIndex}
+              className={cn(
+                'border-border-light bg-bg-primary flex h-[82px] items-center border-b px-6',
+                cellIndex === 0 && 'border-l',
+                cellIndex === 4 && 'border-r',
+                index === APPLICANTS_PAGE_SIZE - 1 && cellIndex === 0 && 'rounded-bl-[20px]',
+                index === APPLICANTS_PAGE_SIZE - 1 && cellIndex === 4 && 'rounded-br-[20px]',
+              )}
+            >
+              <div className="bg-bg-tertiary h-5 w-full rounded" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
+
+function ApplicantTableMessage({ message }: { message: string }) {
+  return (
+    <div className="border-border-light bg-bg-primary flex h-[246px] items-center justify-center rounded-b-[20px] border-x border-b">
+      <p className="text-body1 text-text-tertiary">{message}</p>
+    </div>
+  );
+}
+
+function ApplicantTable({
+  jdId,
+  applicants,
+  isLoading,
+  error,
+}: {
+  jdId: number;
+  applicants: ApplicantListItem[];
+  isLoading: boolean;
+  error: Error | null;
+}) {
+  const hasApplicants = applicants.length > 0;
+
   return (
     <div className="w-full overflow-x-auto">
       <div className="min-w-[1208px]">
@@ -134,94 +211,168 @@ function ApplicantTable({ jdId }: { jdId: string }) {
           ))}
         </div>
 
-        {APPLICANTS.map((applicant, index) => {
-          const isLast = index === APPLICANTS.length - 1;
+        {isLoading && <ApplicantTableSkeleton />}
+        {!isLoading && error && (
+          <ApplicantTableMessage message="지원자 정보를 불러오지 못했습니다." />
+        )}
+        {!isLoading && !error && !hasApplicants && (
+          <ApplicantTableMessage message="아직 지원자가 없습니다." />
+        )}
 
-          return (
-            <div
-              key={applicant.id}
-              className="relative grid grid-cols-[174px_220px_220px_423px_171px]"
-            >
-              <Link
-                href={`/corporate/recruitment/${jdId}/applicants/${applicant.id}/report`}
-                aria-label={`${applicant.name} 상세 리포트 보기`}
-                className="absolute inset-0 z-10"
-              />
+        {!isLoading &&
+          !error &&
+          applicants.map((applicant, index) => {
+            const isLast = index === applicants.length - 1;
+            const cultureTags = applicant.cultureTags ?? [];
+            const techStacks = applicant.techStacks ?? [];
+
+            return (
               <div
-                className={cn(
-                  'border-border-light bg-bg-primary flex h-[82px] items-center border-b border-l px-6',
-                  isLast && 'rounded-bl-[20px]',
-                )}
+                key={applicant.publicId}
+                className="relative grid grid-cols-[174px_220px_220px_423px_171px]"
               >
-                <div className="flex items-center gap-4">
-                  <ApplicantAvatar />
-                  <div className="flex flex-col gap-1.5">
-                    <p className="text-body1 text-text-secondary">{applicant.name}</p>
-                    <Tag variant="info">{applicant.experience}</Tag>
+                <Link
+                  href={`/corporate/recruitment/${jdId}/applicants/${applicant.publicId}/report`}
+                  aria-label={`${applicant.applicantName} 상세 리포트 보기`}
+                  className="absolute inset-0 z-10"
+                />
+                <div
+                  className={cn(
+                    'border-border-light bg-bg-primary flex h-[82px] items-center border-b border-l px-6',
+                    isLast && 'rounded-bl-[20px]',
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <ApplicantAvatar
+                      profileImageUrl={applicant.profileImageUrl}
+                      applicantName={applicant.applicantName}
+                    />
+                    <div className="flex flex-col gap-1.5">
+                      <p className="text-body1 text-text-secondary">{applicant.applicantName}</p>
+                      <Tag variant="info">{applicant.position ?? '경력 정보 없음'}</Tag>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="border-border-light bg-bg-primary flex h-[82px] items-center border-b px-6">
-                <ScoreBar score={applicant.skillScore} />
-              </div>
-              <div className="border-border-light bg-bg-primary flex h-[82px] items-center border-b px-6">
-                <div className="flex flex-col gap-1">
-                  <p className="text-body1 text-text-secondary">{applicant.cultureStyle}</p>
-                  <p className="text-caption text-text-tertiary">{applicant.cultureDescription}</p>
+                <div className="border-border-light bg-bg-primary flex h-[82px] items-center border-b px-6">
+                  <ScoreBar score={applicant.skillScore} />
+                </div>
+                <div className="border-border-light bg-bg-primary flex h-[82px] items-center border-b px-6">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-body1 text-text-secondary">
+                      {applicant.cultureStyle ?? '-'}
+                    </p>
+                    <p className="text-caption text-text-tertiary">
+                      {cultureTags.length > 0 ? cultureTags.join(' + ') : '-'}
+                    </p>
+                  </div>
+                </div>
+                <div className="border-border-light bg-bg-primary flex h-[82px] items-center border-b px-6">
+                  <div className="flex flex-wrap gap-1.5">
+                    {techStacks.length > 0 ? (
+                      techStacks.map((stack) => <Tag key={stack}>{stack}</Tag>)
+                    ) : (
+                      <p className="text-body2 text-text-tertiary">-</p>
+                    )}
+                  </div>
+                </div>
+                <div
+                  className={cn(
+                    'border-border-light bg-bg-primary relative z-20 flex h-[82px] items-center justify-center border-r border-b px-6',
+                    isLast && 'rounded-br-[20px]',
+                  )}
+                >
+                  <ApplicantContactButton jdId={jdId} applicantPublicId={applicant.publicId} />
                 </div>
               </div>
-              <div className="border-border-light bg-bg-primary flex h-[82px] items-center border-b px-6">
-                <div className="flex flex-wrap gap-1.5">
-                  {applicant.techStacks.map((stack) => (
-                    <Tag key={stack}>{stack}</Tag>
-                  ))}
-                </div>
-              </div>
-              <div
-                className={cn(
-                  'border-border-light bg-bg-primary relative z-20 flex h-[82px] items-center justify-center border-r border-b px-6',
-                  isLast && 'rounded-br-[20px]',
-                )}
-              >
-                <ApplicantContactButton />
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
     </div>
   );
 }
 
-function Pagination() {
-  const pages = ['1', '2', '3', '...', '12'];
+function createPageItems(totalPages: number, currentPage: number) {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index);
+  }
+
+  const lastPage = totalPages - 1;
+  const pages = new Set([0, currentPage - 1, currentPage, currentPage + 1, lastPage]);
+  const visiblePages = [...pages]
+    .filter((page) => page >= 0 && page <= lastPage)
+    .sort((a, b) => a - b);
+
+  return visiblePages.flatMap((page, index) => {
+    const previousPage = visiblePages[index - 1];
+    if (previousPage !== undefined && page - previousPage > 1) {
+      return [`ellipsis-${previousPage}-${page}`, page] as const;
+    }
+    return [page] as const;
+  });
+}
+
+function Pagination({
+  applicantList,
+  currentPage,
+  onPageChange,
+}: {
+  applicantList: ApplicantListResponse | null;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+}) {
+  const totalPages = applicantList?.totalPages ?? 0;
+  const pageItems = useMemo(
+    () => createPageItems(totalPages, currentPage),
+    [totalPages, currentPage],
+  );
+
+  if (totalPages <= 1) return null;
 
   return (
     <div className="flex items-center gap-2">
       <button
         type="button"
         aria-label="이전 페이지"
-        className="border-border-light bg-bg-primary text-text-secondary flex size-8 items-center justify-center rounded border"
+        disabled={currentPage === 0}
+        className="border-border-light bg-bg-primary text-text-secondary disabled:text-text-disabled flex size-8 items-center justify-center rounded border disabled:cursor-not-allowed"
+        onClick={() => onPageChange(currentPage - 1)}
       >
         <ChevronLeft size={20} />
       </button>
-      {pages.map((page) => (
-        <button
-          key={page}
-          type="button"
-          className={cn(
-            'border-border-light text-button1 text-text-secondary flex size-8 items-center justify-center rounded border',
-            page === '1' ? 'bg-bg-tertiary' : 'bg-bg-primary',
-            page === '...' && 'border-transparent bg-transparent',
-          )}
-        >
-          {page}
-        </button>
-      ))}
+      {pageItems.map((page) => {
+        if (typeof page === 'string') {
+          return (
+            <span
+              key={page}
+              className="text-button1 text-text-secondary flex size-8 items-center justify-center"
+            >
+              ...
+            </span>
+          );
+        }
+
+        const isActive = page === currentPage;
+
+        return (
+          <button
+            key={page}
+            type="button"
+            className={cn(
+              'border-border-light text-button1 text-text-secondary flex size-8 items-center justify-center rounded border',
+              isActive ? 'bg-bg-tertiary' : 'bg-bg-primary',
+            )}
+            onClick={() => onPageChange(page)}
+          >
+            {page + 1}
+          </button>
+        );
+      })}
       <button
         type="button"
         aria-label="다음 페이지"
-        className="border-border-light bg-bg-primary text-text-secondary flex size-8 items-center justify-center rounded border"
+        disabled={currentPage >= totalPages - 1}
+        className="border-border-light bg-bg-primary text-text-secondary disabled:text-text-disabled flex size-8 items-center justify-center rounded border disabled:cursor-not-allowed"
+        onClick={() => onPageChange(currentPage + 1)}
       >
         <ChevronRight size={20} />
       </button>
@@ -230,6 +381,28 @@ function Pagination() {
 }
 
 export function ApplicantListView({ jdId }: { jdId: string }) {
+  const numericJdId = Number(jdId);
+  const isValidJdId = Number.isFinite(numericJdId) && numericJdId > 0;
+  const [keywordInput, setKeywordInput] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(0);
+  const {
+    data: applicantList,
+    isLoading,
+    error,
+  } = useApplicants(numericJdId, {
+    keyword,
+    page,
+    size: APPLICANTS_PAGE_SIZE,
+  });
+
+  const applicants = applicantList?.content ?? [];
+
+  const submitKeyword = () => {
+    setKeyword(keywordInput.trim());
+    setPage(0);
+  };
+
   return (
     <div className="-mx-6 flex min-h-[calc(100vh-68px)] flex-col gap-6 lg:-mx-20">
       <header className="bg-bg-primary flex flex-col">
@@ -245,7 +418,7 @@ export function ApplicantListView({ jdId }: { jdId: string }) {
             <h1 className="text-h2 text-text-secondary">지원자 리스트</h1>
           </div>
           <div className="flex items-center gap-6">
-            <SearchField />
+            <SearchField value={keywordInput} onChange={setKeywordInput} onSubmit={submitKeyword} />
             <Button type="button" size="xs" className="h-[42px] rounded-[10px]">
               공고 수정
             </Button>
@@ -263,10 +436,20 @@ export function ApplicantListView({ jdId }: { jdId: string }) {
                 variant="outline"
                 size="xs"
                 className="border-border-default bg-bg-primary h-[42px] rounded-[10px] shadow-none"
+                onClick={() => {
+                  setKeywordInput('');
+                  setKeyword('');
+                  setPage(0);
+                }}
               >
                 필터 초기화
               </Button>
-              <Button type="button" size="xs" className="h-[42px] rounded-[10px]">
+              <Button
+                type="button"
+                size="xs"
+                className="h-[42px] rounded-[10px]"
+                onClick={submitKeyword}
+              >
                 필터 적용
               </Button>
             </div>
@@ -275,8 +458,13 @@ export function ApplicantListView({ jdId }: { jdId: string }) {
       </header>
 
       <main className="mx-auto flex w-full max-w-[1208px] flex-col items-end gap-6">
-        <ApplicantTable jdId={jdId} />
-        <Pagination />
+        <ApplicantTable
+          jdId={numericJdId}
+          applicants={isValidJdId ? applicants : []}
+          isLoading={isValidJdId && isLoading}
+          error={isValidJdId ? error : new Error('Invalid job posting id')}
+        />
+        <Pagination applicantList={applicantList} currentPage={page} onPageChange={setPage} />
       </main>
     </div>
   );

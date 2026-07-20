@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { useSendContactMail } from '@/hooks/corporate/use-applicant';
 import { cn } from '@/lib/utils';
 
 import { ActionConfirmDialog } from './action-confirm-dialog';
@@ -19,37 +20,59 @@ const CONTACT_CONTENT = {
 } as const;
 
 type ApplicantContactButtonProps = {
+  jdId?: number;
+  applicantPublicId?: string;
   className?: string;
 };
 
-export function ApplicantContactButton({ className }: ApplicantContactButtonProps) {
+export function ApplicantContactButton({
+  jdId,
+  applicantPublicId,
+  className,
+}: ApplicantContactButtonProps) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isCompletedOpen, setIsCompletedOpen] = useState(false);
+  const [contactErrorMessage, setContactErrorMessage] = useState<string | null>(null);
+  const sendContactMail = useSendContactMail();
+  const canSendContactMail = jdId !== undefined && applicantPublicId !== undefined;
 
   return (
     <>
       <Button
         type="button"
         size="xs"
+        disabled={sendContactMail.isPending}
         className={cn('h-10 rounded-[10px]', className)}
         onClick={(event) => {
           event.stopPropagation();
+          setContactErrorMessage(null);
           setIsConfirmOpen(true);
         }}
       >
-        지원자 컨택하기
+        {sendContactMail.isPending ? '발송 중...' : '지원자 컨택하기'}
       </Button>
 
       <ActionConfirmDialog
         open={isConfirmOpen}
         title={CONTACT_CONTENT.title}
-        description={CONTACT_CONTENT.description}
+        description={contactErrorMessage ?? CONTACT_CONTENT.description}
         confirmLabel={CONTACT_CONTENT.confirmLabel}
         cancelLabel="취소"
-        onCancel={() => setIsConfirmOpen(false)}
-        onConfirm={() => {
+        onCancel={() => {
+          setContactErrorMessage(null);
           setIsConfirmOpen(false);
-          setIsCompletedOpen(true);
+        }}
+        onConfirm={async () => {
+          try {
+            if (canSendContactMail) {
+              await sendContactMail.mutate(jdId, applicantPublicId);
+            }
+            setContactErrorMessage(null);
+            setIsConfirmOpen(false);
+            setIsCompletedOpen(true);
+          } catch {
+            setContactErrorMessage('컨택 메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+          }
         }}
       />
 
