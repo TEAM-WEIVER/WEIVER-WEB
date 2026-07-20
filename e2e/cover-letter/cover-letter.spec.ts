@@ -5,7 +5,7 @@ import { test, expect, type Page, type Route } from '@playwright/test';
  *
  * page.route()로 API를 인터셉트한다.
  * Next.js rewrites: /api/* → https://api.piuda.site/api/*
- * E2E 인터셉트 경로는 **/api/* 기준으로 작성한다.
+ * E2E 인터셉트 경로는 **/ api; /* 기준으로 작성한다.
  */
 
 // ---------------------------------------------------------------------------
@@ -36,7 +36,8 @@ const ESSAY_WITH_DATA = {
         answerId: 1,
         questionId: 1,
         sequence: 1,
-        question: '원하는 분야에 관심을 갖게 된 계기와 자신 있는 이유에 대해 구체적으로 설명해주세요.',
+        question:
+          '원하는 분야에 관심을 갖게 된 계기와 자신 있는 이유에 대해 구체적으로 설명해주세요.',
         maxLength: 1000,
         answer: '첫 번째 자기소개서 답변입니다.',
       },
@@ -44,7 +45,8 @@ const ESSAY_WITH_DATA = {
         answerId: 2,
         questionId: 2,
         sequence: 2,
-        question: '가장 열정을 가지고 임했던 프로젝트를 소개해주시고, 수행 과정 및 결과를 기재해주세요.',
+        question:
+          '가장 열정을 가지고 임했던 프로젝트를 소개해주시고, 수행 과정 및 결과를 기재해주세요.',
         maxLength: 1000,
         answer: '두 번째 자기소개서 답변입니다.',
       },

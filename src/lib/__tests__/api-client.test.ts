@@ -305,10 +305,7 @@ describe('apiRequest', () => {
     const { reissueAccessTokenWithRefreshCookie } = await import('../api-client');
 
     await expect(
-      Promise.all([
-        reissueAccessTokenWithRefreshCookie(),
-        reissueAccessTokenWithRefreshCookie(),
-      ]),
+      Promise.all([reissueAccessTokenWithRefreshCookie(), reissueAccessTokenWithRefreshCookie()]),
     ).resolves.toEqual([reissueResponse, reissueResponse]);
 
     expect(fetchMock).toHaveBeenCalledTimes(2);

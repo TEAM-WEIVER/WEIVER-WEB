@@ -315,9 +315,7 @@ export default function ResumePage() {
       if (hasSavedAwardsRef.current) {
         subRequests.push(putAwards(awardPayload));
       } else if (awardPayload.length > 0) {
-        subRequests.push(
-          postAwards(awardPayload.map(({ awardId: _id, ...rest }) => rest)),
-        );
+        subRequests.push(postAwards(awardPayload.map(({ awardId: _id, ...rest }) => rest)));
       }
 
       const results = await Promise.allSettled(subRequests);
