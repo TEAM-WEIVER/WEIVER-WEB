@@ -1,12 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, Bot, UserRound } from 'lucide-react';
+import { AlertCircle, ArrowRight, Bot, Mic, UserRound } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-
-type AiVideoMode = 'questioning' | 'listening';
 
 interface InterviewQuestionScreenProps {
   question: string;
@@ -16,18 +13,7 @@ interface InterviewQuestionScreenProps {
   isFinished?: boolean;
   onSubmit: (answer: string) => void;
   onFinish?: () => void;
-  aiVideoMode?: AiVideoMode;
 }
-
-const MIC_BARS = [
-  { h: 8, color: 'bg-slate-400' },
-  { h: 16, color: 'bg-slate-500' },
-  { h: 24, color: 'bg-slate-600' },
-  { h: 32, color: 'bg-slate-700' },
-  { h: 24, color: 'bg-slate-600' },
-  { h: 16, color: 'bg-slate-500' },
-  { h: 8, color: 'bg-slate-400' },
-];
 
 export function InterviewQuestionScreen({
   question,
@@ -37,16 +23,136 @@ export function InterviewQuestionScreen({
   isFinished = false,
   onSubmit,
   onFinish,
-  aiVideoMode = 'listening',
 }: InterviewQuestionScreenProps) {
-  const [answer, setAnswer] = useState('');
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const questionKey = `${sequence}:${question}`;
+  const [answerState, setAnswerState] = useState({ questionKey, value: '' });
+  const [interimAnswerState, setInterimAnswerState] = useState({ questionKey, value: '' });
+  const [validationErrorState, setValidationErrorState] = useState<{
+    questionKey: string;
+    message: string | null;
+  }>({ questionKey, message: null });
   const [cameraStatus, setCameraStatus] = useState<'checking' | 'granted' | 'denied'>('checking');
+  const [ttsState, setTtsState] = useState(() => ({
+    questionKey,
+    isPlaying: !isFinished && !!question,
+    isDone: isFinished || !question,
+  }));
+  const [listeningState, setListeningState] = useState({
+    questionKey,
+    isListening: false,
+    hasStarted: false,
+  });
+
+  const finalAnswer = answerState.questionKey === questionKey ? answerState.value : '';
+  const interimAnswer = interimAnswerState.questionKey === questionKey ? interimAnswerState.value : '';
+  const answer = `${finalAnswer}${interimAnswer ? ` ${interimAnswer}` : ''}`.trim();
+  const validationError =
+    validationErrorState.questionKey === questionKey ? validationErrorState.message : null;
+  const isTtsPlaying =
+    ttsState.questionKey === questionKey ? ttsState.isPlaying : !isFinished && !!question;
+  const isTtsDone =
+    ttsState.questionKey === questionKey ? ttsState.isDone : isFinished || !question;
+  const isListening =
+    listeningState.questionKey === questionKey ? listeningState.isListening : false;
+  const hasStartedAnswering =
+    listeningState.questionKey === questionKey ? listeningState.hasStarted : false;
+
+  const effectiveVideoMode: 'questioning' | 'listening' = isTtsPlaying ? 'questioning' : 'listening';
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
+  const recognitionQuestionKeyRef = useRef(questionKey);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
   const aiVideoSrc =
-    aiVideoMode === 'questioning' ? '/interview/questioning.mp4' : '/interview/listening.mp4';
+    effectiveVideoMode === 'questioning' ? '/interview/questioning.mp4' : '/interview/listening.mp4';
+
+  // STT 초기화
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) return;
+
+    const recognition = new SpeechRecognitionAPI();
+    recognition.lang = 'ko-KR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      let finalText = '';
+      let interimText = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalText += transcript;
+        } else {
+          interimText += transcript;
+        }
+      }
+      const currentQuestionKey = recognitionQuestionKeyRef.current;
+      if (finalText) {
+        setAnswerState((prev) => ({
+          questionKey: currentQuestionKey,
+          value: prev.questionKey === currentQuestionKey ? prev.value + finalText : finalText,
+        }));
+      }
+      setInterimAnswerState({ questionKey: currentQuestionKey, value: interimText });
+    };
+
+    recognition.onend = () => {
+      const currentQuestionKey = recognitionQuestionKeyRef.current;
+      setListeningState({ questionKey: currentQuestionKey, isListening: false, hasStarted: true });
+    };
+
+    recognition.onerror = () => {
+      const currentQuestionKey = recognitionQuestionKeyRef.current;
+      setListeningState({ questionKey: currentQuestionKey, isListening: false, hasStarted: true });
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognition.abort();
+    };
+  }, []);
+
+  // 질문이 교체될 때 답변 영역만 초기화하고, 카메라/레이아웃은 유지한다.
+  useEffect(() => {
+    let isCurrentQuestion = true;
+
+    recognitionRef.current?.abort();
+
+    window.speechSynthesis.cancel();
+
+    if (!question || isFinished) {
+      return () => {
+        isCurrentQuestion = false;
+        window.speechSynthesis.cancel();
+      };
+    }
+
+    const utterance = new SpeechSynthesisUtterance(question);
+    utterance.lang = 'ko-KR';
+    utterance.rate = 0.9;
+
+    utterance.onend = () => {
+      if (!isCurrentQuestion) return;
+      setTtsState({ questionKey, isPlaying: false, isDone: true });
+    };
+
+    utterance.onerror = () => {
+      if (!isCurrentQuestion) return;
+      setTtsState({ questionKey, isPlaying: false, isDone: true });
+    };
+
+    window.speechSynthesis.speak(utterance);
+
+    return () => {
+      isCurrentQuestion = false;
+      window.speechSynthesis.cancel();
+    };
+  }, [isFinished, question, questionKey]);
 
   useEffect(() => {
     if (isFinished) return;
@@ -74,18 +180,58 @@ export function InterviewQuestionScreen({
     }
   }, [cameraStatus]);
 
-  function handleSubmit() {
+  function startListening() {
+    if (isListening) return;
+
+    if (!recognitionRef.current) {
+      setValidationErrorState({
+        questionKey,
+        message: '이 브라우저에서는 음성 인식을 지원하지 않아요.',
+      });
+      return;
+    }
+
+    try {
+      recognitionQuestionKeyRef.current = questionKey;
+      recognitionRef.current.start();
+      setValidationErrorState({ questionKey, message: null });
+      setListeningState({ questionKey, isListening: true, hasStarted: true });
+    } catch {
+      setValidationErrorState({
+        questionKey,
+        message: '음성 인식을 시작할 수 없어요. 잠시 후 다시 시도해 주세요.',
+      });
+    }
+  }
+
+  function stopListening() {
+    if (!recognitionRef.current || !isListening) return;
+    recognitionRef.current.stop();
+    setListeningState({ questionKey, isListening: false, hasStarted: true });
+  }
+
+  function handleActionButton() {
     if (isFinished) {
       onFinish?.();
       return;
     }
-
-    if (!answer.trim()) {
-      setValidationError('답변을 입력해 주세요.');
+    if (hasStartedAnswering) {
+      if (isListening) {
+        stopListening();
+      }
+      if (!answer.trim()) {
+        setValidationErrorState({ questionKey, message: '답변 내용이 없어요. 다시 말씀해 주세요.' });
+        return;
+      }
+      setValidationErrorState({ questionKey, message: null });
+      onSubmit(answer);
       return;
     }
-    setValidationError(null);
-    onSubmit(answer);
+    if (isTtsPlaying || isTtsDone) {
+      window.speechSynthesis.cancel();
+      setTtsState({ questionKey, isPlaying: false, isDone: true });
+      startListening();
+    }
   }
 
   return (
@@ -140,6 +286,19 @@ export function InterviewQuestionScreen({
 
         {/* 사용자 카메라 영역 */}
         <section className="relative aspect-video overflow-hidden rounded-2xl border border-slate-200 bg-slate-200">
+          {isListening && !isFinished && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="absolute top-4 left-4 z-10 flex max-w-[calc(100%-32px)] items-center gap-2 rounded-full border border-border-light bg-bg-primary px-3.5 py-1.5 text-body2 text-text-primary shadow-sm"
+            >
+              <span className="flex items-center gap-1 text-error" aria-hidden="true">
+                <span className="size-2 rounded-full bg-error" />
+                <Mic size={12} strokeWidth={2.2} />
+              </span>
+              <span className="truncate">지원자님이 답변을 하고 있어요.</span>
+            </div>
+          )}
           {cameraStatus === 'granted' && !isFinished ? (
             <video
               ref={videoRef}
@@ -181,59 +340,27 @@ export function InterviewQuestionScreen({
           {question}
         </p>
 
-        {!isFinished && (
-          <div className="flex flex-col gap-2">
-            <Textarea
-              placeholder="답변을 입력하세요."
-              value={answer}
-              onChange={(e) => {
-                setAnswer(e.target.value);
-                if (validationError) setValidationError(null);
-              }}
-              disabled={isSubmitting}
-              aria-disabled={isSubmitting}
-              aria-invalid={validationError !== null}
-              aria-label="답변 입력"
-              className="min-h-[140px] resize-none"
-            />
-            {validationError && (
-              <p className="text-sm text-red-500" role="alert">
-                {validationError}
-              </p>
-            )}
-          </div>
+        {validationError && (
+          <p className="text-sm text-red-500" role="alert">
+            {validationError}
+          </p>
         )}
 
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="relative flex size-3 shrink-0">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex size-3 rounded-full bg-red-500" />
-              </div>
-              <div className="flex items-end gap-0.5">
-                {MIC_BARS.map((bar, i) => (
-                  <div
-                    key={i}
-                    className={`w-1 rounded-full ${bar.color}`}
-                    style={{ height: `${bar.h}px` }}
-                  />
-                ))}
-              </div>
-            </div>
-            <span className="text-sm font-medium text-slate-900">
-              {isFinished ? '면접 응답이 저장되었어요.' : '지원자님이 답변을 하고 있어요.'}
-            </span>
-          </div>
-
+        <div className="flex justify-end">
           <Button
             type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
+            onClick={handleActionButton}
+            disabled={isSubmitting || (!isTtsPlaying && !isTtsDone && !isFinished)}
             size="sm"
             className="flex shrink-0 items-center gap-1 bg-slate-200 text-slate-500 hover:bg-slate-300 disabled:opacity-50"
           >
-            {isFinished ? '면접 완료' : isSubmitting ? '제출 중...' : '다음 질문'}
+            {isFinished
+              ? '면접 완료'
+              : isSubmitting
+                ? '제출 중...'
+                : hasStartedAnswering
+                  ? '제출하기'
+                  : '답변하기'}
             <ArrowRight size={14} />
           </Button>
         </div>
