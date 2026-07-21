@@ -94,8 +94,8 @@ AI 분석 결과는 채용 의사결정을 보조하는 참고 자료이며,
   },
   {
     key: 'sensitiveDataConsent',
-    title: '민감정보 처리 동의 (선택)',
-    required: false,
+    title: '민감정보 처리 동의',
+    required: true,
     agreeLabel: '민감정보 처리에 동의합니다.',
     content: `지원자가 직접 입력하거나 업로드한 자료에 민감정보가 포함될 수 있습니다.
 

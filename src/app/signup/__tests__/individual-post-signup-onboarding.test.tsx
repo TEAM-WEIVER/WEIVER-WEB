@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { clearAccessToken, getAuthRole } from '@/lib/auth-token';
+import { clearAccessToken, getAccessToken, getAuthRole } from '@/lib/auth-token';
 import { completeSignup } from '@/lib/signup-api';
 import { useSignupStore } from '@/store/signup-store';
 
@@ -34,6 +34,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
       code: 200,
       data: {
         role: 'APPLICANT',
+        accessToken: 'access-token',
       },
       message: 'OK',
     });
@@ -65,6 +66,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     await user.click(checkboxes[2]);
     await user.click(checkboxes[3]);
     await user.click(checkboxes[4]);
+    await user.click(checkboxes[5]);
 
     await waitFor(() => expect(submitButton).toBeEnabled());
     await user.click(submitButton);
@@ -77,13 +79,14 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
           privacyPolicy: true,
           individualTerms: true,
           aiAnalysisConsent: true,
+          sensitiveDataConsent: true,
         }),
       });
     });
 
     // 가입 완료 후 store는 reset됨 (AC4)
     expect(useSignupStore.getState().terms).toEqual({});
-    // accessToken은 httpOnly cookie에 저장되므로 JS에서 직접 접근 불가
+    expect(getAccessToken()).toBe('access-token');
     expect(getAuthRole()).toBe('APPLICANT');
     expect(navigationMock.push).toHaveBeenCalledWith('/onboarding/resume');
   });
@@ -111,6 +114,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     await user.click(checkboxes[2]);
     await user.click(checkboxes[3]);
     await user.click(checkboxes[4]);
+    await user.click(checkboxes[5]);
     await user.click(screen.getByRole('button', { name: '다음 단계' }));
 
     expect(

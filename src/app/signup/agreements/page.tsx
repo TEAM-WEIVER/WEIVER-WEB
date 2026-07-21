@@ -8,7 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { setAuthRole } from '@/lib/auth-token';
+import { setAuthSession } from '@/lib/auth-token';
 import { completeSignup } from '@/lib/signup-api';
 import { getPrevStep, getStepNumber } from '@/lib/signup-flow';
 import { INDIVIDUAL_TERMS } from '@/lib/signup-terms';
@@ -87,7 +87,7 @@ export default function SignupAgreementsPage() {
         account,
         terms: data,
       });
-      setAuthRole(response.data.role);
+      setAuthSession(response.data.accessToken, response.data.role);
       reset();
       router.push('/onboarding/resume');
     } catch {
