@@ -89,6 +89,7 @@ describe('개인 회원가입 후 이력서 작성 연결', () => {
     expect(getAccessToken()).toBe('access-token');
     expect(getAuthRole()).toBe('APPLICANT');
     expect(navigationMock.push).toHaveBeenCalledWith('/onboarding/resume');
+    expect(navigationMock.replace).not.toHaveBeenCalledWith('/signup/account-info');
   });
 
   it('signupToken이 없으면 account-info로 리다이렉트된다 (AC11)', async () => {
