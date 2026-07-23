@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { IndividualAccountData } from '@/schemas/signup';
 
-import { PasswordRules } from './password-rules';
+import { isPasswordRuleSatisfied, PasswordRules } from './password-rules';
 
 interface PasswordFieldsSectionProps {
   register: UseFormRegister<IndividualAccountData>;
@@ -18,6 +18,9 @@ interface PasswordFieldsSectionProps {
 export function PasswordFieldsSection({ register, errors, password }: PasswordFieldsSectionProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const passwordErrorMessage = isPasswordRuleSatisfied(password)
+    ? undefined
+    : errors.password?.message;
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -45,7 +48,7 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
           </div>
         </div>
         <PasswordRules password={password} />
-        <FieldError>{errors.password?.message}</FieldError>
+        <FieldError>{passwordErrorMessage}</FieldError>
       </div>
 
       <div className="flex flex-col gap-2">
