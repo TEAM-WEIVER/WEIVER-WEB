@@ -78,7 +78,7 @@ export function ProfileOverviewCard({
               </p>
               <p className="flex items-center gap-2.5">
                 <Phone className="text-icon-muted size-4 shrink-0 fill-current" />
-                <span>{applicant?.phoneNumber ?? '010-0000-0000'}</span>
+                <span>{applicant?.phoneNumber ?? '미작성'}</span>
               </p>
             </div>
           </div>
