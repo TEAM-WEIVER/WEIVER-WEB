@@ -12,7 +12,12 @@ export function InterviewCallout() {
             면접은 1차 기술면접, 2차 인적성면접으로 진행되며 약 1시간 정도 소요됩니다.
           </p>
         </div>
-        <Button type="button" size="sm" className="h-[42px] w-full rounded-[10px]" asChild>
+        <Button
+          type="button"
+          size="sm"
+          className="bg-bg-primary text-primary-700 hover:bg-primary-100 h-[42px] w-full rounded-[10px] shadow-none"
+          asChild
+        >
           <Link href="/applicant/interview">AI 면접 진행하기</Link>
         </Button>
       </div>
