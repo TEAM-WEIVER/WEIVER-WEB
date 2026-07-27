@@ -46,10 +46,10 @@ export function CareerSection({ fields, control, register, append, remove }: Car
           ) : null}
           <div className="flex gap-3.5">
             <div className="flex flex-1 flex-col gap-2">
-              <Label className="text-text-secondary">경력명</Label>
+              <Label className="text-text-secondary">회사명-부서</Label>
               <Input
                 {...register(`careers.${index}.company`)}
-                placeholder="경력명을 입력해주세요."
+                placeholder="회사명-부서의 형태로 입력해주세요."
                 className={formControlClass}
               />
             </div>
