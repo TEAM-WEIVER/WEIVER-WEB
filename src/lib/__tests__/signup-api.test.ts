@@ -79,7 +79,7 @@ describe('signup-api', () => {
     const mockResponseBody = {
       status: 'OK',
       code: 200,
-      data: { role: 'APPLICANT' },
+      data: { role: 'APPLICANT', accessToken: 'access-token' },
       message: 'OK',
     };
     fetchMock.mockResolvedValueOnce({

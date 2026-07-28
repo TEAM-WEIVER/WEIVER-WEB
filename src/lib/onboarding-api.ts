@@ -42,7 +42,7 @@ export interface ApplicantsAllData {
     photoUrl: string | null;
     name: string;
     birthday: string | null;
-    phoneNumber: string;
+    phoneNumber: string | null;
     email: string;
     address: string | null;
   } | null;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, Bot, Mic, UserRound } from 'lucide-react';
+import { AlertCircle, ArrowRight, Mic, UserRound } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
@@ -13,6 +13,73 @@ interface InterviewQuestionScreenProps {
   isFinished?: boolean;
   onSubmit: (answer: string) => void;
   onFinish?: () => void;
+}
+
+const AI_INTERVIEWER_VIDEOS = {
+  questioning: '/interview/questioning.mp4',
+  listening: '/interview/listening.mp4',
+} as const;
+
+type AiVideoMode = keyof typeof AI_INTERVIEWER_VIDEOS;
+
+interface SpeechRecognitionResultLike {
+  readonly isFinal: boolean;
+  readonly 0: {
+    readonly transcript: string;
+  };
+}
+
+interface SpeechRecognitionEventLike {
+  readonly resultIndex: number;
+  readonly results: {
+    readonly length: number;
+    readonly [index: number]: SpeechRecognitionResultLike;
+  };
+}
+
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+
+interface SpeechRecognitionConstructor {
+  new (): SpeechRecognitionLike;
+}
+
+interface WindowWithSpeechRecognition extends Window {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+}
+
+function AiInterviewerVideo({ mode }: { mode: AiVideoMode }) {
+  return (
+    <>
+      {(Object.entries(AI_INTERVIEWER_VIDEOS) as Array<[AiVideoMode, string]>).map(
+        ([videoMode, src]) => (
+          <video
+            key={videoMode}
+            src={src}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            aria-hidden={mode !== videoMode}
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-150 ${
+              mode === videoMode ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+        ),
+      )}
+    </>
+  );
 }
 
 export function InterviewQuestionScreen({
@@ -44,7 +111,8 @@ export function InterviewQuestionScreen({
   });
 
   const finalAnswer = answerState.questionKey === questionKey ? answerState.value : '';
-  const interimAnswer = interimAnswerState.questionKey === questionKey ? interimAnswerState.value : '';
+  const interimAnswer =
+    interimAnswerState.questionKey === questionKey ? interimAnswerState.value : '';
   const answer = `${finalAnswer}${interimAnswer ? ` ${interimAnswer}` : ''}`.trim();
   const validationError =
     validationErrorState.questionKey === questionKey ? validationErrorState.message : null;
@@ -56,21 +124,21 @@ export function InterviewQuestionScreen({
     listeningState.questionKey === questionKey ? listeningState.isListening : false;
   const hasStartedAnswering =
     listeningState.questionKey === questionKey ? listeningState.hasStarted : false;
+  const isActionButtonDisabled =
+    isSubmitting || (!isFinished && !hasStartedAnswering && !isTtsDone);
 
-  const effectiveVideoMode: 'questioning' | 'listening' = isTtsPlaying ? 'questioning' : 'listening';
+  const effectiveVideoMode: AiVideoMode = isTtsPlaying ? 'questioning' : 'listening';
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const recognitionQuestionKeyRef = useRef(questionKey);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
-  const aiVideoSrc =
-    effectiveVideoMode === 'questioning' ? '/interview/questioning.mp4' : '/interview/listening.mp4';
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   // STT 초기화
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const speechWindow = window as WindowWithSpeechRecognition;
+    const SpeechRecognitionAPI =
+      speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) return;
 
     const recognition = new SpeechRecognitionAPI();
@@ -78,8 +146,7 @@ export function InterviewQuestionScreen({
     recognition.continuous = true;
     recognition.interimResults = true;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event) => {
       let finalText = '';
       let interimText = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -120,6 +187,7 @@ export function InterviewQuestionScreen({
   // 질문이 교체될 때 답변 영역만 초기화하고, 카메라/레이아웃은 유지한다.
   useEffect(() => {
     let isCurrentQuestion = true;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
     recognitionRef.current?.abort();
 
@@ -136,20 +204,28 @@ export function InterviewQuestionScreen({
     utterance.lang = 'ko-KR';
     utterance.rate = 0.9;
 
-    utterance.onend = () => {
+    const finishTts = () => {
       if (!isCurrentQuestion) return;
+      if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
+        fallbackTimer = null;
+      }
       setTtsState({ questionKey, isPlaying: false, isDone: true });
     };
 
-    utterance.onerror = () => {
-      if (!isCurrentQuestion) return;
-      setTtsState({ questionKey, isPlaying: false, isDone: true });
-    };
+    utterance.onend = finishTts;
+    utterance.onerror = finishTts;
 
-    window.speechSynthesis.speak(utterance);
+    try {
+      window.speechSynthesis.speak(utterance);
+      fallbackTimer = setTimeout(finishTts, Math.min(Math.max(question.length * 160, 4000), 30000));
+    } catch {
+      finishTts();
+    }
 
     return () => {
       isCurrentQuestion = false;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       window.speechSynthesis.cancel();
     };
   }, [isFinished, question, questionKey]);
@@ -220,7 +296,10 @@ export function InterviewQuestionScreen({
         stopListening();
       }
       if (!answer.trim()) {
-        setValidationErrorState({ questionKey, message: '답변 내용이 없어요. 다시 말씀해 주세요.' });
+        setValidationErrorState({
+          questionKey,
+          message: '답변 내용이 없어요. 다시 말씀해 주세요.',
+        });
         return;
       }
       setValidationErrorState({ questionKey, message: null });
@@ -266,22 +345,7 @@ export function InterviewQuestionScreen({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* AI 면접관 영상 영역 */}
         <section className="relative aspect-video overflow-hidden rounded-2xl border border-slate-200 bg-slate-200">
-          {aiVideoSrc ? (
-            <video
-              key={aiVideoSrc}
-              src={aiVideoSrc}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-500">
-              <Bot size={44} className="text-slate-400" />
-              <p className="text-sm font-medium">AI 면접관이 지금 준비중이에요.</p>
-            </div>
-          )}
+          <AiInterviewerVideo mode={effectiveVideoMode} />
         </section>
 
         {/* 사용자 카메라 영역 */}
@@ -290,10 +354,10 @@ export function InterviewQuestionScreen({
             <div
               role="status"
               aria-live="polite"
-              className="absolute top-4 left-4 z-10 flex max-w-[calc(100%-32px)] items-center gap-2 rounded-full border border-border-light bg-bg-primary px-3.5 py-1.5 text-body2 text-text-primary shadow-sm"
+              className="border-border-light bg-bg-primary text-body2 text-text-primary absolute top-4 left-4 z-10 flex max-w-[calc(100%-32px)] items-center gap-2 rounded-full border px-3.5 py-1.5 shadow-sm"
             >
-              <span className="flex items-center gap-1 text-error" aria-hidden="true">
-                <span className="size-2 rounded-full bg-error" />
+              <span className="text-error flex items-center gap-1" aria-hidden="true">
+                <span className="bg-error size-2 rounded-full" />
                 <Mic size={12} strokeWidth={2.2} />
               </span>
               <span className="truncate">지원자님이 답변을 하고 있어요.</span>
@@ -350,9 +414,9 @@ export function InterviewQuestionScreen({
           <Button
             type="button"
             onClick={handleActionButton}
-            disabled={isSubmitting || (!isTtsPlaying && !isTtsDone && !isFinished)}
+            disabled={isActionButtonDisabled}
             size="sm"
-            className="flex shrink-0 items-center gap-1 bg-slate-200 text-slate-500 hover:bg-slate-300 disabled:opacity-50"
+            className="bg-primary-700 text-text-inverse hover:bg-primary-800 disabled:bg-primary-200 disabled:text-text-disabled disabled:hover:bg-primary-200 flex shrink-0 items-center gap-1"
           >
             {isFinished
               ? '면접 완료'

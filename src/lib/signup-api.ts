@@ -31,6 +31,7 @@ interface VerifyApplicantEmailData {
 
 interface CompleteApplicantSignupData {
   role: 'APPLICANT';
+  accessToken: string;
 }
 
 interface CompleteSignupPayload {

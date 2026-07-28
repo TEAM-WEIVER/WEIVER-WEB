@@ -33,7 +33,7 @@ describe('login-api', () => {
     expect(apiRequest).toHaveBeenCalledWith('/api/auth/companies/login', {
       method: 'POST',
       body: {
-        id: 'weiver',
+        loginId: 'weiver',
         password: 'Password123!',
       },
     });
