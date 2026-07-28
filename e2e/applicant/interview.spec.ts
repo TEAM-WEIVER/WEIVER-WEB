@@ -1,4 +1,6 @@
-import { test, expect, type Page, type WebSocketRoute } from '@playwright/test';
+import { type Page, type WebSocketRoute } from '@playwright/test';
+
+import { test, expect } from '../fixtures/auth';
 
 /**
  * AI 면접 WebSocket(STOMP) 인수 테스트 (#44)
@@ -98,10 +100,6 @@ const INTERVIEW_FINISHED = {
  * 인증된 사용자 상태로 면접 페이지 진입
  */
 async function gotoInterviewWithAuth(page: Page) {
-  await page.goto(INTERVIEW_URL);
-  await page.evaluate(() => {
-    localStorage.setItem('accessToken', 'mock-access-token');
-  });
   await page.goto(INTERVIEW_URL);
 }
 

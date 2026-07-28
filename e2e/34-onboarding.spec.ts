@@ -1,4 +1,6 @@
-import { test, expect, Page } from '@playwright/test';
+import { test as baseTest, type Page } from '@playwright/test';
+
+import { test, expect } from './fixtures/auth';
 
 /**
  * 개인(지원자) 온보딩 인수 테스트
@@ -13,10 +15,6 @@ import { test, expect, Page } from '@playwright/test';
 // 헬퍼: 인증된 사용자 상태로 페이지 진입
 // ──────────────────────────────────────────────
 async function gotoWithAuth(page: Page, url: string) {
-  await page.goto(url);
-  await page.evaluate(() => {
-    localStorage.setItem('accessToken', 'mock-access-token');
-  });
   await page.goto(url);
 }
 
@@ -435,8 +433,8 @@ test.describe('AC14: API 호출 중 로딩 처리', () => {
 // ──────────────────────────────────────────────
 // AC15: 공통 — 인증 만료 또는 미인증 접근
 // ──────────────────────────────────────────────
-test.describe('AC15: 인증 만료 시 /login 리다이렉트', () => {
-  test('accessToken 없이 온보딩 페이지 접근 시 /login으로 리다이렉트된다', async ({ page }) => {
+baseTest.describe('AC15: 인증 만료 시 /login 리다이렉트', () => {
+  baseTest('accessToken 없이 온보딩 페이지 접근 시 /login으로 리다이렉트된다', async ({ page }) => {
     // Given: 토큰 없는 상태로 직접 접근
     await page.goto('/onboarding/resume');
 
@@ -444,12 +442,8 @@ test.describe('AC15: 인증 만료 시 /login 리다이렉트', () => {
     await expect(page).toHaveURL('/login');
   });
 
-  test('토큰 만료 후 refresh 실패 시 /login으로 리다이렉트된다', async ({ page }) => {
-    // Given: 만료된 토큰 주입 (에러 시나리오)
-    await page.goto('/onboarding/cover-letter?scenario=auth-expired');
-    await page.evaluate(() => {
-      localStorage.setItem('accessToken', 'expired-access-token');
-    });
+  baseTest('토큰 만료 후 refresh 실패 시 /login으로 리다이렉트된다', async ({ page }) => {
+    // Given: 인증 역할이나 재발급 가능한 refresh cookie가 없는 상태
     await page.goto('/onboarding/cover-letter?scenario=auth-expired');
 
     // Then: refresh도 실패하므로 /login으로 리다이렉트
