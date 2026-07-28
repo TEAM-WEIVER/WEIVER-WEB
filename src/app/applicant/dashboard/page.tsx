@@ -79,7 +79,7 @@ export default function ApplicantDashboardPage() {
 
           <div className="grid gap-[23px] min-[1440px]:grid-cols-[798px_387px]">
             <HiringProcessCard isDocumentAnalysisReady={isProfileReady} />
-            <InterviewCallout />
+            <InterviewCallout canStartInterview={isProfileReady} />
           </div>
 
           <ReapplyNotice />

@@ -30,16 +30,18 @@ export function HiringProcessCard({ isDocumentAnalysisReady }: HiringProcessCard
 function HiringStepCard({ label, active }: { label: string; active: boolean }) {
   return (
     <div
-      className={`border-border-light flex h-[82px] min-w-0 items-center gap-[18px] rounded-lg border px-[19px] py-4 ${
-        active ? 'bg-bg-tertiary' : 'bg-bg-secondary'
-      }`}
+      className={`flex h-[82px] min-w-0 items-center rounded-lg border px-[19px] py-4 ${
+        active ? 'border-success bg-success/10' : 'border-border-light bg-primary-200'
+      } ${active ? 'gap-6' : 'gap-[18px]'}`}
     >
       <ProgressIcon variant="process" complete={active} />
       <div
         className={`flex min-w-0 flex-col gap-1 ${active ? 'text-text-secondary' : 'text-text-disabled'}`}
       >
         <p className="text-h4 whitespace-nowrap">{label}</p>
-        <p className="text-body2">{active ? '진행 완료' : '미진행'}</p>
+        <p className={`text-body2 ${active ? 'text-success' : ''}`}>
+          {active ? '분석 완료' : '미진행'}
+        </p>
       </div>
     </div>
   );
