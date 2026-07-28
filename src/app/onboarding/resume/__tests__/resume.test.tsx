@@ -140,9 +140,7 @@ describe('이력서 온보딩 페이지', () => {
     expect(screen.getByLabelText('생년월일 선택 값')).toHaveValue('2001-07-30');
     expect(screen.getByPlaceholderText('010-1234-5678')).toHaveValue('010-8975-1978');
     expect(screen.getByPlaceholderText('weiver@example.com')).toHaveValue('rlawlsdl0730@gmail.com');
-    expect(screen.getByPlaceholderText('경기도 안산시 상록구 한양대학로 55')).toHaveValue(
-      '경기도 안산시 상록구 한양대학로 55',
-    );
+    expect(screen.getByDisplayValue('경기도 안산시 상록구 한양대학로 55')).toBeInTheDocument();
   });
 
   it('증명사진을 선택하면 미리보기를 표시하고 개인정보 저장 FormData에 파일을 담는다', async () => {
