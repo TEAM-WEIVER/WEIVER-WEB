@@ -1,11 +1,13 @@
-import { test, expect, type Page, type Route } from '@playwright/test';
+import { type Page, type Route } from '@playwright/test';
+
+import { test, expect } from '../fixtures/auth';
 
 /**
  * 자기소개서 온보딩 인수 테스트 (#42)
  *
  * page.route()로 API를 인터셉트한다.
  * Next.js rewrites: /api/* → https://api.piuda.site/api/*
- * E2E 인터셉트 경로는 **/ api; /* 기준으로 작성한다.
+ * E2E 인터셉트 경로는 `/api/*` 기준으로 작성한다.
  */
 
 // ---------------------------------------------------------------------------
@@ -96,11 +98,6 @@ async function mockRoute(
 
 /** 인증된 사용자 상태로 커버레터 페이지 진입 */
 async function gotoCoverLetterWithAuth(page: Page) {
-  // localStorage에 accessToken을 주입한 뒤 페이지를 로드한다.
-  await page.goto('/onboarding/cover-letter');
-  await page.evaluate(() => {
-    localStorage.setItem('accessToken', 'mock-access-token');
-  });
   await page.goto('/onboarding/cover-letter');
 }
 
