@@ -2,6 +2,7 @@ import { Image as ImageIcon } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { Controller, type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
 
+import { DatePicker } from '@/components/ui/date-picker';
 import { formControlClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,12 +81,11 @@ export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInf
               control={control}
               name="birthday"
               render={({ field }) => (
-                <Input
-                  {...field}
+                <DatePicker
                   value={field.value ?? ''}
-                  inputMode="numeric"
-                  placeholder="2000-01-01"
-                  className={formControlClass}
+                  onChange={field.onChange}
+                  maxYear={new Date().getFullYear()}
+                  aria-label="생년월일 선택"
                 />
               )}
             />
@@ -131,7 +131,7 @@ export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInf
                 <Input
                   {...field}
                   value={field.value ?? ''}
-                  placeholder="경기도 안산시 상록구 한양대학로 55"
+                  placeholder="실 거주지를 입력해주세요."
                   className={formControlClass}
                 />
               )}

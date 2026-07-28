@@ -137,7 +137,7 @@ describe('이력서 온보딩 페이지', () => {
     await waitFor(() => {
       expect(screen.getByPlaceholderText('본명을 입력해주세요.')).toHaveValue('김민채');
     });
-    expect(screen.getByPlaceholderText('2000-01-01')).toHaveValue('2001-07-30');
+    expect(screen.getByLabelText('생년월일 선택 값')).toHaveValue('2001-07-30');
     expect(screen.getByPlaceholderText('010-1234-5678')).toHaveValue('010-8975-1978');
     expect(screen.getByPlaceholderText('weiver@example.com')).toHaveValue('rlawlsdl0730@gmail.com');
     expect(screen.getByPlaceholderText('경기도 안산시 상록구 한양대학로 55')).toHaveValue(
@@ -175,7 +175,10 @@ describe('이력서 온보딩 페이지', () => {
     await waitFor(() => {
       expect(screen.getByPlaceholderText('본명을 입력해주세요.')).toHaveValue('김민채');
     });
-    await user.type(await screen.findByPlaceholderText('경력명을 입력해주세요.'), '쿠팡플레이');
+    await user.type(
+      await screen.findByPlaceholderText('회사명-부서의 형태로 입력해주세요.'),
+      '쿠팡플레이',
+    );
     await user.click(screen.getByRole('button', { name: '다음' }));
 
     await waitFor(() => {
@@ -202,9 +205,15 @@ describe('이력서 온보딩 페이지', () => {
       expect(screen.getByPlaceholderText('본명을 입력해주세요.')).toHaveValue('김민채');
     });
 
-    await user.type(await screen.findByPlaceholderText('경력명을 입력해주세요.'), '쿠팡플레이');
+    await user.type(
+      await screen.findByPlaceholderText('회사명-부서의 형태로 입력해주세요.'),
+      '쿠팡플레이',
+    );
     await user.click(screen.getByRole('button', { name: '경력 추가하기' }));
-    await user.type(screen.getAllByPlaceholderText('경력명을 입력해주세요.')[1], '토스');
+    await user.type(
+      screen.getAllByPlaceholderText('회사명-부서의 형태로 입력해주세요.')[1],
+      '토스',
+    );
     await user.click(screen.getByRole('button', { name: '다음' }));
 
     await waitFor(() => {
@@ -268,7 +277,9 @@ describe('이력서 온보딩 페이지', () => {
     render(<ResumePage />);
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('경력명을 입력해주세요.')).toHaveValue('에이블리');
+      expect(screen.getByPlaceholderText('회사명-부서의 형태로 입력해주세요.')).toHaveValue(
+        '에이블리',
+      );
     });
     await user.click(screen.getByRole('button', { name: '다음' }));
 
@@ -324,7 +335,9 @@ describe('이력서 온보딩 페이지', () => {
     render(<ResumePage />);
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('경력명을 입력해주세요.')).toHaveValue('에이블리');
+      expect(screen.getByPlaceholderText('회사명-부서의 형태로 입력해주세요.')).toHaveValue(
+        '에이블리',
+      );
     });
     await user.click(screen.getByRole('button', { name: '경력 삭제' }));
     await user.click(screen.getByRole('button', { name: '다음' }));

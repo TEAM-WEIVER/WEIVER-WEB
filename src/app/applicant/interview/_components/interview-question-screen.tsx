@@ -124,6 +124,8 @@ export function InterviewQuestionScreen({
     listeningState.questionKey === questionKey ? listeningState.isListening : false;
   const hasStartedAnswering =
     listeningState.questionKey === questionKey ? listeningState.hasStarted : false;
+  const isActionButtonDisabled =
+    isSubmitting || (!isFinished && !hasStartedAnswering && !isTtsDone);
 
   const effectiveVideoMode: AiVideoMode = isTtsPlaying ? 'questioning' : 'listening';
 
@@ -185,6 +187,7 @@ export function InterviewQuestionScreen({
   // 질문이 교체될 때 답변 영역만 초기화하고, 카메라/레이아웃은 유지한다.
   useEffect(() => {
     let isCurrentQuestion = true;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
     recognitionRef.current?.abort();
 
@@ -201,20 +204,28 @@ export function InterviewQuestionScreen({
     utterance.lang = 'ko-KR';
     utterance.rate = 0.9;
 
-    utterance.onend = () => {
+    const finishTts = () => {
       if (!isCurrentQuestion) return;
+      if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
+        fallbackTimer = null;
+      }
       setTtsState({ questionKey, isPlaying: false, isDone: true });
     };
 
-    utterance.onerror = () => {
-      if (!isCurrentQuestion) return;
-      setTtsState({ questionKey, isPlaying: false, isDone: true });
-    };
+    utterance.onend = finishTts;
+    utterance.onerror = finishTts;
 
-    window.speechSynthesis.speak(utterance);
+    try {
+      window.speechSynthesis.speak(utterance);
+      fallbackTimer = setTimeout(finishTts, Math.min(Math.max(question.length * 160, 4000), 30000));
+    } catch {
+      finishTts();
+    }
 
     return () => {
       isCurrentQuestion = false;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       window.speechSynthesis.cancel();
     };
   }, [isFinished, question, questionKey]);
@@ -403,9 +414,9 @@ export function InterviewQuestionScreen({
           <Button
             type="button"
             onClick={handleActionButton}
-            disabled={isSubmitting || (!isTtsPlaying && !isTtsDone && !isFinished)}
+            disabled={isActionButtonDisabled}
             size="sm"
-            className="flex shrink-0 items-center gap-1 bg-slate-200 text-slate-500 hover:bg-slate-300 disabled:opacity-50"
+            className="bg-primary-700 text-text-inverse hover:bg-primary-800 disabled:bg-primary-200 disabled:text-text-disabled disabled:hover:bg-primary-200 flex shrink-0 items-center gap-1"
           >
             {isFinished
               ? '면접 완료'
