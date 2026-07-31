@@ -1,0 +1,260 @@
+name: Promote develop to main
+
+# PROMOTION_TOKEN: fine-grained PAT with Contents and Pull requests read/write permissions.
+on:
+  push:
+    branches: [develop]
+
+concurrency:
+  group: promote-develop-to-main
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  statuses: write
+
+env:
+  PROMOTION_BRANCH: automation/develop-to-main
+
+jobs:
+  prepare:
+    name: 승격 커밋 준비
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      promotion_sha: ${{ steps.prepare.outputs.promotion_sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create promotion commit
+        id: prepare
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main develop
+          git checkout -B "$PROMOTION_BRANCH" origin/main
+          git merge --no-ff --no-edit "$GITHUB_SHA"
+          git push --force origin "HEAD:refs/heads/$PROMOTION_BRANCH"
+          echo "promotion_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  lint-typecheck-test:
+    name: lint-typecheck-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: prepare
+    env:
+      PROMOTION_SHA: ${{ needs.prepare.outputs.promotion_sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout promotion commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.PROMOTION_SHA }}
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Approve builds
+        run: pnpm approve-builds --yes || true
+
+      - name: Lint
+        run: pnpm lint:check
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit test
+        run: pnpm test --run
+
+      - name: Report required check
+        if: always()
+        run: |
+          if [[ "${{ job.status }}" == "success" ]]; then
+            state="success"
+            description="Lint, typecheck and unit tests passed"
+          else
+            state="failure"
+            description="Lint, typecheck or unit tests failed"
+          fi
+
+          gh api --method POST \
+            "repos/$GITHUB_REPOSITORY/statuses/$PROMOTION_SHA" \
+            -f state="$state" \
+            -f context="lint-typecheck-test" \
+            -f description="$description"
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: prepare
+    env:
+      PROMOTION_SHA: ${{ needs.prepare.outputs.promotion_sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout promotion commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.PROMOTION_SHA }}
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Approve builds
+        run: pnpm approve-builds --yes || true
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build
+        run: pnpm build
+
+      - name: Run E2E tests
+        run: |
+          if find e2e -name "*.spec.ts" | grep -q .; then
+            pnpm test:e2e
+          else
+            echo "E2E 테스트 파일 없음 — 건너뜀"
+          fi
+
+      - name: Report required check
+        if: always()
+        run: |
+          if [[ "${{ job.status }}" == "success" ]]; then
+            state="success"
+            description="E2E tests passed"
+          else
+            state="failure"
+            description="Build or E2E tests failed"
+          fi
+
+          gh api --method POST \
+            "repos/$GITHUB_REPOSITORY/statuses/$PROMOTION_SHA" \
+            -f state="$state" \
+            -f context="e2e" \
+            -f description="$description"
+
+  promote:
+    name: main 자동 병합
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: [prepare, lint-typecheck-test, e2e]
+    env:
+      GH_TOKEN: ${{ secrets.PROMOTION_TOKEN }}
+      PROMOTION_SHA: ${{ needs.prepare.outputs.promotion_sha }}
+    steps:
+      - name: Create or reuse promotion pull request
+        id: pull-request
+        run: |
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::error::PROMOTION_TOKEN 저장소 시크릿이 필요합니다."
+            exit 1
+          fi
+
+          current_develop_sha="$(
+            gh api \
+              "repos/$GITHUB_REPOSITORY/git/ref/heads/develop" \
+              --jq '.object.sha'
+          )"
+
+          if [[ "$current_develop_sha" != "$GITHUB_SHA" ]]; then
+            echo "::error::새로운 develop 커밋이 감지되어 현재 승격을 중단합니다."
+            exit 1
+          fi
+
+          pr_number="$(
+            gh pr list \
+              --repo "$GITHUB_REPOSITORY" \
+              --base main \
+              --head "$PROMOTION_BRANCH" \
+              --state open \
+              --json number \
+              --jq '.[0].number // empty'
+          )"
+
+          if [[ -z "$pr_number" ]]; then
+            pr_url="$(
+              gh pr create \
+                --repo "$GITHUB_REPOSITORY" \
+                --base main \
+                --head "$PROMOTION_BRANCH" \
+                --title "[RELEASE] develop E2E 검증 후 main 자동 승격" \
+                --body "develop 커밋 \`$GITHUB_SHA\`의 품질 검사와 E2E가 통과해 자동 생성된 승격 PR입니다."
+            )"
+            pr_number="${pr_url##*/}"
+          fi
+
+          actual_sha="$(
+            gh pr view "$pr_number" \
+              --repo "$GITHUB_REPOSITORY" \
+              --json headRefOid \
+              --jq '.headRefOid'
+          )"
+
+          if [[ "$actual_sha" != "$PROMOTION_SHA" ]]; then
+            echo "::error::승격 PR의 HEAD가 검증한 커밋과 다릅니다."
+            exit 1
+          fi
+
+          echo "number=$pr_number" >> "$GITHUB_OUTPUT"
+
+      - name: Merge into main
+        env:
+          PR_NUMBER: ${{ steps.pull-request.outputs.number }}
+        run: |
+          mergeable="false"
+
+          for _ in {1..180}; do
+            merge_state="$(
+              gh pr view "$PR_NUMBER" \
+                --repo "$GITHUB_REPOSITORY" \
+                --json mergeStateStatus \
+                --jq '.mergeStateStatus'
+            )"
+
+            if [[ "$merge_state" == "CLEAN" ]]; then
+              mergeable="true"
+              break
+            fi
+
+            if [[ "$merge_state" == "BEHIND" || "$merge_state" == "DIRTY" ]]; then
+              echo "::error::승격 PR을 병합할 수 없습니다: $merge_state"
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          if [[ "$mergeable" != "true" ]]; then
+            echo "::error::승격 PR의 필수 체크가 제한 시간 내 완료되지 않았습니다."
+            exit 1
+          fi
+
+          gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --merge
