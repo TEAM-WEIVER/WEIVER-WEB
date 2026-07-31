@@ -1,6 +1,7 @@
 import type { FieldArrayWithId, UseFormRegister } from 'react-hook-form';
-import { useWatch, type Control } from 'react-hook-form';
+import { Controller, useWatch, type Control } from 'react-hook-form';
 
+import { DatePicker } from '@/components/ui/date-picker';
 import { formControlClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,10 +45,16 @@ export function CertificationSection({
           <div className="flex gap-3.5">
             <div className="flex flex-col gap-2">
               <Label className="text-text-secondary">취득일</Label>
-              <Input
-                {...register(`certifications.${index}.acquiredDate`)}
-                placeholder="YYYY-MM-DD"
-                className={formControlClass}
+              <Controller
+                control={control}
+                name={`certifications.${index}.acquiredDate`}
+                render={({ field }) => (
+                  <DatePicker
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    aria-label="취득일 선택"
+                  />
+                )}
               />
             </div>
             <div className="flex flex-1 flex-col gap-2">

@@ -1,6 +1,7 @@
 import type { FieldArrayWithId, UseFormRegister } from 'react-hook-form';
-import { useWatch, type Control } from 'react-hook-form';
+import { Controller, useWatch, type Control } from 'react-hook-form';
 
+import { DatePicker } from '@/components/ui/date-picker';
 import { formControlClass, nativeSelectClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -92,18 +93,32 @@ export function EducationSection({
             </div>
             <div className="flex flex-1 flex-col gap-2">
               <Label className="text-text-secondary">입학년월</Label>
-              <Input
-                {...register(`education.${index}.enrollmentDate`)}
-                placeholder="YYYY-MM"
-                className={formControlClass}
+              <Controller
+                control={control}
+                name={`education.${index}.enrollmentDate`}
+                render={({ field }) => (
+                  <DatePicker
+                    mode="month"
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    aria-label="입학년월 선택"
+                  />
+                )}
               />
             </div>
             <div className="flex flex-1 flex-col gap-2">
               <Label className="text-text-secondary">졸업년월</Label>
-              <Input
-                {...register(`education.${index}.graduationDate`)}
-                placeholder="YYYY-MM"
-                className={formControlClass}
+              <Controller
+                control={control}
+                name={`education.${index}.graduationDate`}
+                render={({ field }) => (
+                  <DatePicker
+                    mode="month"
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    aria-label="졸업년월 선택"
+                  />
+                )}
               />
             </div>
             <div className="flex flex-1 flex-col gap-2">

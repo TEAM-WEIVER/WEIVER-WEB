@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiError } from '@/lib/api-client';
 import {
   initApplicantSignup,
   sendApplicantVerificationEmail,
@@ -100,6 +101,24 @@ describe('개인 회원가입 플로우', () => {
     await waitFor(() => expect(screen.getByText('인증 완료')).toBeInTheDocument());
     expect(nextButton).toBeDisabled();
     expect(navigationMock.push).not.toHaveBeenCalled();
+  });
+
+  it('비밀번호 규칙을 모두 만족하면 기존 비밀번호 오류 메시지를 숨긴다', async () => {
+    const user = userEvent.setup();
+
+    render(<SignupAccountInfoPage />);
+
+    const passwordInput = screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자');
+
+    await user.type(passwordInput, 'Aa1aaaa');
+    await waitFor(() => expect(screen.getByText('8자 이상이어야 합니다.')).toBeInTheDocument());
+
+    await user.type(passwordInput, '!');
+
+    await waitFor(() =>
+      expect(screen.queryByText('8자 이상이어야 합니다.')).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByText('특수문자가 포함되어야 합니다.')).not.toBeInTheDocument();
   });
 
   it('비밀번호 확인이 일치하지 않으면 오류를 표시하고 계정 단계 제출을 막는다', async () => {
@@ -218,6 +237,22 @@ describe('개인 회원가입 플로우', () => {
     expect(
       await screen.findByText('인증번호 전송에 실패했습니다. 잠시 후 다시 시도해주세요.'),
     ).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('숫자 6자리')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /다음 단계/ })).toBeDisabled();
+  });
+
+  it('이미 등록된 이메일이면 중복 이메일 메시지를 표시한다', async () => {
+    const user = userEvent.setup();
+    vi.mocked(sendApplicantVerificationEmail).mockRejectedValue(
+      new ApiError('이미 사용 중인 이메일입니다.', 409),
+    );
+
+    render(<SignupAccountInfoPage />);
+
+    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
+    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
+
+    expect(await screen.findByText('이미 사용 중인 이메일입니다.')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('숫자 6자리')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /다음 단계/ })).toBeDisabled();
   });

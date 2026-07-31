@@ -8,7 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { setAuthRole } from '@/lib/auth-token';
+import { setAuthSession } from '@/lib/auth-token';
 import { completeSignup } from '@/lib/signup-api';
 import { getPrevStep, getStepNumber } from '@/lib/signup-flow';
 import { INDIVIDUAL_TERMS } from '@/lib/signup-terms';
@@ -23,6 +23,7 @@ export default function SignupAgreementsPage() {
   const savedTerms = useSignupStore((state) => state.terms);
   const reset = useSignupStore((state) => state.reset);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSignupCompleted, setIsSignupCompleted] = useState(false);
 
   const defaultValues = Object.fromEntries(
     INDIVIDUAL_TERMS.map((item) => [item.key, savedTerms[item.key] ?? false]),
@@ -47,10 +48,12 @@ export default function SignupAgreementsPage() {
 
   // AC11: signupToken 없으면 즉시 리다이렉트 (플리커 방지 early return — Hook 이후에 위치)
   useEffect(() => {
+    if (isSignupCompleted) return;
+
     if (!account.signupToken) {
       router.replace('/signup/account-info');
     }
-  }, [account.signupToken, router]);
+  }, [account.signupToken, isSignupCompleted, router]);
 
   if (!account.signupToken) return null;
 
@@ -87,7 +90,8 @@ export default function SignupAgreementsPage() {
         account,
         terms: data,
       });
-      setAuthRole(response.data.role);
+      setAuthSession(response.data.accessToken, response.data.role);
+      setIsSignupCompleted(true);
       reset();
       router.push('/onboarding/resume');
     } catch {

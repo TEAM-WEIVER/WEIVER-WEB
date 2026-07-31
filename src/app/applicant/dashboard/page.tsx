@@ -52,6 +52,7 @@ export default function ApplicantDashboardPage() {
   }, []);
 
   const progress = overview?.progress ?? EMPTY_PROGRESS;
+  const isProfileReady = Object.values(progress).every(Boolean);
 
   const handleProfileEdit = () => {
     router.push(getProfileEditPath(progress));
@@ -77,8 +78,8 @@ export default function ApplicantDashboardPage() {
           />
 
           <div className="grid gap-[23px] min-[1440px]:grid-cols-[798px_387px]">
-            <HiringProcessCard />
-            <InterviewCallout />
+            <HiringProcessCard isDocumentAnalysisReady={isProfileReady} />
+            <InterviewCallout canStartInterview={isProfileReady} />
           </div>
 
           <ReapplyNotice />

@@ -1,5 +1,15 @@
 import { CircleCheck } from 'lucide-react';
 
+export function isPasswordRuleSatisfied(password: string) {
+  return (
+    /[a-zA-Z]/.test(password) &&
+    /[0-9]/.test(password) &&
+    /[^a-zA-Z0-9]/.test(password) &&
+    password.length >= 8 &&
+    password.length <= 64
+  );
+}
+
 function PasswordRuleItem({ passed, label }: { passed: boolean; label: string }) {
   return (
     <div className="flex items-center gap-1.5">

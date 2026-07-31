@@ -30,5 +30,5 @@ export async function POST(request: NextRequest) {
     maxAge: 60 * 60, // 1시간
   });
 
-  return NextResponse.json({ data: { role } }, { status: 200 });
+  return NextResponse.json({ data: { role, accessToken } }, { status: 200 });
 }

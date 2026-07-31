@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiError } from '@/lib/api-client';
 import { sendApplicantVerificationEmail, verifyApplicantEmail } from '@/lib/signup-api';
 
 import { useEmailVerification } from '../use-email-verification';
@@ -118,6 +119,18 @@ describe('useEmailVerification', () => {
     expect(result.current.sendError).toBe(
       '인증번호 전송에 실패했습니다. 잠시 후 다시 시도해주세요.',
     );
+    expect(result.current.isCodeSent).toBe(false);
+  });
+
+  it('이미 등록된 이메일이면 중복 이메일 메시지를 설정한다', async () => {
+    vi.mocked(sendApplicantVerificationEmail).mockRejectedValueOnce(new ApiError('conflict', 409));
+    const { result } = renderHook(() => useEmailVerification('user@example.com'));
+
+    await act(async () => {
+      await result.current.sendVerification();
+    });
+
+    expect(result.current.sendError).toBe('conflict');
     expect(result.current.isCodeSent).toBe(false);
   });
 });

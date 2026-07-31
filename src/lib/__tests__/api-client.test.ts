@@ -151,6 +151,41 @@ describe('apiRequest', () => {
     expect((requestOptions.headers as Headers).get('Authorization')).toBeNull();
   });
 
+  it('실패 응답의 message를 ApiError에 담는다', async () => {
+    vi.resetModules();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          status: 'error',
+          httpStatus: 409,
+          errorCode: 'EMAIL_ALREADY_EXISTS',
+          message: '이미 사용 중인 이메일입니다.',
+          timestamp: '2026-07-23T14:37:16',
+          path: '/api/auth/applicants/email/send',
+          errors: [],
+        }),
+        {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { apiRequest } = await import('../api-client');
+
+    await expect(
+      apiRequest('/api/auth/applicants/email/send', {
+        method: 'POST',
+        body: { email: 'applicant@example.com' },
+      }),
+    ).rejects.toMatchObject({
+      name: 'ApiError',
+      message: '이미 사용 중인 이메일입니다.',
+      status: 409,
+    });
+  });
+
   it.each(['/api/auth/reissue', '/api/auth/logout', '/api/auth/applicants/me'])(
     '인증 상태를 변경하는 auth 요청에는 CSRF 토큰을 헤더에 담아 보낸다: %s',
     async (path) => {

@@ -18,7 +18,7 @@ export function TermSection({ item, checked, onToggle }: TermSectionProps) {
       </div>
 
       <div className="border-border-default bg-bg-primary rounded-lg border px-5 py-3.5">
-        <div className="h-[124px] overflow-y-auto">
+        <div className="h-31 overflow-y-auto">
           <p className="text-body2 whitespace-pre-line text-black">{item.content}</p>
         </div>
       </div>
