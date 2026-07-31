@@ -5,7 +5,7 @@ export const individualTermsSchema = z.object({
   privacyPolicy: z.boolean().refine((v) => v === true, '개인정보 처리방침에 동의해주세요.'),
   individualTerms: z.boolean().refine((v) => v === true, '개인회원 이용약관에 동의해주세요.'),
   aiAnalysisConsent: z.boolean().refine((v) => v === true, 'AI 분석 동의에 동의해주세요.'),
-  sensitiveDataConsent: z.boolean(),
+  sensitiveDataConsent: z.boolean().refine((v) => v === true, '민감정보 처리에 동의해주세요.'),
   marketingConsent: z.boolean(),
 });
 

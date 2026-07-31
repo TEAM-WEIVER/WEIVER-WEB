@@ -58,6 +58,7 @@ export function ProfileOverviewCard({
   onEditProfile,
 }: ProfileOverviewCardProps) {
   const isProfileReady = PROFILE_STEPS.every((step) => progress[step.key]);
+  const applicantName = applicant?.name?.trim();
 
   return (
     <section className="border-border-light bg-bg-primary flex flex-col rounded-[20px] border px-6 py-7 lg:min-h-[188px] lg:px-[34px]">
@@ -69,7 +70,7 @@ export function ProfileOverviewCard({
 
           <div className="flex min-w-0 flex-col gap-4 rounded-lg py-3.5 lg:w-[336px] lg:px-3.5">
             <h1 className="text-h3 text-text-secondary truncate">
-              {applicant?.name ?? '피우다'}님
+              {applicantName ? `${applicantName}님` : '이름을 입력해주세요'}
             </h1>
             <div className="text-body2 text-text-tertiary flex min-w-0 flex-col gap-2">
               <p className="flex min-w-0 items-center gap-2.5">
@@ -78,7 +79,7 @@ export function ProfileOverviewCard({
               </p>
               <p className="flex items-center gap-2.5">
                 <Phone className="text-icon-muted size-4 shrink-0 fill-current" />
-                <span>{applicant?.phoneNumber ?? '010-0000-0000'}</span>
+                <span>{applicant?.phoneNumber ?? '미작성'}</span>
               </p>
             </div>
           </div>

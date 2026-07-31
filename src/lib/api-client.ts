@@ -28,6 +28,10 @@ interface ApiResponse<TData> {
   message: string;
 }
 
+interface ApiErrorResponse {
+  message?: unknown;
+}
+
 interface CsrfData {
   csrfToken: string;
 }
@@ -142,7 +146,18 @@ export async function reissueAccessTokenWithRefreshCookie() {
 
 async function parseResponse<TResponse>(response: Response) {
   if (!response.ok) {
-    throw new ApiError('API request failed', response.status);
+    let message = 'API request failed';
+
+    try {
+      const errorResponse = (await response.json()) as ApiErrorResponse;
+      if (typeof errorResponse.message === 'string' && errorResponse.message.trim() !== '') {
+        message = errorResponse.message;
+      }
+    } catch {
+      // Keep the default message when the error response has no JSON body.
+    }
+
+    throw new ApiError(message, response.status);
   }
 
   if (response.status === 204) {

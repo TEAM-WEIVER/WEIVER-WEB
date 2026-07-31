@@ -28,7 +28,7 @@ async function setupHappyPath(page: Page) {
   await mockRoute(page, API.EMAIL_SEND, FIXTURES.emailSend.success);
   await mockRoute(page, API.EMAIL_VERIFY, FIXTURES.emailVerify.success);
   await mockRoute(page, API.SIGNUP_INIT, FIXTURES.signupInit.success);
-  await mockRoute(page, API.SIGNUP_AGREEMENTS, FIXTURES.signupAgreements.success);
+  await mockRoute(page, API.SIGNUP_COMPLETE, FIXTURES.signupComplete.success);
 }
 
 // ---------------------------------------------------------------------------
@@ -49,12 +49,12 @@ async function sendVerificationCode(page: Page) {
 
 async function verifyCode(page: Page, code = '123456') {
   await page.getByLabel('이메일 인증번호').fill(code);
-  await page.getByRole('button', { name: '확인', exact: true }).click();
+  await page.getByRole('button', { name: '인증번호 확인' }).click();
 }
 
 async function fillPassword(page: Page, pw = 'Password1!') {
-  await page.getByLabel('비밀번호').fill(pw);
-  await page.getByRole('textbox', { name: '비밀번호 확인' }).fill(pw);
+  await page.getByRole('textbox', { name: '비밀번호', exact: true }).fill(pw);
+  await page.getByRole('textbox', { name: '비밀번호 확인', exact: true }).fill(pw);
 }
 
 // ---------------------------------------------------------------------------
@@ -77,7 +77,7 @@ test('AC1: 유효한 이메일 입력 후 인증번호 전송 버튼 클릭 시 
 
   // Then — 인증번호 입력 필드와 확인 버튼 표시
   await expect(page.getByLabel('이메일 인증번호')).toBeVisible();
-  await expect(page.getByRole('button', { name: '확인', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '인증번호 확인' })).toBeVisible();
 
   // Then — 인증번호 전송 버튼 비활성화 (중복 요청 방지)
   await expect(page.getByRole('button', { name: '인증번호 전송' })).toBeDisabled();
@@ -106,7 +106,7 @@ test('AC2: 올바른 인증번호 입력 후 확인 클릭 시 인증 완료 상
   await expect(page.getByRole('timer')).toBeHidden();
 
   // Then — 이메일 입력 필드와 인증번호 전송 버튼 비활성화 (읽기 전용)
-  await expect(page.getByLabel('이메일')).toBeDisabled();
+  await expect(page.getByRole('textbox', { name: '이메일', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: '인증번호 전송' })).toBeDisabled();
 });
 
@@ -137,9 +137,7 @@ test('AC3: 이메일 인증 완료 + 비밀번호 입력 후 다음 단계 클�
 // AC4. 약관 동의 및 가입 완료
 // ---------------------------------------------------------------------------
 
-test('AC4: 필수 약관 4개 모두 동의 후 다음 단계 클릭 시 /onboarding/resume으로 이동한다', async ({
-  page,
-}) => {
+test('AC4: 필수 약관 5개 모두 동의 후 회원가입 완료 API가 성공한다', async ({ page }) => {
   // Given — signupToken을 Zustand store에 세팅하려면 account-info 단계를 거쳐야 한다
   await setupHappyPath(page);
   await gotoAccountInfo(page);
@@ -150,15 +148,27 @@ test('AC4: 필수 약관 4개 모두 동의 후 다음 단계 클릭 시 /onboar
   await page.getByRole('button', { name: '다음 단계' }).click();
   await expect(page).toHaveURL('/signup/agreements');
 
-  // When — 필수 약관 4개 체크
+  // When — 필수 약관 5개 체크
   await page.getByRole('checkbox', { name: /서비스 이용약관/ }).check();
   await page.getByRole('checkbox', { name: /개인정보 처리방침/ }).check();
   await page.getByRole('checkbox', { name: /개인회원 이용약관/ }).check();
-  await page.getByRole('checkbox', { name: /AI 분석 동의/ }).check();
+  await page.getByRole('checkbox', { name: /AI 분석에 동의/ }).check();
+  await page.getByRole('checkbox', { name: /민감정보 처리에 동의/ }).check();
+
+  const completeResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/auth/signup/complete') &&
+      response.request().method() === 'POST',
+  );
+
   await page.getByRole('button', { name: '다음 단계' }).click();
 
-  // Then
-  await expect(page).toHaveURL('/onboarding/resume');
+  // Then — 회원가입 이후 화면 검증은 인증 fixture 기반 후속 E2E에서 담당
+  const completeResponse = await completeResponsePromise;
+  expect(completeResponse.ok()).toBe(true);
+  await expect(completeResponse.json()).resolves.toMatchObject({
+    data: { role: 'APPLICANT' },
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -170,7 +180,7 @@ test('AC5: 약관 동의 API 실패 시 에러 메시지를 표시하고 페이�
   await mockRoute(page, API.EMAIL_SEND, FIXTURES.emailSend.success);
   await mockRoute(page, API.EMAIL_VERIFY, FIXTURES.emailVerify.success);
   await mockRoute(page, API.SIGNUP_INIT, FIXTURES.signupInit.success);
-  await mockRoute(page, API.SIGNUP_AGREEMENTS, FIXTURES.signupAgreements.failure);
+  await mockRoute(page, API.SIGNUP_COMPLETE, FIXTURES.signupComplete.failure);
 
   await gotoAccountInfo(page);
   await fillEmail(page);
@@ -183,7 +193,8 @@ test('AC5: 약관 동의 API 실패 시 에러 메시지를 표시하고 페이�
   await page.getByRole('checkbox', { name: /서비스 이용약관/ }).check();
   await page.getByRole('checkbox', { name: /개인정보 처리방침/ }).check();
   await page.getByRole('checkbox', { name: /개인회원 이용약관/ }).check();
-  await page.getByRole('checkbox', { name: /AI 분석 동의/ }).check();
+  await page.getByRole('checkbox', { name: /AI 분석에 동의/ }).check();
+  await page.getByRole('checkbox', { name: /민감정보 처리에 동의/ }).check();
 
   // When
   await page.getByRole('button', { name: '다음 단계' }).click();
@@ -221,7 +232,7 @@ test('AC6: 타이머 만료 후 재전송 버튼이 표시되고, 클릭 시 타
 
   // Then — 인증번호 입력 필드, 확인 버튼 비활성화
   await expect(page.getByLabel('이메일 인증번호')).toBeDisabled();
-  await expect(page.getByRole('button', { name: '확인', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '인증번호 확인' })).toBeDisabled();
 
   // Then — 재전송 버튼 표시
   await expect(page.getByRole('button', { name: '재전송' })).toBeVisible();
@@ -238,14 +249,18 @@ test('AC6: 타이머 만료 후 재전송 버튼이 표시되고, 클릭 시 타
 // AC7. 재전송 횟수 제한 (클라이언트 카운트 기준, 3회 초과 시 차단)
 // ---------------------------------------------------------------------------
 
-test('AC7: 인증번호를 3회 전송한 후 4번째 재전송 시 횟수 초과 메시지가 표시되고 API를 호출하지 않는다', async ({
+test('AC7: 인증번호를 3회 전송한 후에는 재전송 버튼이 비활성화되고 API를 호출하지 않는다', async ({
   page,
 }) => {
   // Given
   let sendCallCount = 0;
   await page.route(API.EMAIL_SEND, (route) => {
     sendCallCount++;
-    route.fulfill({ status: 200 });
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(FIXTURES.emailSend.success.body),
+    });
   });
 
   await gotoAccountInfo(page);
@@ -267,19 +282,11 @@ test('AC7: 인증번호를 3회 전송한 후 4번째 재전송 시 횟수 초�
   // 타이머 만료 (3회 이후)
   await page.clock.runFor(5 * 60 * 1000);
 
-  // When — 4번째 재전송 시도
+  // Then — 4번째 재전송을 시도할 수 없도록 버튼 비활성화
   await expect(page.getByRole('button', { name: '재전송' })).toBeVisible();
-  await page.getByRole('button', { name: '재전송' }).click();
-
-  // Then — 횟수 초과 메시지
-  await expect(
-    page.getByText('인증번호 전송 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.'),
-  ).toBeVisible();
-
-  // Then — 재전송 버튼 비활성화
   await expect(page.getByRole('button', { name: '재전송' })).toBeDisabled();
 
-  // Then — API 호출은 3회만 발생 (4번째 호출 없음)
+  // Then — API 호출은 3회만 발생
   expect(sendCallCount).toBe(3);
 });
 

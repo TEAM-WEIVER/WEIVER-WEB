@@ -36,7 +36,7 @@ export function FileDropzone({
             클릭하거나 파일을 드래그하여 업로드하세요
           </p>
           <p className="text-body3 text-text-disabled">
-            PDF 또는 ZIP 파일만 업로드 가능 (최대 10MB)
+            PDF 또는 ZIP 파일만 업로드 가능 (최대 20MB)
           </p>
         </div>
       </button>

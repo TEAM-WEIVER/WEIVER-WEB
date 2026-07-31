@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useTimer } from '@/hooks/use-timer';
+import { ApiError } from '@/lib/api-client';
 import { sendApplicantVerificationEmail, verifyApplicantEmail } from '@/lib/signup-api';
 
 const MAX_SEND_COUNT = 3;
+const DEFAULT_SEND_ERROR_MESSAGE = '인증번호 전송에 실패했습니다. 잠시 후 다시 시도해주세요.';
 
 export function useEmailVerification(email: string) {
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
@@ -57,8 +59,12 @@ export function useEmailVerification(email: string) {
       setVerificationCode('');
       setSendCount((c) => c + 1);
       timer.start();
-    } catch {
-      setSendError('인증번호 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } catch (error) {
+      setSendError(
+        error instanceof ApiError && error.status === 409
+          ? error.message
+          : DEFAULT_SEND_ERROR_MESSAGE,
+      );
     } finally {
       setIsSending(false);
     }
