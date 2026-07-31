@@ -10,8 +10,12 @@ export function AgreementSection({ control }: { control: Control<PortfolioData> 
       control={control}
       name="agreement"
       render={({ field }) => (
-        <label className="bg-bg-tertiary flex cursor-pointer items-center gap-2.5 rounded-lg px-5 py-3">
+        <label
+          htmlFor="portfolio-agreement"
+          className="bg-bg-tertiary flex cursor-pointer items-center gap-2.5 rounded-lg px-5 py-3"
+        >
           <Checkbox
+            id="portfolio-agreement"
             checked={field.value === true}
             onCheckedChange={(checked) => field.onChange(checked === true)}
           />

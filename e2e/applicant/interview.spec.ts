@@ -43,7 +43,8 @@ function stompConnected(): string {
  */
 function stompMessage(destination: string, body: object): string {
   const bodyStr = JSON.stringify(body);
-  return `MESSAGE\ndestination:${destination}\ncontent-type:application/json\ncontent-length:${bodyStr.length}\n\n${bodyStr}\0`;
+  const contentLength = Buffer.byteLength(bodyStr, 'utf8');
+  return `MESSAGE\ndestination:${destination}\nsubscription:sub-0\nmessage-id:mock-${Date.now()}\ncontent-type:application/json\ncontent-length:${contentLength}\n\n${bodyStr}\0`;
 }
 
 /**
@@ -52,6 +53,16 @@ function stompMessage(destination: string, body: object): string {
 function stompError(message: string, isAuth = false): string {
   const body = JSON.stringify({ message, auth_error: isAuth });
   return `ERROR\nmessage:${message}\ncontent-type:application/json\n\n${body}\0`;
+}
+
+function sendInterviewMessage(
+  ws: WebSocketRoute,
+  payload: object,
+  delay = 50,
+): ReturnType<typeof setTimeout> {
+  return setTimeout(() => {
+    ws.send(stompMessage('/user/queue/interviews', payload));
+  }, delay);
 }
 
 /**
@@ -99,8 +110,69 @@ const INTERVIEW_FINISHED = {
 /**
  * 인증된 사용자 상태로 면접 페이지 진입
  */
-async function gotoInterviewWithAuth(page: Page) {
+async function gotoInterviewWithAuth(page: Page, speechTranscript = '테스트 답변입니다.') {
+  await page.addInitScript((transcript) => {
+    class MockSpeechRecognition {
+      lang = 'ko-KR';
+      continuous = true;
+      interimResults = true;
+      onresult: ((event: object) => void) | null = null;
+      onend: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+
+      start() {
+        this.onresult?.({
+          resultIndex: 0,
+          results: [
+            {
+              0: { transcript },
+              isFinal: true,
+            },
+          ],
+        });
+      }
+
+      stop() {
+        this.onend?.();
+      }
+
+      abort() {}
+    }
+
+    for (const property of ['SpeechRecognition', 'webkitSpeechRecognition']) {
+      Object.defineProperty(window, property, {
+        configurable: true,
+        value: MockSpeechRecognition,
+      });
+    }
+    Object.defineProperty(window, 'speechSynthesis', {
+      configurable: true,
+      value: {
+        cancel() {},
+        speak(utterance: SpeechSynthesisUtterance) {
+          setTimeout(() => utterance.onend?.(new Event('end') as SpeechSynthesisEvent), 0);
+        },
+      },
+    });
+  }, speechTranscript);
+
   await page.goto(INTERVIEW_URL);
+
+  const checkboxes = page.getByRole('checkbox');
+  await expect(checkboxes).toHaveCount(3);
+
+  for (let index = 0; index < 3; index += 1) {
+    await checkboxes.nth(index).check();
+  }
+
+  await expect(page.getByRole('button', { name: '면접 시작' })).toBeEnabled();
+}
+
+async function submitSpokenAnswer(page: Page) {
+  await expect(page.getByRole('button', { name: '답변하기' })).toBeEnabled();
+  await page.getByRole('button', { name: '답변하기' }).click();
+  await expect(page.getByRole('button', { name: '제출하기' })).toBeEnabled();
+  await page.getByRole('button', { name: '제출하기' }).click();
 }
 
 // ──────────────────────────────────────────────
@@ -241,8 +313,7 @@ test.describe('AC2: 질문 수신 및 표시', () => {
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            // 연이어 첫 번째 질문 전송
-            ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+            sendInterviewMessage(ws, questionReady(1));
           }
         }
       });
@@ -258,8 +329,8 @@ test.describe('AC2: 질문 수신 및 표시', () => {
       timeout: 5000,
     });
 
-    // Then: 답변 입력 영역(textarea)이 활성화된다
-    await expect(page.getByRole('textbox')).toBeEnabled({ timeout: 5000 });
+    // Then: 음성 답변 시작 버튼이 활성화된다
+    await expect(page.getByRole('button', { name: '답변하기' })).toBeEnabled({ timeout: 5000 });
 
     // Then: 질문 순서 UI에 "질문 1"이 반영된다
     await expect(page.getByText(/질문\s*1/, { exact: false })).toBeVisible({ timeout: 5000 });
@@ -289,8 +360,7 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            // 첫 번째 질문
-            ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+            sendInterviewMessage(ws, questionReady(1));
 
             // When: 동일한 sequence=1 QUESTION_READY 중복 전송
             setTimeout(() => {
@@ -330,13 +400,12 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+            sendInterviewMessage(ws, questionReady(1));
           }
 
           if (destination.includes('/answers')) {
             ws.send(stompMessage('/user/queue/interviews', answerAccepted(1)));
-            // sequence 2 질문 전송
-            ws.send(stompMessage('/user/queue/interviews', questionReady(2)));
+            sendInterviewMessage(ws, questionReady(2));
 
             // When: 이후 오래된 sequence 1이 재도착
             setTimeout(() => {
@@ -354,8 +423,7 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
     await expect(page.getByText('1번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
       timeout: 5000,
     });
-    await page.getByRole('textbox').fill('답변 내용입니다.');
-    await page.getByRole('button', { name: '제출' }).click();
+    await submitSpokenAnswer(page);
 
     // Then: sequence 2 질문이 표시된 후 sequence 1이 도착해도 sequence 2가 유지됨
     await expect(page.getByText('2번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
@@ -373,9 +441,7 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
 // ──────────────────────────────────────────────
 
 test.describe('AC3: 답변 제출 및 다음 질문 루프', () => {
-  test('답변 입력 후 제출 버튼 클릭 시 answers 경로로 payload가 publish되고 입력 영역이 비활성화된다', async ({
-    page,
-  }) => {
+  test('음성 답변 제출 시 answers 경로로 올바른 payload가 publish된다', async ({ page }) => {
     // Given
     let capturedAnswerPayload: {
       question_code?: string;
@@ -397,7 +463,7 @@ test.describe('AC3: 답변 제출 및 다음 질문 루프', () => {
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+            sendInterviewMessage(ws, questionReady(1));
           }
 
           if (destination === `/app/interviews/${SESSION_ID}/answers`) {
@@ -415,20 +481,15 @@ test.describe('AC3: 답변 제출 및 다음 질문 루프', () => {
       });
     });
 
-    await gotoInterviewWithAuth(page);
+    await gotoInterviewWithAuth(page, '안녕하세요. 답변 내용입니다.');
     await page.getByRole('button', { name: '면접 시작' }).click();
 
     await expect(page.getByText('1번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
       timeout: 5000,
     });
 
-    // When: 답변 입력 후 제출
-    const textarea = page.getByRole('textbox');
-    await textarea.fill('안녕하세요. 답변 내용입니다.');
-    await page.getByRole('button', { name: '제출' }).click();
-
-    // Then: 제출 직후 입력 영역이 비활성화된다 (SUBMITTING 상태)
-    await expect(textarea).toBeDisabled({ timeout: 3000 });
+    // When: 음성 답변 시작 후 인식 결과 제출
+    await submitSpokenAnswer(page);
 
     // Then: answers 경로로 올바른 payload가 전송됨
     await expect(async () => {
@@ -468,7 +529,7 @@ test.describe('AC3-a: 마지막 답변 후 INTERVIEW_FINISHED 직접 수신', ()
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+            sendInterviewMessage(ws, questionReady(1));
           }
 
           // When: 마지막 답변 제출 후 ANSWER_ACCEPTED 없이 INTERVIEW_FINISHED
@@ -486,13 +547,12 @@ test.describe('AC3-a: 마지막 답변 후 INTERVIEW_FINISHED 직접 수신', ()
       timeout: 5000,
     });
 
-    await page.getByRole('textbox').fill('마지막 답변입니다.');
-    await page.getByRole('button', { name: '제출' }).click();
+    await submitSpokenAnswer(page);
 
     // Then: INTERVIEW_FINISHED 수신 → 면접 완료/종료 화면으로 전환
-    await expect(
-      page.getByRole('heading', { name: /면접\s*(완료|종료)/, exact: false }),
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('면접이 완료되었어요.', { exact: true }).first()).toBeVisible({
+      timeout: 5000,
+    });
   });
 });
 
@@ -519,13 +579,12 @@ test.describe('AC4: 면접 종료 처리', () => {
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+            sendInterviewMessage(ws, questionReady(1));
           }
 
           if (destination.includes('/answers')) {
             ws.send(stompMessage('/user/queue/interviews', answerAccepted(1)));
-            // When: INTERVIEW_FINISHED 수신
-            ws.send(stompMessage('/user/queue/interviews', INTERVIEW_FINISHED));
+            sendInterviewMessage(ws, INTERVIEW_FINISHED);
           }
         }
       });
@@ -537,16 +596,15 @@ test.describe('AC4: 면접 종료 처리', () => {
     await expect(page.getByText('1번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
       timeout: 5000,
     });
-    await page.getByRole('textbox').fill('마지막 답변입니다.');
-    await page.getByRole('button', { name: '제출' }).click();
+    await submitSpokenAnswer(page);
 
     // Then: 면접 완료/종료 화면으로 전환된다
-    await expect(
-      page.getByRole('heading', { name: /면접\s*(완료|종료)/, exact: false }),
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('면접이 완료되었어요.', { exact: true }).first()).toBeVisible({
+      timeout: 5000,
+    });
 
-    // Then: 답변 제출 UI가 더 이상 표시되지 않는다 (FINISHED 상태, 세션 초기화됨)
-    await expect(page.getByRole('textbox')).not.toBeVisible({ timeout: 3000 });
+    // Then: 답변 제출 UI가 더 이상 표시되지 않는다
+    await expect(page.getByRole('button', { name: /답변하기|제출하기/ })).toHaveCount(0);
   });
 });
 
@@ -555,13 +613,21 @@ test.describe('AC4: 면접 종료 처리', () => {
 // ──────────────────────────────────────────────
 
 test.describe('AC5: 연결 실패 및 인증 오류', () => {
-  test('WebSocket 연결 오류 발생 시 "면접을 시작할 수 없습니다" 에러 메시지가 표시된다', async ({
+  test('세션 시작 중 STOMP 오류 발생 시 "면접을 시작할 수 없습니다" 에러 메시지가 표시된다', async ({
     page,
   }) => {
-    // Given: WebSocket 연결 자체가 실패하는 상황 (서버 미응답)
+    // Given: 연결 직후 서버가 일반 STOMP 오류를 반환하는 상황
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
-      // 연결 즉시 종료하여 연결 실패 시뮬레이션
-      ws.close();
+      ws.onMessage((data) => {
+        const frame = frameToString(data as string | Buffer);
+
+        if (frame.startsWith('CONNECT')) {
+          ws.send(stompConnected());
+          setTimeout(() => {
+            ws.send(stompError('면접을 시작할 수 없습니다. 다시 시도해 주세요.'));
+          }, 50);
+        }
+      });
     });
 
     await gotoInterviewWithAuth(page);
@@ -618,7 +684,7 @@ test.describe('AC5-a: 면접 진행 중 STOMP ERROR 프레임 처리', () => {
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+            sendInterviewMessage(ws, questionReady(1));
             // When: 질문 표시 중 서버에서 STOMP ERROR 프레임 전송
             setTimeout(() => {
               ws.send(stompError('서버 내부 오류가 발생했습니다.'));
@@ -667,7 +733,7 @@ test.describe('AC7: 빈 답변 제출 방지', () => {
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+            sendInterviewMessage(ws, questionReady(1));
           }
 
           if (destination.includes('/answers')) {
@@ -678,18 +744,19 @@ test.describe('AC7: 빈 답변 제출 방지', () => {
       });
     });
 
-    await gotoInterviewWithAuth(page);
+    await gotoInterviewWithAuth(page, '');
     await page.getByRole('button', { name: '면접 시작' }).click();
 
     await expect(page.getByText('1번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
       timeout: 5000,
     });
 
-    // When: 답변 입력 없이 제출 (빈 값)
-    await page.getByRole('button', { name: '제출' }).click();
+    // When: 음성 답변을 시작했지만 인식된 내용 없이 제출
+    await page.getByRole('button', { name: '답변하기' }).click();
+    await page.getByRole('button', { name: '제출하기' }).click();
 
     // Then: 유효성 검사 메시지가 표시된다
-    await expect(page.getByText('답변을 입력해 주세요', { exact: false })).toBeVisible({
+    await expect(page.getByText('답변 내용이 없어요. 다시 말씀해 주세요.')).toBeVisible({
       timeout: 3000,
     });
 
@@ -716,7 +783,7 @@ test.describe('AC7: 빈 답변 제출 방지', () => {
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+            sendInterviewMessage(ws, questionReady(1));
           }
 
           if (destination.includes('/answers')) {
@@ -726,19 +793,19 @@ test.describe('AC7: 빈 답변 제출 방지', () => {
       });
     });
 
-    await gotoInterviewWithAuth(page);
+    await gotoInterviewWithAuth(page, '   ');
     await page.getByRole('button', { name: '면접 시작' }).click();
 
     await expect(page.getByText('1번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
       timeout: 5000,
     });
 
-    // When: 공백만 입력 후 제출
-    await page.getByRole('textbox').fill('   ');
-    await page.getByRole('button', { name: '제출' }).click();
+    // When: 공백만 음성 인식된 상태로 제출
+    await page.getByRole('button', { name: '답변하기' }).click();
+    await page.getByRole('button', { name: '제출하기' }).click();
 
     // Then: 유효성 검사 메시지 표시
-    await expect(page.getByText('답변을 입력해 주세요', { exact: false })).toBeVisible({
+    await expect(page.getByText('답변 내용이 없어요. 다시 말씀해 주세요.')).toBeVisible({
       timeout: 3000,
     });
 
@@ -768,7 +835,7 @@ test.describe('AC8: 브라우저 탭 비활성화 복귀 시 소켓 상태 확�
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+            sendInterviewMessage(ws, questionReady(1));
           }
         }
       });
@@ -832,7 +899,7 @@ test.describe('AC8: 브라우저 탭 비활성화 복귀 시 소켓 상태 확�
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+            sendInterviewMessage(ws, questionReady(1));
           }
         }
       });
