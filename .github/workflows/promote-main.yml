@@ -206,7 +206,9 @@ jobs:
                 --base main \
                 --head "$PROMOTION_BRANCH" \
                 --title "[RELEASE] develop E2E 검증 후 main 자동 승격" \
-                --body "develop 커밋 \`$GITHUB_SHA\`의 품질 검사와 E2E가 통과해 자동 생성된 승격 PR입니다."
+                --body "develop 커밋 \`$GITHUB_SHA\`의 품질 검사와 E2E가 통과해 자동 생성된 승격 PR입니다.
+
+          @coderabbitai ignore"
             )"
             pr_number="${pr_url##*/}"
           fi
