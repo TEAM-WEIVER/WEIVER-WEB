@@ -61,13 +61,16 @@ export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInf
 
         <div className="grid flex-1 grid-cols-3 gap-x-6 gap-y-2.5">
           <div className="flex min-w-0 flex-col gap-2">
-            <Label className="text-text-secondary">이름</Label>
+            <Label htmlFor="resume-name" className="text-text-secondary">
+              이름
+            </Label>
             <Controller
               control={control}
               name="name"
               render={({ field }) => (
                 <Input
                   {...field}
+                  id="resume-name"
                   value={field.value ?? ''}
                   placeholder="본명을 입력해주세요."
                   className={formControlClass}
@@ -91,13 +94,16 @@ export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInf
             />
           </div>
           <div className="flex min-w-0 flex-col gap-2">
-            <Label className="text-text-secondary">이메일</Label>
+            <Label htmlFor="resume-email" className="text-text-secondary">
+              이메일
+            </Label>
             <Controller
               control={control}
               name="email"
               render={({ field }) => (
                 <Input
                   {...field}
+                  id="resume-email"
                   value={field.value ?? ''}
                   type="email"
                   placeholder="weiver@example.com"
@@ -107,13 +113,16 @@ export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInf
             />
           </div>
           <div className="flex min-w-0 flex-col gap-2">
-            <Label className="text-text-secondary">전화번호</Label>
+            <Label htmlFor="resume-phone" className="text-text-secondary">
+              전화번호
+            </Label>
             <Controller
               control={control}
               name="phone"
               render={({ field }) => (
                 <Input
                   {...field}
+                  id="resume-phone"
                   value={field.value ?? ''}
                   type="tel"
                   placeholder="010-1234-5678"
@@ -123,13 +132,16 @@ export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInf
             />
           </div>
           <div className="col-span-2 flex min-w-0 flex-col gap-2">
-            <Label className="text-text-secondary">주소</Label>
+            <Label htmlFor="resume-address" className="text-text-secondary">
+              주소
+            </Label>
             <Controller
               control={control}
               name="address"
               render={({ field }) => (
                 <Input
                   {...field}
+                  id="resume-address"
                   value={field.value ?? ''}
                   placeholder="실 거주지를 입력해주세요."
                   className={formControlClass}

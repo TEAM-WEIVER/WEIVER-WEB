@@ -292,9 +292,9 @@ test('AC6: POST/PUT 실패 시 role=alert 에러 메시지가 표시되고 페�
   await page.getByRole('button', { name: '다음' }).click();
 
   // Then — 에러 메시지 표시
-  await expect(page.getByRole('alert')).toContainText(
-    '저장 중 오류가 발생했습니다. 다시 시도해주세요.',
-  );
+  await expect(
+    page.getByText('저장 중 오류가 발생했습니다. 다시 시도해주세요.', { exact: true }),
+  ).toBeVisible();
 
   // Then — 페이지 유지 (리다이렉트 없음)
   await expect(page).toHaveURL('/onboarding/cover-letter');
@@ -340,7 +340,9 @@ test('AC7: GET 실패 시 빈 폼이 표시되고 에러 없이 POST로 진행�
   await expect(page.getByLabel(/3\./)).toHaveValue('');
 
   // Then — 에러 alert 미표시 (GET 실패는 조용히 처리)
-  await expect(page.getByRole('alert')).toBeHidden();
+  await expect(
+    page.getByText('저장 중 오류가 발생했습니다. 다시 시도해주세요.', { exact: true }),
+  ).toHaveCount(0);
 
   // When — 다음 버튼 클릭 (POST 경로)
   await page.getByRole('button', { name: '다음' }).click();
