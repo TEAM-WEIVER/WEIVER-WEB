@@ -100,37 +100,17 @@ test('필수 항목 저장 성공 시 자기소개서 단계로 이동한다', a
   expect(saveCalled).toBe(true);
 });
 
-test('필수 항목이 비어 있으면 다음 버튼 클릭 시 저장 API를 호출하지 않는다', async ({ page }) => {
-  let saveCalled = false;
-
-  await page.route(APPLICANT_INFO_API, async (route) => {
-    saveCalled = true;
-    await fulfillJson(route, 200, SAVE_SUCCESS);
-  });
-
+test('필수 항목이 비어 있으면 다음 버튼이 비활성화된다', async ({ page }) => {
   await gotoResume(page);
 
-  await page.getByRole('button', { name: '다음' }).click();
-
-  await expect(page).toHaveURL('/onboarding/resume');
-  expect(saveCalled).toBe(false);
+  await expect(page.getByRole('button', { name: '다음' })).toBeDisabled();
 });
 
-test('일부 필수 항목만 입력하고 제출하면 현재 페이지를 유지한다', async ({ page }) => {
-  let saveCalled = false;
-
-  await page.route(APPLICANT_INFO_API, async (route) => {
-    saveCalled = true;
-    await fulfillJson(route, 200, SAVE_SUCCESS);
-  });
-
+test('일부 필수 항목만 입력하면 다음 버튼이 비활성화된다', async ({ page }) => {
   await gotoResume(page);
 
   await page.getByLabel('이름').fill('홍길동');
-  await page.getByRole('button', { name: '다음' }).click();
-
-  await expect(page).toHaveURL('/onboarding/resume');
-  expect(saveCalled).toBe(false);
+  await expect(page.getByRole('button', { name: '다음' })).toBeDisabled();
 });
 
 test('저장 API 실패 시 오류를 표시하고 현재 페이지를 유지한다', async ({ page }) => {
