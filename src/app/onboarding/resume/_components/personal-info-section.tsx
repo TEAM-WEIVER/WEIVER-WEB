@@ -109,9 +109,11 @@ export function PersonalInfoSection({
                   onChange={field.onChange}
                   maxYear={new Date().getFullYear()}
                   aria-label="생년월일 선택"
+                  aria-invalid={showErrors && !!errors.birthday}
                 />
               )}
             />
+            {showErrors ? <FieldError>{errors.birthday?.message}</FieldError> : null}
           </div>
           <div className="flex min-w-0 flex-col gap-2">
             <Label htmlFor="resume-email" className="text-text-secondary">

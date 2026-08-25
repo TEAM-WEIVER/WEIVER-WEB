@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, type FieldErrors } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -151,6 +151,31 @@ function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
           }))
         : [{ ...EMPTY_AWARD }],
   };
+}
+
+function collectResumeErrorMessages(value: unknown, messages: string[] = []) {
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectResumeErrorMessages(item, messages));
+    return messages;
+  }
+
+  if (!value || typeof value !== 'object') return messages;
+
+  const error = value as Record<string, unknown>;
+  if (typeof error.message === 'string') messages.push(error.message);
+
+  Object.entries(error).forEach(([key, item]) => {
+    if (key !== 'message' && key !== 'ref' && key !== 'type') {
+      collectResumeErrorMessages(item, messages);
+    }
+  });
+
+  return messages;
+}
+
+function getResumeValidationMessage(errors: FieldErrors<ResumeData>) {
+  const messages = [...new Set(collectResumeErrorMessages(errors))];
+  return ['오류가 발생했습니다. 다시 시도해주세요.', ...messages].join('\n');
 }
 
 export default function ResumePage() {
@@ -346,6 +371,10 @@ export default function ResumePage() {
     }
   };
 
+  const onInvalid = (validationErrors: FieldErrors<ResumeData>) => {
+    setSubmitError(getResumeValidationMessage(validationErrors));
+  };
+
   const handleSkip = () => {
     navigateNext();
   };
@@ -355,14 +384,14 @@ export default function ResumePage() {
       totalSteps={TOTAL_STEPS}
       currentStep={stepNumber}
       title={stepTitle}
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit(onSubmit, onInvalid)}
       footer={
         <div className="flex flex-col gap-3">
           {submitError && (
             <div
               role="alert"
               aria-live="assertive"
-              className="bg-error/10 border-error text-error rounded-lg border px-4 py-3 text-sm"
+              className="bg-error/10 border-error text-error rounded-lg border px-4 py-3 text-sm whitespace-pre-line"
             >
               {submitError}
             </div>
