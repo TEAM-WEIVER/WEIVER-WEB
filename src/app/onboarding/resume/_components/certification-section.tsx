@@ -1,8 +1,8 @@
-import type { FieldArrayWithId, UseFormRegister } from 'react-hook-form';
+import type { FieldArrayWithId, FieldErrors, UseFormRegister } from 'react-hook-form';
 import { Controller, useWatch, type Control } from 'react-hook-form';
 
 import { DatePicker } from '@/components/ui/date-picker';
-import { formControlClass } from '@/components/ui/form-field';
+import { FieldError, formControlClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ResumeData } from '@/schemas/onboarding';
@@ -14,17 +14,21 @@ const EMPTY_CERTIFICATION = { certificateId: undefined, acquiredDate: '', name: 
 interface CertificationSectionProps {
   fields: FieldArrayWithId<ResumeData, 'certifications', 'id'>[];
   control: Control<ResumeData>;
+  errors: FieldErrors<ResumeData>;
   register: UseFormRegister<ResumeData>;
   append: (value: typeof EMPTY_CERTIFICATION) => void;
   remove: (index: number) => void;
+  showErrors: boolean;
 }
 
 export function CertificationSection({
   fields,
   control,
+  errors,
   register,
   append,
   remove,
+  showErrors,
 }: CertificationSectionProps) {
   const watchedCertifications = useWatch({ control, name: 'certifications' });
 
@@ -62,8 +66,16 @@ export function CertificationSection({
               <Input
                 {...register(`certifications.${index}.name`)}
                 placeholder="자격증명을 정확하게 입력해주세요."
-                className={formControlClass}
+                aria-invalid={showErrors && !!errors.certifications?.[index]?.name}
+                className={`${formControlClass} ${
+                  showErrors && errors.certifications?.[index]?.name
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
+                }`}
               />
+              {showErrors ? (
+                <FieldError>{errors.certifications?.[index]?.name?.message}</FieldError>
+              ) : null}
             </div>
             <div className="flex w-[388px] flex-col gap-2">
               <Label className="text-text-secondary">발행처</Label>

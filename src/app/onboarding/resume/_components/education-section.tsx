@@ -1,8 +1,8 @@
-import type { FieldArrayWithId, UseFormRegister } from 'react-hook-form';
+import type { FieldArrayWithId, FieldErrors, UseFormRegister } from 'react-hook-form';
 import { Controller, useWatch, type Control } from 'react-hook-form';
 
 import { DatePicker } from '@/components/ui/date-picker';
-import { formControlClass, nativeSelectClass } from '@/components/ui/form-field';
+import { FieldError, formControlClass, nativeSelectClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ResumeData } from '@/schemas/onboarding';
@@ -23,17 +23,21 @@ const EMPTY_EDUCATION = {
 interface EducationSectionProps {
   fields: FieldArrayWithId<ResumeData, 'education', 'id'>[];
   control: Control<ResumeData>;
+  errors: FieldErrors<ResumeData>;
   register: UseFormRegister<ResumeData>;
   append: (value: typeof EMPTY_EDUCATION) => void;
   remove: (index: number) => void;
+  showErrors: boolean;
 }
 
 export function EducationSection({
   fields,
   control,
+  errors,
   register,
   append,
   remove,
+  showErrors,
 }: EducationSectionProps) {
   const watchedEducation = useWatch({ control, name: 'education' });
 
@@ -56,7 +60,15 @@ export function EducationSection({
           <div className="flex gap-3.5">
             <div className="flex w-[164px] flex-col gap-2">
               <Label className="text-text-secondary">학력구분</Label>
-              <select {...register(`education.${index}.type`)} className={nativeSelectClass}>
+              <select
+                {...register(`education.${index}.type`)}
+                aria-invalid={showErrors && !!errors.education?.[index]?.type}
+                className={`${nativeSelectClass} ${
+                  showErrors && errors.education?.[index]?.type
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
+                }`}
+              >
                 <option value="">학력구분</option>
                 <option value="고등학교">고등학교</option>
                 <option value="대학교(2,3년)">대학교(2,3년)</option>
@@ -64,14 +76,25 @@ export function EducationSection({
                 <option value="대학원(석사)">대학원(석사)</option>
                 <option value="대학원(박사)">대학원(박사)</option>
               </select>
+              {showErrors ? (
+                <FieldError>{errors.education?.[index]?.type?.message}</FieldError>
+              ) : null}
             </div>
             <div className="flex flex-1 flex-col gap-2">
               <Label className="text-text-secondary">학교명</Label>
               <Input
                 {...register(`education.${index}.school`)}
                 placeholder="학교명을 입력해주세요."
-                className={formControlClass}
+                aria-invalid={showErrors && !!errors.education?.[index]?.school}
+                className={`${formControlClass} ${
+                  showErrors && errors.education?.[index]?.school
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
+                }`}
               />
+              {showErrors ? (
+                <FieldError>{errors.education?.[index]?.school?.message}</FieldError>
+              ) : null}
             </div>
             <div className="flex flex-1 flex-col gap-2">
               <Label className="text-text-secondary">전공명</Label>
@@ -87,9 +110,18 @@ export function EducationSection({
               <Label className="text-text-secondary">학점</Label>
               <Input
                 {...register(`education.${index}.gpa`)}
-                placeholder="평점/4.5"
-                className={formControlClass}
+                inputMode="decimal"
+                placeholder="예: 3.8 (4.5 만점)"
+                aria-invalid={showErrors && !!errors.education?.[index]?.gpa}
+                className={`${formControlClass} ${
+                  showErrors && errors.education?.[index]?.gpa
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
+                }`}
               />
+              {showErrors ? (
+                <FieldError>{errors.education?.[index]?.gpa?.message}</FieldError>
+              ) : null}
             </div>
             <div className="flex flex-1 flex-col gap-2">
               <Label className="text-text-secondary">입학년월</Label>

@@ -173,7 +173,7 @@ export default function ResumePage() {
     control,
     reset,
     setValue,
-    formState: { isValid },
+    formState: { errors, submitCount },
   } = useForm<ResumeData>({
     resolver: zodResolver(resumeSchema),
     defaultValues: {
@@ -381,9 +381,9 @@ export default function ResumePage() {
             <Button
               type="submit"
               size="xs"
-              disabled={!isValid || isSubmitting}
+              disabled={isSubmitting}
               aria-busy={isSubmitting}
-              aria-disabled={!isValid || isSubmitting}
+              aria-disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
@@ -401,34 +401,48 @@ export default function ResumePage() {
         </div>
       }
     >
-      <PersonalInfoSection control={control} photoUrl={photoUrl} setValue={setValue} />
+      <PersonalInfoSection
+        control={control}
+        errors={errors}
+        photoUrl={photoUrl}
+        setValue={setValue}
+        showErrors={submitCount > 0}
+      />
       <EducationSection
         fields={education.fields}
         control={control}
+        errors={errors}
         register={register}
         append={education.append}
         remove={education.remove}
+        showErrors={submitCount > 0}
       />
       <CertificationSection
         fields={certifications.fields}
         control={control}
+        errors={errors}
         register={register}
         append={certifications.append}
         remove={certifications.remove}
+        showErrors={submitCount > 0}
       />
       <AwardSection
         fields={awards.fields}
         control={control}
+        errors={errors}
         register={register}
         append={awards.append}
         remove={awards.remove}
+        showErrors={submitCount > 0}
       />
       <CareerSection
         fields={careers.fields}
         control={control}
+        errors={errors}
         register={register}
         append={careers.append}
         remove={careers.remove}
+        showErrors={submitCount > 0}
       />
     </OnboardingStepShell>
   );

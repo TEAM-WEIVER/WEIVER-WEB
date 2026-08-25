@@ -44,7 +44,7 @@ export default function CoverLetterPage() {
     handleSubmit,
     control,
     setValue,
-    formState: { isValid },
+    formState: { errors, submitCount },
   } = useForm<CoverLetterData>({
     resolver: zodResolver(coverLetterSchema),
     defaultValues: {
@@ -185,9 +185,9 @@ export default function CoverLetterPage() {
               <Button
                 type="submit"
                 size="xs"
-                disabled={isLoading || !isValid || isSubmitting}
+                disabled={isLoading || isSubmitting}
                 aria-busy={isSubmitting}
-                aria-disabled={isLoading || !isValid || isSubmitting}
+                aria-disabled={isLoading || isSubmitting}
               >
                 {isSubmitting ? (
                   <>
@@ -219,7 +219,9 @@ export default function CoverLetterPage() {
             key={question.number}
             question={question}
             currentLength={questionValues[index]?.length ?? 0}
+            error={errors[question.field]?.message}
             register={register}
+            showErrors={submitCount > 0}
           />
         ))}
       </div>

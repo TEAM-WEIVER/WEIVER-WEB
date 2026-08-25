@@ -4,6 +4,7 @@ import type { DragEvent } from 'react';
 interface FileDropzoneProps {
   isDragging: boolean;
   error: string;
+  isInvalid: boolean;
   onBrowse: () => void;
   onDragOver: (e: DragEvent) => void;
   onDragLeave: (e: DragEvent) => void;
@@ -13,6 +14,7 @@ interface FileDropzoneProps {
 export function FileDropzone({
   isDragging,
   error,
+  isInvalid,
   onBrowse,
   onDragOver,
   onDragLeave,
@@ -27,7 +29,11 @@ export function FileDropzone({
         onDragLeave={onDragLeave}
         onDrop={onDrop}
         className={`flex w-full cursor-pointer flex-col items-center justify-center gap-3.5 rounded-lg border border-dashed px-10 py-12 transition-colors ${
-          isDragging ? 'border-primary-700 bg-primary-200' : 'border-border-default bg-bg-tertiary'
+          isInvalid
+            ? 'border-error bg-bg-tertiary'
+            : isDragging
+              ? 'border-primary-700 bg-primary-200'
+              : 'border-border-default bg-bg-tertiary'
         }`}
       >
         <CloudUpload size={24} className="text-icon-muted" />
