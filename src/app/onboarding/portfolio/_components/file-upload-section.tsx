@@ -16,6 +16,7 @@ interface FileUploadSectionProps {
   existingFile: ExistingPortfolioFile | null;
   fileError: string;
   isDragging: boolean;
+  missingContentError: string;
   onBrowse: () => void;
   onFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onDragOver: (e: DragEvent) => void;
@@ -30,6 +31,7 @@ export function FileUploadSection({
   existingFile,
   fileError,
   isDragging,
+  missingContentError,
   onBrowse,
   onFileChange,
   onDragOver,
@@ -61,7 +63,8 @@ export function FileUploadSection({
             />
             <FileDropzone
               isDragging={isDragging}
-              error={fileError}
+              error={fileError || missingContentError}
+              isInvalid={!!fileError || !!missingContentError}
               onBrowse={onBrowse}
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
@@ -71,7 +74,8 @@ export function FileUploadSection({
         ) : (
           <FileDropzone
             isDragging={isDragging}
-            error={fileError}
+            error={fileError || missingContentError}
+            isInvalid={!!fileError || !!missingContentError}
             onBrowse={onBrowse}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}

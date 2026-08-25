@@ -143,6 +143,43 @@ describe('이력서 온보딩 페이지', () => {
     expect(screen.getByDisplayValue('경기도 안산시 상록구 한양대학로 55')).toBeInTheDocument();
   });
 
+  it('필수 개인 정보가 비어 있으면 다음 버튼이 비활성화되어 저장 API를 호출하지 않는다', async () => {
+    vi.mocked(getApplicantsAll).mockResolvedValueOnce({
+      status: 'success',
+      code: 200,
+      data: {
+        ApplicantDTO: null,
+        EducationDTO: [],
+        AwardDTO: [],
+        WorkExperienceDTO: [],
+        CertificateDTO: [],
+      },
+      message: null,
+    });
+    render(<ResumePage />);
+
+    await screen.findByPlaceholderText('본명을 입력해주세요.');
+
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+    expect(saveApplicantInfo).not.toHaveBeenCalled();
+  });
+
+  it('4.5 만점 형식이 아닌 학점에 오류를 표시한다', async () => {
+    const user = userEvent.setup();
+    render(<ResumePage />);
+
+    await screen.findByPlaceholderText('본명을 입력해주세요.');
+    await user.selectOptions(screen.getByDisplayValue('학력구분'), '대학교(4년)');
+    await user.type(screen.getByPlaceholderText('학교명을 입력해주세요.'), '위버대학교');
+    const gpaInput = screen.getByPlaceholderText('예: 3.8 (4.5 만점)');
+    await user.type(gpaInput, '3.8/4.5');
+    await user.click(screen.getByRole('button', { name: '다음' }));
+
+    expect(await screen.findByText('0~4.5 사이의 숫자로 입력해주세요.')).toBeInTheDocument();
+    expect(gpaInput).toHaveAttribute('aria-invalid', 'true');
+    expect(saveApplicantInfo).not.toHaveBeenCalled();
+  });
+
   it('증명사진을 선택하면 미리보기를 표시하고 개인정보 저장 FormData에 파일을 담는다', async () => {
     const user = userEvent.setup();
     render(<ResumePage />);

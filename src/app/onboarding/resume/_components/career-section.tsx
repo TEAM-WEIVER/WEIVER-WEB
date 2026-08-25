@@ -1,8 +1,8 @@
-import type { FieldArrayWithId, UseFormRegister } from 'react-hook-form';
+import type { FieldArrayWithId, FieldErrors, UseFormRegister } from 'react-hook-form';
 import { Controller, useWatch, type Control } from 'react-hook-form';
 
 import { DatePicker } from '@/components/ui/date-picker';
-import { formControlClass, nativeSelectClass } from '@/components/ui/form-field';
+import { FieldError, formControlClass, nativeSelectClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ResumeData } from '@/schemas/onboarding';
@@ -23,12 +23,22 @@ const EMPTY_CAREER = {
 interface CareerSectionProps {
   fields: FieldArrayWithId<ResumeData, 'careers', 'id'>[];
   control: Control<ResumeData>;
+  errors: FieldErrors<ResumeData>;
   register: UseFormRegister<ResumeData>;
   append: (value: typeof EMPTY_CAREER) => void;
   remove: (index: number) => void;
+  showErrors: boolean;
 }
 
-export function CareerSection({ fields, control, register, append, remove }: CareerSectionProps) {
+export function CareerSection({
+  fields,
+  control,
+  errors,
+  register,
+  append,
+  remove,
+  showErrors,
+}: CareerSectionProps) {
   const watchedCareers = useWatch({ control, name: 'careers' });
 
   return (
@@ -51,8 +61,16 @@ export function CareerSection({ fields, control, register, append, remove }: Car
               <Input
                 {...register(`careers.${index}.company`)}
                 placeholder="회사명-부서의 형태로 입력해주세요."
-                className={formControlClass}
+                aria-invalid={showErrors && !!errors.careers?.[index]?.company}
+                className={`${formControlClass} ${
+                  showErrors && errors.careers?.[index]?.company
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
+                }`}
               />
+              {showErrors ? (
+                <FieldError>{errors.careers?.[index]?.company?.message}</FieldError>
+              ) : null}
             </div>
             <div className="flex w-[220px] flex-col gap-2">
               <Label className="text-text-secondary">입사일</Label>
