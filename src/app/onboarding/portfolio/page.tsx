@@ -48,7 +48,7 @@ export default function PortfolioPage() {
     control,
     setValue,
     watch,
-    formState: { isValid },
+    formState: { errors, submitCount },
   } = useForm<PortfolioData>({
     resolver: zodResolver(portfolioSchema),
     defaultValues: {
@@ -91,7 +91,9 @@ export default function PortfolioPage() {
   const [githubUrl, notionUrl, otherUrl] = watch(['githubUrl', 'notionUrl', 'otherUrl']);
   const hasContent =
     !!portfolioFile.uploadedFile || !!existingFile || !!githubUrl || !!notionUrl || !!otherUrl;
-  const isSubmitEnabled = isValid && !portfolioFile.fileError && hasContent;
+  const showErrors = submitCount > 0;
+  const missingContentError =
+    showErrors && !hasContent ? '포트폴리오 파일 또는 링크를 하나 이상 입력해주세요.' : '';
 
   const onSubmit = async (data: PortfolioData) => {
     if (!hasContent) return;
@@ -179,9 +181,9 @@ export default function PortfolioPage() {
               <Button
                 type="submit"
                 size="xs"
-                disabled={!isSubmitEnabled || isSubmitting}
+                disabled={isSubmitting}
                 aria-busy={isSubmitting}
-                aria-disabled={!isSubmitEnabled || isSubmitting}
+                aria-disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
@@ -209,9 +211,14 @@ export default function PortfolioPage() {
         onDragLeave={portfolioFile.handleDragLeave}
         onDrop={portfolioFile.handleDrop}
         onRemove={portfolioFile.removeFile}
+        missingContentError={missingContentError}
       />
-      <ExternalLinksSection register={register} />
-      <AgreementSection control={control} />
+      <ExternalLinksSection errors={errors} register={register} showErrors={showErrors} />
+      <AgreementSection
+        control={control}
+        error={errors.agreement?.message}
+        showErrors={showErrors}
+      />
     </OnboardingStepShell>
   );
 }

@@ -7,7 +7,13 @@ export const educationSchema = z.object({
   type: z.string().min(1, '학력구분을 선택해주세요.'),
   school: z.string().min(1, '학교명을 입력해주세요.'),
   major: z.string().optional(),
-  gpa: z.string().optional(),
+  gpa: z
+    .string()
+    .regex(
+      /^(?:[0-3](?:\.\d{1,2})?|4(?:\.([0-4]\d?|5(?:0)?))?)$/,
+      '0~4.5 사이의 숫자로 입력해주세요.',
+    )
+    .or(z.literal('')),
   enrollmentDate: z.string().optional(),
   graduationDate: z.string().optional(),
   status: z.string().optional(),
@@ -108,9 +114,9 @@ export type ResumeData = z.infer<typeof resumeSchema>;
 /* ─── 자기소개서 (2단계) ─── */
 
 export const coverLetterSchema = z.object({
-  question1: z.string().max(1000, '1000자를 초과할 수 없습니다.'),
-  question2: z.string().max(1000, '1000자를 초과할 수 없습니다.'),
-  question3: z.string().max(500, '500자를 초과할 수 없습니다.'),
+  question1: z.string().max(1000, '최대 1000자까지 입력해주세요.'),
+  question2: z.string().max(1000, '최대 1000자까지 입력해주세요.'),
+  question3: z.string().max(500, '최대 500자까지 입력해주세요.'),
 });
 
 export type CoverLetterData = z.infer<typeof coverLetterSchema>;

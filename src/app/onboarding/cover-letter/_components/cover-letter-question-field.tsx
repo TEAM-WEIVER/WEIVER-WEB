@@ -9,17 +9,22 @@ import type { CoverLetterQuestion } from '../_constants/cover-letter-questions';
 interface CoverLetterQuestionFieldProps {
   question: CoverLetterQuestion;
   currentLength: number;
+  error?: string;
   register: UseFormRegister<CoverLetterData>;
+  showErrors: boolean;
 }
 
 export function CoverLetterQuestionField({
   question,
   currentLength,
+  error,
   register,
+  showErrors,
 }: CoverLetterQuestionFieldProps) {
-  const isOverLimit = currentLength > question.maxLength;
+  const errorMessage = showErrors ? error : undefined;
   const textareaId = `cover-letter-${question.field}`;
   const countId = `${textareaId}-count`;
+  const errorId = `${textareaId}-error`;
 
   return (
     <div className="flex flex-col gap-2">
@@ -30,7 +35,7 @@ export function CoverLetterQuestionField({
         <p
           id={countId}
           className={`text-caption shrink-0 pl-4 text-right ${
-            isOverLimit ? 'text-error' : 'text-text-tertiary'
+            errorMessage ? 'text-error' : 'text-text-tertiary'
           }`}
         >
           {currentLength}/{question.maxLength}
@@ -38,13 +43,19 @@ export function CoverLetterQuestionField({
       </div>
       <Textarea
         id={textareaId}
-        aria-describedby={countId}
+        aria-describedby={errorMessage ? `${countId} ${errorId}` : countId}
+        aria-invalid={!!errorMessage}
         {...register(question.field)}
         placeholder="내용을 입력해주세요."
         className={`${formTextareaClass} min-h-[180px] resize-none ${
-          isOverLimit ? 'border-error focus-visible:border-error focus-visible:ring-error/20' : ''
+          errorMessage ? 'border-error focus-visible:border-error focus-visible:ring-error/20' : ''
         }`}
       />
+      {errorMessage ? (
+        <p id={errorId} className="text-caption text-error">
+          {errorMessage}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -1,9 +1,15 @@
 import { Image as ImageIcon } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
-import { Controller, type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
+import {
+  Controller,
+  type Control,
+  type FieldErrors,
+  type UseFormSetValue,
+  useWatch,
+} from 'react-hook-form';
 
 import { DatePicker } from '@/components/ui/date-picker';
-import { formControlClass } from '@/components/ui/form-field';
+import { FieldError, formControlClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ResumeData } from '@/schemas/onboarding';
@@ -12,11 +18,19 @@ import { SectionTitle } from './section-title';
 
 interface PersonalInfoSectionProps {
   control: Control<ResumeData>;
+  errors: FieldErrors<ResumeData>;
   photoUrl?: string | null;
   setValue: UseFormSetValue<ResumeData>;
+  showErrors: boolean;
 }
 
-export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInfoSectionProps) {
+export function PersonalInfoSection({
+  control,
+  errors,
+  photoUrl,
+  setValue,
+  showErrors,
+}: PersonalInfoSectionProps) {
   const profileImage = useWatch({ control, name: 'profileImage' });
   const objectPreviewUrl = useMemo(
     () => (profileImage ? URL.createObjectURL(profileImage) : null),
@@ -73,10 +87,16 @@ export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInf
                   id="resume-name"
                   value={field.value ?? ''}
                   placeholder="본명을 입력해주세요."
-                  className={formControlClass}
+                  aria-invalid={showErrors && !!errors.name}
+                  className={`${formControlClass} ${
+                    showErrors && errors.name
+                      ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                      : ''
+                  }`}
                 />
               )}
             />
+            {showErrors ? <FieldError>{errors.name?.message}</FieldError> : null}
           </div>
           <div className="flex min-w-0 flex-col gap-2">
             <Label className="text-text-secondary">생년월일</Label>
@@ -107,10 +127,16 @@ export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInf
                   value={field.value ?? ''}
                   type="email"
                   placeholder="weiver@example.com"
-                  className={formControlClass}
+                  aria-invalid={showErrors && !!errors.email}
+                  className={`${formControlClass} ${
+                    showErrors && errors.email
+                      ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                      : ''
+                  }`}
                 />
               )}
             />
+            {showErrors ? <FieldError>{errors.email?.message}</FieldError> : null}
           </div>
           <div className="flex min-w-0 flex-col gap-2">
             <Label htmlFor="resume-phone" className="text-text-secondary">
@@ -126,10 +152,16 @@ export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInf
                   value={field.value ?? ''}
                   type="tel"
                   placeholder="010-1234-5678"
-                  className={formControlClass}
+                  aria-invalid={showErrors && !!errors.phone}
+                  className={`${formControlClass} ${
+                    showErrors && errors.phone
+                      ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                      : ''
+                  }`}
                 />
               )}
             />
+            {showErrors ? <FieldError>{errors.phone?.message}</FieldError> : null}
           </div>
           <div className="col-span-2 flex min-w-0 flex-col gap-2">
             <Label htmlFor="resume-address" className="text-text-secondary">
@@ -144,10 +176,16 @@ export function PersonalInfoSection({ control, photoUrl, setValue }: PersonalInf
                   id="resume-address"
                   value={field.value ?? ''}
                   placeholder="실 거주지를 입력해주세요."
-                  className={formControlClass}
+                  aria-invalid={showErrors && !!errors.address}
+                  className={`${formControlClass} ${
+                    showErrors && errors.address
+                      ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                      : ''
+                  }`}
                 />
               )}
             />
+            {showErrors ? <FieldError>{errors.address?.message}</FieldError> : null}
           </div>
         </div>
       </div>

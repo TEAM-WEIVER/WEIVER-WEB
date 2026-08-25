@@ -1,6 +1,6 @@
-import type { UseFormRegister } from 'react-hook-form';
+import type { FieldErrors, UseFormRegister } from 'react-hook-form';
 
-import { formControlClass } from '@/components/ui/form-field';
+import { FieldError, formControlClass } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { PortfolioData } from '@/schemas/onboarding';
@@ -8,7 +8,13 @@ import type { PortfolioData } from '@/schemas/onboarding';
 import { GithubIcon, NotionIcon } from './portfolio-icons';
 import { SectionTitle } from './section-title';
 
-export function ExternalLinksSection({ register }: { register: UseFormRegister<PortfolioData> }) {
+interface ExternalLinksSectionProps {
+  errors: FieldErrors<PortfolioData>;
+  register: UseFormRegister<PortfolioData>;
+  showErrors: boolean;
+}
+
+export function ExternalLinksSection({ errors, register, showErrors }: ExternalLinksSectionProps) {
   return (
     <div className="flex flex-col gap-6">
       <SectionTitle title="포트폴리오 링크 (선택)" />
@@ -23,8 +29,14 @@ export function ExternalLinksSection({ register }: { register: UseFormRegister<P
             {...register('githubUrl')}
             id="portfolio-github-url"
             placeholder="https://github.com/username"
-            className={formControlClass}
+            aria-invalid={showErrors && !!errors.githubUrl}
+            className={`${formControlClass} ${
+              showErrors && errors.githubUrl
+                ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                : ''
+            }`}
           />
+          {showErrors ? <FieldError>{errors.githubUrl?.message}</FieldError> : null}
         </div>
 
         <div className="flex flex-col gap-2">
@@ -36,8 +48,14 @@ export function ExternalLinksSection({ register }: { register: UseFormRegister<P
             {...register('notionUrl')}
             id="portfolio-notion-url"
             placeholder="https://notion.so/..."
-            className={formControlClass}
+            aria-invalid={showErrors && !!errors.notionUrl}
+            className={`${formControlClass} ${
+              showErrors && errors.notionUrl
+                ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                : ''
+            }`}
           />
+          {showErrors ? <FieldError>{errors.notionUrl?.message}</FieldError> : null}
         </div>
 
         <div className="flex flex-col gap-2">
@@ -48,8 +66,14 @@ export function ExternalLinksSection({ register }: { register: UseFormRegister<P
             {...register('otherUrl')}
             id="portfolio-other-url"
             placeholder="https://..."
-            className={formControlClass}
+            aria-invalid={showErrors && !!errors.otherUrl}
+            className={`${formControlClass} ${
+              showErrors && errors.otherUrl
+                ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                : ''
+            }`}
           />
+          {showErrors ? <FieldError>{errors.otherUrl?.message}</FieldError> : null}
         </div>
       </div>
     </div>
