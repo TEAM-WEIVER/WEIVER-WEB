@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, type FieldErrors } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -151,6 +151,12 @@ function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
           }))
         : [{ ...EMPTY_AWARD }],
   };
+}
+
+function getResumeValidationMessage(errors: FieldErrors<ResumeData>) {
+  return Object.keys(errors).length > 0
+    ? '입력하지 않았거나 올바르지 않은 필드를 확인해주세요.'
+    : '오류가 발생했습니다. 다시 시도해주세요.';
 }
 
 export default function ResumePage() {
@@ -346,6 +352,10 @@ export default function ResumePage() {
     }
   };
 
+  const onInvalid = (validationErrors: FieldErrors<ResumeData>) => {
+    setSubmitError(getResumeValidationMessage(validationErrors));
+  };
+
   const handleSkip = () => {
     navigateNext();
   };
@@ -355,14 +365,14 @@ export default function ResumePage() {
       totalSteps={TOTAL_STEPS}
       currentStep={stepNumber}
       title={stepTitle}
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit(onSubmit, onInvalid)}
       footer={
         <div className="flex flex-col gap-3">
           {submitError && (
             <div
               role="alert"
               aria-live="assertive"
-              className="bg-error/10 border-error text-error rounded-lg border px-4 py-3 text-sm"
+              className="bg-error/10 border-error text-error rounded-lg border px-4 py-3 text-sm whitespace-pre-line"
             >
               {submitError}
             </div>
