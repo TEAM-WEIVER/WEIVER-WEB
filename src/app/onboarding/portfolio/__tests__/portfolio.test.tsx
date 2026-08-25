@@ -96,6 +96,38 @@ describe('포트폴리오 온보딩 페이지', () => {
     expect(patchPortfolio).not.toHaveBeenCalled();
   });
 
+  it('제출 클릭 후 포트폴리오 파일 또는 링크 누락 오류를 업로드 영역에 표시한다', async () => {
+    const user = userEvent.setup();
+    render(<PortfolioPage />);
+
+    await waitFor(() => {
+      expect(getPortfolio).toHaveBeenCalled();
+    });
+    await user.click(screen.getByRole('button', { name: '제출' }));
+
+    expect(
+      await screen.findByText('포트폴리오 파일 또는 링크를 하나 이상 입력해주세요.'),
+    ).toBeInTheDocument();
+    expect(postPortfolio).not.toHaveBeenCalled();
+  });
+
+  it('제출 클릭 후 잘못된 링크 형식에 오류를 표시한다', async () => {
+    const user = userEvent.setup();
+    render(<PortfolioPage />);
+
+    await waitFor(() => {
+      expect(getPortfolio).toHaveBeenCalled();
+    });
+    const githubInput = screen.getByPlaceholderText('https://github.com/username');
+    await user.type(githubInput, 'github.com/weiver-dev');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: '제출' }));
+
+    expect(await screen.findByText('올바른 URL 형식을 입력해주세요.')).toBeInTheDocument();
+    expect(githubInput).toHaveAttribute('aria-invalid', 'true');
+    expect(postPortfolio).not.toHaveBeenCalled();
+  });
+
   it('기존 포트폴리오가 있으면 새 파일 없이 requestDTO만 PATCH로 수정한다', async () => {
     const user = userEvent.setup();
     vi.mocked(getPortfolio).mockResolvedValueOnce({
