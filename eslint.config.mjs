@@ -41,6 +41,16 @@ const eslintConfig = defineConfig([
         },
       ],
 
+      // 사용하지 않는 변수 (_로 시작하는 변수 무시)
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          varsIgnorePattern: '^_',
+          argsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
+
       // React 관련
       'react/self-closing-comp': 'error',
       'react/jsx-curly-brace-presence': ['error', { props: 'never', children: 'never' }],
