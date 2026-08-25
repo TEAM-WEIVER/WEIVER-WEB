@@ -207,7 +207,11 @@ describe('이력서 온보딩 페이지', () => {
     await waitFor(() => {
       expect(screen.getByPlaceholderText('본명을 입력해주세요.')).toHaveValue('김민채');
     });
-    await user.type(screen.getByPlaceholderText('자격증명을 정확하게 입력해주세요.'), 'SQLD');
+    const certificationNameInput = screen.getByPlaceholderText('자격증명을 정확하게 입력해주세요.');
+    await user.type(certificationNameInput, 'SQLD');
+    await waitFor(() => {
+      expect(certificationNameInput).toHaveValue('SQLD');
+    });
     await user.click(screen.getByRole('button', { name: '다음' }));
 
     const alert = await screen.findByRole('alert');
