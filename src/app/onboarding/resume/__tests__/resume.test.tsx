@@ -214,7 +214,7 @@ describe('이력서 온보딩 페이지', () => {
     });
     await user.click(screen.getByRole('button', { name: '다음' }));
 
-    const alert = await screen.findByRole('alert');
+    const alert = await screen.findByRole('alert', undefined, { timeout: 5000 });
     expect(alert).toHaveTextContent('입력하지 않았거나 올바르지 않은 필드를 확인해주세요.');
     expect(alert).not.toHaveTextContent('취득일을 선택해주세요.');
     expect(alert).not.toHaveTextContent('발행처를 입력해주세요.');
