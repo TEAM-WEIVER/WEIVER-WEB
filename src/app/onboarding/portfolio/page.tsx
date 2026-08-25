@@ -88,7 +88,12 @@ export default function PortfolioPage() {
     loadPortfolio();
   }, [setValue]);
 
-  const [githubUrl, notionUrl, otherUrl] = watch(['githubUrl', 'notionUrl', 'otherUrl']);
+  const [githubUrl, notionUrl, otherUrl, agreement] = watch([
+    'githubUrl',
+    'notionUrl',
+    'otherUrl',
+    'agreement',
+  ]);
   const hasContent =
     !!portfolioFile.uploadedFile || !!existingFile || !!githubUrl || !!notionUrl || !!otherUrl;
   const showErrors = submitCount > 0;
@@ -181,9 +186,13 @@ export default function PortfolioPage() {
               <Button
                 type="submit"
                 size="xs"
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting || !!portfolioFile.fileError || (agreement === true && !hasContent)
+                }
                 aria-busy={isSubmitting}
-                aria-disabled={isSubmitting}
+                aria-disabled={
+                  isSubmitting || !!portfolioFile.fileError || (agreement === true && !hasContent)
+                }
               >
                 {isSubmitting ? (
                   <>

@@ -112,14 +112,14 @@ export function EducationSection({
                 {...register(`education.${index}.gpa`)}
                 inputMode="decimal"
                 placeholder="예: 3.8 (4.5 만점)"
-                aria-invalid={showErrors && !!errors.education?.[index]?.gpa}
+                aria-invalid={!!errors.education?.[index]?.gpa}
                 className={`${formControlClass} ${
-                  showErrors && errors.education?.[index]?.gpa
+                  errors.education?.[index]?.gpa
                     ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
                     : ''
                 }`}
               />
-              {showErrors ? (
+              {errors.education?.[index]?.gpa ? (
                 <FieldError>{errors.education?.[index]?.gpa?.message}</FieldError>
               ) : null}
             </div>
