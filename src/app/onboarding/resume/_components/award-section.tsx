@@ -57,9 +57,11 @@ export function AwardSection({
                     value={field.value ?? ''}
                     onChange={field.onChange}
                     aria-label="수상일 선택"
+                    aria-invalid={showErrors && !!errors.awards?.[index]?.date}
                   />
                 )}
               />
+              {showErrors ? <FieldError>{errors.awards?.[index]?.date?.message}</FieldError> : null}
             </div>
             <div className="flex flex-1 flex-col gap-2">
               <Label className="text-text-secondary">수상명</Label>
@@ -80,8 +82,16 @@ export function AwardSection({
               <Input
                 {...register(`awards.${index}.issuer`)}
                 placeholder="발행처를 입력해주세요."
-                className={formControlClass}
+                aria-invalid={showErrors && !!errors.awards?.[index]?.issuer}
+                className={`${formControlClass} ${
+                  showErrors && errors.awards?.[index]?.issuer
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
+                }`}
               />
+              {showErrors ? (
+                <FieldError>{errors.awards?.[index]?.issuer?.message}</FieldError>
+              ) : null}
             </div>
           </div>
         </div>
