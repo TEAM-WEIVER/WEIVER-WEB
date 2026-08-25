@@ -173,7 +173,7 @@ export default function ResumePage() {
     control,
     reset,
     setValue,
-    formState: { errors, submitCount },
+    formState: { errors, submitCount, isValid },
   } = useForm<ResumeData>({
     resolver: zodResolver(resumeSchema),
     defaultValues: {
@@ -381,9 +381,9 @@ export default function ResumePage() {
             <Button
               type="submit"
               size="xs"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isValid}
               aria-busy={isSubmitting}
-              aria-disabled={isSubmitting}
+              aria-disabled={isSubmitting || !isValid}
             >
               {isSubmitting ? (
                 <>
