@@ -204,7 +204,9 @@ describe('이력서 온보딩 페이지', () => {
     const user = userEvent.setup();
     render(<ResumePage />);
 
-    await screen.findByPlaceholderText('본명을 입력해주세요.');
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('본명을 입력해주세요.')).toHaveValue('김민채');
+    });
     await user.type(screen.getByPlaceholderText('자격증명을 정확하게 입력해주세요.'), 'SQLD');
     await user.click(screen.getByRole('button', { name: '다음' }));
 
