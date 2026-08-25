@@ -143,8 +143,7 @@ describe('이력서 온보딩 페이지', () => {
     expect(screen.getByDisplayValue('경기도 안산시 상록구 한양대학로 55')).toBeInTheDocument();
   });
 
-  it('다음 클릭 후 누락된 필수 개인 정보에 오류를 표시한다', async () => {
-    const user = userEvent.setup();
+  it('필수 개인 정보가 비어 있으면 다음 버튼이 비활성화되어 저장 API를 호출하지 않는다', async () => {
     vi.mocked(getApplicantsAll).mockResolvedValueOnce({
       status: 'success',
       code: 200,
@@ -159,11 +158,9 @@ describe('이력서 온보딩 페이지', () => {
     });
     render(<ResumePage />);
 
-    const nameInput = await screen.findByPlaceholderText('본명을 입력해주세요.');
-    await user.click(screen.getByRole('button', { name: '다음' }));
+    await screen.findByPlaceholderText('본명을 입력해주세요.');
 
-    expect(await screen.findByText('이름을 입력해주세요.')).toBeInTheDocument();
-    expect(nameInput).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
     expect(saveApplicantInfo).not.toHaveBeenCalled();
   });
 
