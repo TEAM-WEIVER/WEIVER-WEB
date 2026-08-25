@@ -153,29 +153,10 @@ function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
   };
 }
 
-function collectResumeErrorMessages(value: unknown, messages: string[] = []) {
-  if (Array.isArray(value)) {
-    value.forEach((item) => collectResumeErrorMessages(item, messages));
-    return messages;
-  }
-
-  if (!value || typeof value !== 'object') return messages;
-
-  const error = value as Record<string, unknown>;
-  if (typeof error.message === 'string') messages.push(error.message);
-
-  Object.entries(error).forEach(([key, item]) => {
-    if (key !== 'message' && key !== 'ref' && key !== 'type') {
-      collectResumeErrorMessages(item, messages);
-    }
-  });
-
-  return messages;
-}
-
 function getResumeValidationMessage(errors: FieldErrors<ResumeData>) {
-  const messages = [...new Set(collectResumeErrorMessages(errors))];
-  return ['오류가 발생했습니다. 다시 시도해주세요.', ...messages].join('\n');
+  return Object.keys(errors).length > 0
+    ? '입력하지 않았거나 올바르지 않은 필드를 확인해주세요.'
+    : '오류가 발생했습니다. 다시 시도해주세요.';
 }
 
 export default function ResumePage() {

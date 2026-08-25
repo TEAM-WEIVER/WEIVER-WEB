@@ -200,7 +200,7 @@ describe('이력서 온보딩 페이지', () => {
     expect(saveApplicantInfo).not.toHaveBeenCalled();
   });
 
-  it('입력 중인 자격증의 누락 필드 메시지를 상단과 필드에 표시한다', async () => {
+  it('입력 중인 자격증의 누락 필드는 상단 단일 안내와 필드 오류로 표시한다', async () => {
     const user = userEvent.setup();
     render(<ResumePage />);
 
@@ -209,9 +209,11 @@ describe('이력서 온보딩 페이지', () => {
     await user.click(screen.getByRole('button', { name: '다음' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('오류가 발생했습니다. 다시 시도해주세요.');
-    expect(alert).toHaveTextContent('취득일을 선택해주세요.');
-    expect(alert).toHaveTextContent('발행처를 입력해주세요.');
+    expect(alert).toHaveTextContent('입력하지 않았거나 올바르지 않은 필드를 확인해주세요.');
+    expect(alert).not.toHaveTextContent('취득일을 선택해주세요.');
+    expect(alert).not.toHaveTextContent('발행처를 입력해주세요.');
+    expect(screen.getByText('취득일을 선택해주세요.')).toBeInTheDocument();
+    expect(screen.getByText('발행처를 입력해주세요.')).toBeInTheDocument();
     expect(screen.getAllByPlaceholderText('발행처를 입력해주세요.')[0]).toHaveAttribute(
       'aria-invalid',
       'true',
