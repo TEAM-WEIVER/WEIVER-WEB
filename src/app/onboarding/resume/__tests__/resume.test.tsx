@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -201,20 +201,21 @@ describe('이력서 온보딩 페이지', () => {
   });
 
   it('입력 중인 자격증의 누락 필드는 상단 단일 안내와 필드 오류로 표시한다', async () => {
-    const user = userEvent.setup();
     render(<ResumePage />);
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText('본명을 입력해주세요.')).toHaveValue('김민채');
     });
     const certificationNameInput = screen.getByPlaceholderText('자격증명을 정확하게 입력해주세요.');
-    await user.type(certificationNameInput, 'SQLD');
+    fireEvent.change(certificationNameInput, { target: { value: 'SQLD' } });
     await waitFor(() => {
       expect(certificationNameInput).toHaveValue('SQLD');
     });
-    await user.click(screen.getByRole('button', { name: '다음' }));
+    const form = screen.getByRole('button', { name: '다음' }).closest('form');
+    if (!form) throw new Error('이력서 온보딩 폼을 찾을 수 없습니다.');
+    fireEvent.submit(form);
 
-    const alert = await screen.findByRole('alert', undefined, { timeout: 5000 });
+    const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('입력하지 않았거나 올바르지 않은 필드를 확인해주세요.');
     expect(alert).not.toHaveTextContent('취득일을 선택해주세요.');
     expect(alert).not.toHaveTextContent('발행처를 입력해주세요.');
