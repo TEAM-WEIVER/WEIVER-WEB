@@ -134,11 +134,7 @@ export default function InterviewPage() {
               question={currentQuestion}
               sequence={currentSequence}
               roundLabel={roundLabel}
-              isSubmitting={
-                status === 'SUBMITTING' ||
-                status === 'RECONNECTING' ||
-                status === 'SUBSCRIBED'
-              }
+              isSubmitting={status === 'SUBMITTING' || status === 'RECONNECTING'}
               onSubmit={handleSubmitAnswer}
             />
           )}
