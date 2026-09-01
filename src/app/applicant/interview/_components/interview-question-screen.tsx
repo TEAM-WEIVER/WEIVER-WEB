@@ -295,14 +295,6 @@ export function InterviewQuestionScreen({
       if (isListening) {
         stopListening();
       }
-      if (!answer.trim()) {
-        setValidationErrorState({
-          questionKey,
-          message: '답변 내용이 없어요. 다시 말씀해 주세요.',
-        });
-        return;
-      }
-      setValidationErrorState({ questionKey, message: null });
       onSubmit(answer);
       return;
     }
