@@ -134,9 +134,13 @@ export function EducationSection({
                     value={field.value ?? ''}
                     onChange={field.onChange}
                     aria-label="입학년월 선택"
+                    aria-invalid={showErrors && !!errors.education?.[index]?.enrollmentDate}
                   />
                 )}
               />
+              {showErrors ? (
+                <FieldError>{errors.education?.[index]?.enrollmentDate?.message}</FieldError>
+              ) : null}
             </div>
             <div className="flex flex-1 flex-col gap-2">
               <Label className="text-text-secondary">졸업년월</Label>
@@ -149,19 +153,35 @@ export function EducationSection({
                     value={field.value ?? ''}
                     onChange={field.onChange}
                     aria-label="졸업년월 선택"
+                    aria-invalid={showErrors && !!errors.education?.[index]?.graduationDate}
                   />
                 )}
               />
+              {showErrors ? (
+                <FieldError>{errors.education?.[index]?.graduationDate?.message}</FieldError>
+              ) : null}
             </div>
             <div className="flex flex-1 flex-col gap-2">
               <Label className="text-text-secondary">졸업상태</Label>
-              <select {...register(`education.${index}.status`)} className={nativeSelectClass}>
+              <select
+                {...register(`education.${index}.status`)}
+                aria-label="졸업상태"
+                aria-invalid={showErrors && !!errors.education?.[index]?.status}
+                className={`${nativeSelectClass} ${
+                  showErrors && errors.education?.[index]?.status
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
+                }`}
+              >
                 <option value="">졸업상태</option>
                 <option value="재학중">재학중</option>
                 <option value="휴학중">휴학중</option>
                 <option value="졸업">졸업</option>
                 <option value="졸업예정">졸업예정</option>
               </select>
+              {showErrors ? (
+                <FieldError>{errors.education?.[index]?.status?.message}</FieldError>
+              ) : null}
             </div>
           </div>
         </div>

@@ -4,18 +4,19 @@ import { resumeSchema } from '../onboarding';
 
 const resumeWithGpa = (gpa: string) => ({
   name: '홍길동',
-  email: '',
+  email: 'hong@example.com',
   phone: '010-1234-5678',
   address: '서울시 강남구',
+  birthday: '2000-01-01',
   education: [
     {
       type: '대학교(4년)',
       school: '위버대학교',
-      major: '',
+      major: '컴퓨터공학과',
       gpa,
-      enrollmentDate: '',
-      graduationDate: '',
-      status: '',
+      enrollmentDate: '2020-03',
+      graduationDate: '2024-02',
+      status: '졸업',
     },
   ],
   certifications: [],
@@ -33,7 +34,7 @@ describe('onboarding schemas', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe('0~4.5 사이의 숫자로 입력해주세요.');
+      expect(result.error.issues.some((issue) => issue.message.includes('학점'))).toBe(true);
     }
   });
 });

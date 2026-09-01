@@ -13,6 +13,7 @@ type DatePickerProps = {
   minYear?: number;
   maxYear?: number;
   disabled?: boolean;
+  'aria-invalid'?: boolean;
   'aria-label'?: string;
   className?: string;
 };
@@ -104,6 +105,7 @@ export function DatePicker({
   maxYear = CURRENT_YEAR + 10,
   disabled = false,
   className,
+  'aria-invalid': ariaInvalid = false,
   'aria-label': ariaLabel = '날짜 선택',
 }: DatePickerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -160,12 +162,14 @@ export function DatePicker({
         type="button"
         variant="outline"
         disabled={disabled}
+        aria-invalid={ariaInvalid}
         aria-label={ariaLabel}
         aria-expanded={isOpen}
         onClick={() => setIsOpen((nextIsOpen) => !nextIsOpen)}
         className={cn(
           'border-border-default bg-bg-primary text-body2 text-text-primary hover:bg-bg-tertiary h-12 w-full justify-start rounded-lg px-4 shadow-none',
           !selectedValue && 'text-text-disabled',
+          ariaInvalid && 'border-error focus-visible:border-error focus-visible:ring-error/20',
         )}
       >
         <CalendarIcon className="text-icon-muted size-4" />
@@ -228,6 +232,7 @@ function MonthPickerPanel({
         value={viewYear}
         onChange={(event) => onViewYearChange(Number(event.target.value))}
         className="border-border-default bg-bg-primary text-body2 text-text-primary focus-visible:border-ring focus-visible:ring-ring/50 h-10 rounded-md border px-3 outline-none focus-visible:ring-[1px]"
+        aria-label="연도 선택"
       >
         {years.map((year) => (
           <option key={year} value={year}>

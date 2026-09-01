@@ -82,9 +82,13 @@ export function CareerSection({
                     value={field.value ?? ''}
                     onChange={field.onChange}
                     aria-label="입사일 선택"
+                    aria-invalid={showErrors && !!errors.careers?.[index]?.startDate}
                   />
                 )}
               />
+              {showErrors ? (
+                <FieldError>{errors.careers?.[index]?.startDate?.message}</FieldError>
+              ) : null}
             </div>
             <div className="flex w-[220px] flex-col gap-2">
               <Label className="text-text-secondary">퇴사일</Label>
@@ -96,13 +100,26 @@ export function CareerSection({
                     value={field.value ?? ''}
                     onChange={field.onChange}
                     aria-label="퇴사일 선택"
+                    aria-invalid={showErrors && !!errors.careers?.[index]?.endDate}
                   />
                 )}
               />
+              {showErrors ? (
+                <FieldError>{errors.careers?.[index]?.endDate?.message}</FieldError>
+              ) : null}
             </div>
             <div className="flex w-[221px] flex-col gap-2">
               <Label className="text-text-secondary">경력형태</Label>
-              <select {...register(`careers.${index}.type`)} className={nativeSelectClass}>
+              <select
+                {...register(`careers.${index}.type`)}
+                aria-label="경력형태"
+                aria-invalid={showErrors && !!errors.careers?.[index]?.type}
+                className={`${nativeSelectClass} ${
+                  showErrors && errors.careers?.[index]?.type
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
+                }`}
+              >
                 <option value="">경력형태</option>
                 <option value="정규직">정규직</option>
                 <option value="인턴">인턴</option>
@@ -111,6 +128,9 @@ export function CareerSection({
                 <option value="병역특례">병역특례</option>
                 <option value="아르바이트">아르바이트</option>
               </select>
+              {showErrors ? (
+                <FieldError>{errors.careers?.[index]?.type?.message}</FieldError>
+              ) : null}
             </div>
           </div>
           <div className="flex gap-3.5">
@@ -119,16 +139,32 @@ export function CareerSection({
               <Input
                 {...register(`careers.${index}.position`)}
                 placeholder="직급을 입력해주세요."
-                className={formControlClass}
+                aria-invalid={showErrors && !!errors.careers?.[index]?.position}
+                className={`${formControlClass} ${
+                  showErrors && errors.careers?.[index]?.position
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
+                }`}
               />
+              {showErrors ? (
+                <FieldError>{errors.careers?.[index]?.position?.message}</FieldError>
+              ) : null}
             </div>
             <div className="flex flex-1 flex-col gap-2">
               <Label className="text-text-secondary">담당업무</Label>
               <Input
                 {...register(`careers.${index}.duty`)}
                 placeholder="담당업무를 한 줄정도로 적어주세요."
-                className={formControlClass}
+                aria-invalid={showErrors && !!errors.careers?.[index]?.duty}
+                className={`${formControlClass} ${
+                  showErrors && errors.careers?.[index]?.duty
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
+                }`}
               />
+              {showErrors ? (
+                <FieldError>{errors.careers?.[index]?.duty?.message}</FieldError>
+              ) : null}
             </div>
           </div>
         </div>

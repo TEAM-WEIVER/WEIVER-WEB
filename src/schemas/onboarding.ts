@@ -6,17 +6,16 @@ export const educationSchema = z.object({
   educationId: z.number().optional(),
   type: z.string().min(1, '학력구분을 선택해주세요.'),
   school: z.string().min(1, '학교명을 입력해주세요.'),
-  major: z.string().optional(),
+  major: z.string().min(1, '전공명을 입력해주세요.'),
   gpa: z
     .string()
     .regex(
       /^(?:[0-3](?:\.\d{1,2})?|4(?:\.([0-4]\d?|5(?:0)?))?)$/,
-      '0~4.5 사이의 숫자로 입력해주세요.',
-    )
-    .or(z.literal('')),
-  enrollmentDate: z.string().optional(),
-  graduationDate: z.string().optional(),
-  status: z.string().optional(),
+      '학점은 0~4.5 사이의 숫자로 입력해주세요.',
+    ),
+  enrollmentDate: z.string().min(1, '입학년월을 선택해주세요.'),
+  graduationDate: z.string().min(1, '졸업년월을 선택해주세요.'),
+  status: z.string().min(1, '졸업상태를 선택해주세요.'),
 });
 
 const emptyEducationSchema = z.object({
@@ -36,9 +35,9 @@ export type EducationData = z.infer<typeof educationSchema>;
 
 export const certificationSchema = z.object({
   certificateId: z.number().optional(),
-  acquiredDate: z.string().optional(),
+  acquiredDate: z.string().min(1, '취득일을 선택해주세요.'),
   name: z.string().min(1, '자격증명을 입력해주세요.'),
-  issuer: z.string().optional(),
+  issuer: z.string().min(1, '발행처를 입력해주세요.'),
 });
 
 const emptyCertificationSchema = z.object({
@@ -54,9 +53,9 @@ export type CertificationData = z.infer<typeof certificationSchema>;
 
 export const awardSchema = z.object({
   awardId: z.number().optional(),
-  date: z.string().optional(),
+  date: z.string().min(1, '수상일을 선택해주세요.'),
   name: z.string().min(1, '수상명을 입력해주세요.'),
-  issuer: z.string().optional(),
+  issuer: z.string().min(1, '발행처를 입력해주세요.'),
 });
 
 const emptyAwardSchema = z.object({
@@ -74,11 +73,11 @@ export const careerSchema = z.object({
   workExperienceId: z.number().optional(),
   isRecognized: z.boolean().optional(),
   company: z.string().min(1, '경력명을 입력해주세요.'),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  type: z.string().optional(),
-  position: z.string().optional(),
-  duty: z.string().optional(),
+  startDate: z.string().min(1, '입사일을 선택해주세요.'),
+  endDate: z.string().min(1, '퇴사일을 선택해주세요.'),
+  type: z.string().min(1, '경력형태를 선택해주세요.'),
+  position: z.string().min(1, '직급을 입력해주세요.'),
+  duty: z.string().min(1, '담당업무를 입력해주세요.'),
 });
 
 const emptyCareerSchema = z.object({
@@ -98,10 +97,13 @@ export type CareerData = z.infer<typeof careerSchema>;
 
 export const resumeSchema = z.object({
   name: z.string().min(1, '이름을 입력해주세요.'),
-  email: z.string().email('올바른 이메일 형식을 입력해주세요.').or(z.literal('')),
-  phone: z.string().min(1, '전화번호를 입력해주세요.'),
+  email: z.string().min(1, '이메일을 입력해주세요.').email('올바른 이메일 형식을 입력해주세요.'),
+  phone: z
+    .string()
+    .min(1, '전화번호를 입력해주세요.')
+    .regex(/^01[0-9]-\d{3,4}-\d{4}$/, '010-1234-5678 형식으로 입력해주세요.'),
   address: z.string().min(1, '주소를 입력해주세요.'),
-  birthday: z.string().optional(),
+  birthday: z.string().min(1, '생년월일을 선택해주세요.'),
   profileImage: z.instanceof(File).optional(),
   education: z.array(z.union([educationSchema, emptyEducationSchema])),
   certifications: z.array(z.union([certificationSchema, emptyCertificationSchema])),

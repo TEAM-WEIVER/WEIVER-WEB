@@ -57,9 +57,13 @@ export function CertificationSection({
                     value={field.value ?? ''}
                     onChange={field.onChange}
                     aria-label="취득일 선택"
+                    aria-invalid={showErrors && !!errors.certifications?.[index]?.acquiredDate}
                   />
                 )}
               />
+              {showErrors ? (
+                <FieldError>{errors.certifications?.[index]?.acquiredDate?.message}</FieldError>
+              ) : null}
             </div>
             <div className="flex flex-1 flex-col gap-2">
               <Label className="text-text-secondary">자격증명</Label>
@@ -82,8 +86,16 @@ export function CertificationSection({
               <Input
                 {...register(`certifications.${index}.issuer`)}
                 placeholder="발행처를 입력해주세요."
-                className={formControlClass}
+                aria-invalid={showErrors && !!errors.certifications?.[index]?.issuer}
+                className={`${formControlClass} ${
+                  showErrors && errors.certifications?.[index]?.issuer
+                    ? 'border-error focus-visible:border-error focus-visible:ring-error/20'
+                    : ''
+                }`}
               />
+              {showErrors ? (
+                <FieldError>{errors.certifications?.[index]?.issuer?.message}</FieldError>
+              ) : null}
             </div>
           </div>
         </div>

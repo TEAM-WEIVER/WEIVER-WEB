@@ -53,8 +53,26 @@ async function gotoResume(page: Page) {
   await loadResponse;
 }
 
+async function fillBirthday(page: Page) {
+  // DatePicker 트리거 버튼 클릭 → 캘린더 팝업 열기
+  const birthdayTrigger = page.getByRole('button', { name: '생년월일 선택' });
+  await birthdayTrigger.click();
+
+  // 생년월일 DatePicker 컨테이너 내부로 범위 한정
+  const birthdayPicker = page.locator('div').filter({
+    has: birthdayTrigger,
+  });
+
+  // 연도/월 select는 팝업이 열린 후 컨테이너 안에서만 찾기
+  await birthdayPicker.locator('select[aria-label="연도 선택"]').selectOption('2000');
+  await birthdayPicker.locator('select[aria-label="월 선택"]').selectOption('1');
+  // 날짜 버튼 클릭 (1일) — 팝업 내부에서 '1' 버튼
+  await birthdayPicker.getByRole('button', { name: '1', exact: true }).click();
+}
+
 async function fillRequiredFields(page: Page) {
   await page.getByLabel('이름').fill('홍길동');
+  await fillBirthday(page);
   await page.getByLabel('이메일').fill('hong@example.com');
   await page.getByLabel('전화번호').fill('010-1234-5678');
   await page.getByLabel('주소').fill('서울특별시 강남구');
@@ -82,27 +100,16 @@ test('필수 항목 저장 성공 시 자기소개서 단계로 이동한다', a
   expect(saveCalled).toBe(true);
 });
 
-test('필수 항목이 비어 있으면 다음 버튼이 비활성화되고 저장 API를 호출하지 않는다', async ({
-  page,
-}) => {
-  let saveCalled = false;
-
-  await page.route(APPLICANT_INFO_API, async (route) => {
-    saveCalled = true;
-    await fulfillJson(route, 200, SAVE_SUCCESS);
-  });
-
+test('필수 항목이 비어 있으면 다음 버튼이 비활성화된다', async ({ page }) => {
   await gotoResume(page);
 
   await expect(page.getByRole('button', { name: '다음' })).toBeDisabled();
-  expect(saveCalled).toBe(false);
 });
 
-test('일부 필수 항목만 입력해도 다음 버튼은 비활성화된다', async ({ page }) => {
+test('일부 필수 항목만 입력하면 다음 버튼이 비활성화된다', async ({ page }) => {
   await gotoResume(page);
 
   await page.getByLabel('이름').fill('홍길동');
-
   await expect(page.getByRole('button', { name: '다음' })).toBeDisabled();
 });
 

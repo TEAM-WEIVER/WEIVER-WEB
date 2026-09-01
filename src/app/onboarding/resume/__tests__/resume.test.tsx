@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -39,6 +39,23 @@ vi.mock('@/lib/onboarding-api', () => ({
   putExperiences: vi.fn(),
   saveApplicantInfo: vi.fn(),
 }));
+
+async function fillMonth(user: ReturnType<typeof userEvent.setup>, label: string, index = 0) {
+  const trigger = screen.getAllByRole('button', { name: label })[index];
+  await user.click(trigger);
+  const picker = trigger.parentElement;
+  if (!picker) throw new Error(`날짜 선택기를 찾을 수 없습니다: ${label}`);
+  await user.selectOptions(within(picker).getByRole('combobox', { name: '연도 선택' }), '2021');
+  await user.click(within(picker).getByRole('button', { name: '3월' }));
+}
+
+async function fillDate(user: ReturnType<typeof userEvent.setup>, label: string, index = 0) {
+  const trigger = screen.getAllByRole('button', { name: label })[index];
+  await user.click(trigger);
+  const picker = trigger.parentElement;
+  if (!picker) throw new Error(`날짜 선택기를 찾을 수 없습니다: ${label}`);
+  await user.click(within(picker).getAllByRole('button', { name: '1' })[0]);
+}
 
 describe('이력서 온보딩 페이지', () => {
   beforeEach(() => {
@@ -175,8 +192,36 @@ describe('이력서 온보딩 페이지', () => {
     await user.type(gpaInput, '3.8/4.5');
     await user.click(screen.getByRole('button', { name: '다음' }));
 
-    expect(await screen.findByText('0~4.5 사이의 숫자로 입력해주세요.')).toBeInTheDocument();
+    expect(await screen.findByText('학점은 0~4.5 사이의 숫자로 입력해주세요.')).toBeInTheDocument();
     expect(gpaInput).toHaveAttribute('aria-invalid', 'true');
+    expect(saveApplicantInfo).not.toHaveBeenCalled();
+  });
+
+  it('입력 중인 자격증의 누락 필드는 상단 단일 안내와 필드 오류로 표시한다', async () => {
+    render(<ResumePage />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('본명을 입력해주세요.')).toHaveValue('김민채');
+    });
+    const certificationNameInput = screen.getByPlaceholderText('자격증명을 정확하게 입력해주세요.');
+    fireEvent.change(certificationNameInput, { target: { value: 'SQLD' } });
+    await waitFor(() => {
+      expect(certificationNameInput).toHaveValue('SQLD');
+    });
+    const form = screen.getByRole('button', { name: '다음' }).closest('form');
+    if (!form) throw new Error('이력서 온보딩 폼을 찾을 수 없습니다.');
+    fireEvent.submit(form);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('입력하지 않았거나 올바르지 않은 필드를 확인해주세요.');
+    expect(alert).not.toHaveTextContent('취득일을 선택해주세요.');
+    expect(alert).not.toHaveTextContent('발행처를 입력해주세요.');
+    expect(screen.getByText('취득일을 선택해주세요.')).toBeInTheDocument();
+    expect(screen.getByText('발행처를 입력해주세요.')).toBeInTheDocument();
+    expect(screen.getAllByPlaceholderText('발행처를 입력해주세요.')[0]).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
     expect(saveApplicantInfo).not.toHaveBeenCalled();
   });
 
@@ -214,17 +259,25 @@ describe('이력서 온보딩 페이지', () => {
       await screen.findByPlaceholderText('회사명-부서의 형태로 입력해주세요.'),
       '쿠팡플레이',
     );
+    await fillDate(user, '입사일 선택');
+    await fillDate(user, '퇴사일 선택');
+    await user.selectOptions(screen.getByDisplayValue('경력형태'), '인턴');
+    await user.type(screen.getByPlaceholderText('직급을 입력해주세요.'), '인턴');
+    await user.type(
+      screen.getByPlaceholderText('담당업무를 한 줄정도로 적어주세요.'),
+      '서비스 개발',
+    );
     await user.click(screen.getByRole('button', { name: '다음' }));
 
     await waitFor(() => {
       expect(postExperiences).toHaveBeenCalledWith([
         {
           companyName: '쿠팡플레이',
-          startDate: '',
-          endDate: '',
-          employmentType: undefined,
-          position: '',
-          duties: '',
+          startDate: expect.any(String),
+          endDate: expect.any(String),
+          employmentType: 'INTERN',
+          position: '인턴',
+          duties: '서비스 개발',
           isRecognized: true,
         },
       ]);
@@ -244,10 +297,26 @@ describe('이력서 온보딩 페이지', () => {
       await screen.findByPlaceholderText('회사명-부서의 형태로 입력해주세요.'),
       '쿠팡플레이',
     );
+    await fillDate(user, '입사일 선택');
+    await fillDate(user, '퇴사일 선택');
+    await user.selectOptions(screen.getByDisplayValue('경력형태'), '인턴');
+    await user.type(screen.getByPlaceholderText('직급을 입력해주세요.'), '인턴');
+    await user.type(
+      screen.getByPlaceholderText('담당업무를 한 줄정도로 적어주세요.'),
+      '서비스 개발',
+    );
     await user.click(screen.getByRole('button', { name: '경력 추가하기' }));
     await user.type(
       screen.getAllByPlaceholderText('회사명-부서의 형태로 입력해주세요.')[1],
       '토스',
+    );
+    await fillDate(user, '입사일 선택', 1);
+    await fillDate(user, '퇴사일 선택', 1);
+    await user.selectOptions(screen.getAllByRole('combobox', { name: '경력형태' })[1], '인턴');
+    await user.type(screen.getAllByPlaceholderText('직급을 입력해주세요.')[1], '인턴');
+    await user.type(
+      screen.getAllByPlaceholderText('담당업무를 한 줄정도로 적어주세요.')[1],
+      '서비스 개발',
     );
     await user.click(screen.getByRole('button', { name: '다음' }));
 
@@ -255,20 +324,20 @@ describe('이력서 온보딩 페이지', () => {
       expect(postExperiences).toHaveBeenCalledWith([
         {
           companyName: '쿠팡플레이',
-          startDate: '',
-          endDate: '',
-          employmentType: undefined,
-          position: '',
-          duties: '',
+          startDate: expect.any(String),
+          endDate: expect.any(String),
+          employmentType: 'INTERN',
+          position: '인턴',
+          duties: '서비스 개발',
           isRecognized: true,
         },
         {
           companyName: '토스',
-          startDate: '',
-          endDate: '',
-          employmentType: undefined,
-          position: '',
-          duties: '',
+          startDate: expect.any(String),
+          endDate: expect.any(String),
+          employmentType: 'INTERN',
+          position: '인턴',
+          duties: '서비스 개발',
           isRecognized: true,
         },
       ]);
@@ -395,21 +464,31 @@ describe('이력서 온보딩 페이지', () => {
       await screen.findByPlaceholderText('자격증명을 정확하게 입력해주세요.'),
       'SQLD',
     );
+    await fillDate(user, '취득일 선택');
+    await user.type(
+      screen.getAllByPlaceholderText('발행처를 입력해주세요.')[0],
+      '한국데이터산업진흥원',
+    );
     await user.click(screen.getByRole('button', { name: '자격증 추가하기' }));
     await user.type(screen.getAllByPlaceholderText('자격증명을 정확하게 입력해주세요.')[1], 'ADsP');
+    await fillDate(user, '취득일 선택', 1);
+    await user.type(
+      screen.getAllByPlaceholderText('발행처를 입력해주세요.')[1],
+      '한국데이터산업진흥원',
+    );
     await user.click(screen.getByRole('button', { name: '다음' }));
 
     await waitFor(() => {
       expect(postCertificates).toHaveBeenCalledWith([
         {
           certificateName: 'SQLD',
-          acquisitionDate: '',
-          issuer: '',
+          acquisitionDate: expect.any(String),
+          issuer: '한국데이터산업진흥원',
         },
         {
           certificateName: 'ADsP',
-          acquisitionDate: '',
-          issuer: '',
+          acquisitionDate: expect.any(String),
+          issuer: '한국데이터산업진흥원',
         },
       ]);
     });
@@ -517,9 +596,19 @@ describe('이력서 온보딩 페이지', () => {
 
     await user.selectOptions(screen.getByDisplayValue('학력구분'), '대학교(2,3년)');
     await user.type(await screen.findByPlaceholderText('학교명을 입력해주세요.'), '한양대학교');
+    await user.type(screen.getByPlaceholderText('전공명을 입력해주세요.'), '컴퓨터공학과');
+    await user.type(screen.getByPlaceholderText('예: 3.8 (4.5 만점)'), '3.8');
+    await fillMonth(user, '입학년월 선택');
+    await fillMonth(user, '졸업년월 선택');
+    await user.selectOptions(screen.getByDisplayValue('졸업상태'), '졸업');
     await user.click(screen.getByRole('button', { name: '학력 추가하기' }));
     await user.selectOptions(screen.getAllByDisplayValue('학력구분')[0], '대학교(4년)');
     await user.type(screen.getAllByPlaceholderText('학교명을 입력해주세요.')[1], '서울대학교');
+    await user.type(screen.getAllByPlaceholderText('전공명을 입력해주세요.')[1], '컴퓨터공학과');
+    await user.type(screen.getAllByPlaceholderText('예: 3.8 (4.5 만점)')[1], '3.8');
+    await fillMonth(user, '입학년월 선택', 1);
+    await fillMonth(user, '졸업년월 선택', 1);
+    await user.selectOptions(screen.getAllByRole('combobox', { name: '졸업상태' })[1], '졸업');
     await user.click(screen.getByRole('button', { name: '다음' }));
 
     await waitFor(() => {
@@ -527,20 +616,20 @@ describe('이력서 온보딩 페이지', () => {
         {
           degreeType: 'ASSOCIATE',
           schoolName: '한양대학교',
-          major: '',
-          gpa: undefined,
-          startDate: '',
-          endDate: '',
-          status: undefined,
+          major: '컴퓨터공학과',
+          gpa: 3.8,
+          startDate: expect.any(String),
+          endDate: expect.any(String),
+          status: 'GRADUATED',
         },
         {
           degreeType: 'BACHELOR',
           schoolName: '서울대학교',
-          major: '',
-          gpa: undefined,
-          startDate: '',
-          endDate: '',
-          status: undefined,
+          major: '컴퓨터공학과',
+          gpa: 3.8,
+          startDate: '2021-03',
+          endDate: '2021-03',
+          status: 'GRADUATED',
         },
       ]);
     });
@@ -662,21 +751,31 @@ describe('이력서 온보딩 페이지', () => {
       await screen.findByPlaceholderText('수상명을 정확하게 입력해주세요.'),
       '최우수상',
     );
+    await fillDate(user, '수상일 선택');
+    await user.type(
+      screen.getAllByPlaceholderText('발행처를 입력해주세요.')[1],
+      '한국인터넷진흥원',
+    );
     await user.click(screen.getByRole('button', { name: '수상이력 추가하기' }));
     await user.type(screen.getAllByPlaceholderText('수상명을 정확하게 입력해주세요.')[1], '우수상');
+    await fillDate(user, '수상일 선택', 1);
+    await user.type(
+      screen.getAllByPlaceholderText('발행처를 입력해주세요.')[2],
+      '한국인터넷진흥원',
+    );
     await user.click(screen.getByRole('button', { name: '다음' }));
 
     await waitFor(() => {
       expect(postAwards).toHaveBeenCalledWith([
         {
           awardName: '최우수상',
-          awardDate: '',
-          issuer: '',
+          awardDate: expect.any(String),
+          issuer: '한국인터넷진흥원',
         },
         {
           awardName: '우수상',
-          awardDate: '',
-          issuer: '',
+          awardDate: expect.any(String),
+          issuer: '한국인터넷진흥원',
         },
       ]);
     });
