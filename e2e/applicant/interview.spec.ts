@@ -74,6 +74,15 @@ function frameToString(data: string | Buffer): string {
   return data.toString('utf-8');
 }
 
+function parseStompBody<T>(frame: string): T | null {
+  const bodyMatch = frame.match(/\n\n([\s\S]+?)\0/);
+  try {
+    return JSON.parse(bodyMatch?.[1] ?? '{}') as T;
+  } catch {
+    return null;
+  }
+}
+
 // ──────────────────────────────────────────────
 // 메시지 페이로드
 // ──────────────────────────────────────────────
@@ -467,12 +476,7 @@ test.describe('AC3: 답변 제출 및 다음 질문 루프', () => {
           }
 
           if (destination === `/app/interviews/${SESSION_ID}/answers`) {
-            const bodyMatch = frame.match(/\n\n([\s\S]+?)\0/);
-            try {
-              capturedAnswerPayload = JSON.parse(bodyMatch?.[1] ?? '{}');
-            } catch {
-              capturedAnswerPayload = null;
-            }
+            capturedAnswerPayload = parseStompBody<typeof capturedAnswerPayload>(frame);
             // ANSWER_ACCEPTED 후 다음 질문
             ws.send(stompMessage('/user/queue/interviews', answerAccepted(1)));
             ws.send(stompMessage('/user/queue/interviews', questionReady(2)));
@@ -709,15 +713,19 @@ test.describe('AC5-a: 면접 진행 중 STOMP ERROR 프레임 처리', () => {
 });
 
 // ──────────────────────────────────────────────
-// AC7: 빈 답변 제출 방지
+// AC7: 빈 답변 제출 허용
 // ──────────────────────────────────────────────
 
-test.describe('AC7: 빈 답변 제출 방지', () => {
-  test('답변 입력 없이 제출 버튼 클릭 시 유효성 검사 메시지가 표시되고 WebSocket 메시지가 전송되지 않는다', async ({
+test.describe('AC7: 빈 답변 제출 허용', () => {
+  test('답변 입력 없이 제출 버튼 클릭 시 빈 문자열 answer가 WebSocket으로 전송된다', async ({
     page,
   }) => {
     // Given: 질문이 표시된 상태
-    let answerPublished = false;
+    let capturedAnswerPayload: {
+      question_code?: string;
+      sequence?: number;
+      answer?: string;
+    } | null = null;
 
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
       ws.onMessage((data) => {
@@ -736,9 +744,8 @@ test.describe('AC7: 빈 답변 제출 방지', () => {
             sendInterviewMessage(ws, questionReady(1));
           }
 
-          if (destination.includes('/answers')) {
-            // 빈 답변 제출 시 이 블록이 실행되면 안 됨
-            answerPublished = true;
+          if (destination === `/app/interviews/${SESSION_ID}/answers`) {
+            capturedAnswerPayload = parseStompBody<typeof capturedAnswerPayload>(frame);
           }
         }
       });
@@ -755,19 +762,20 @@ test.describe('AC7: 빈 답변 제출 방지', () => {
     await page.getByRole('button', { name: '답변하기' }).click();
     await page.getByRole('button', { name: '제출하기' }).click();
 
-    // Then: 유효성 검사 메시지가 표시된다
-    await expect(page.getByText('답변 내용이 없어요. 다시 말씀해 주세요.')).toBeVisible({
-      timeout: 3000,
-    });
-
-    // Then: WebSocket 메시지가 전송되지 않는다
-    await page.waitForTimeout(300);
-    expect(answerPublished).toBe(false);
+    // Then: 빈 문자열 answer payload가 전송된다
+    await expect.poll(() => capturedAnswerPayload, { timeout: 3000 }).not.toBeNull();
+    expect(capturedAnswerPayload?.answer).toBe('');
+    expect(capturedAnswerPayload?.sequence).toBe(1);
+    expect(capturedAnswerPayload?.question_code).toBe('Q001');
   });
 
-  test('공백만 입력 후 제출 시에도 유효성 검사 메시지가 표시된다', async ({ page }) => {
+  test('공백만 입력 후 제출 시에도 빈 문자열 answer가 WebSocket으로 전송된다', async ({ page }) => {
     // Given
-    let answerPublished = false;
+    let capturedAnswerPayload: {
+      question_code?: string;
+      sequence?: number;
+      answer?: string;
+    } | null = null;
 
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
       ws.onMessage((data) => {
@@ -786,8 +794,8 @@ test.describe('AC7: 빈 답변 제출 방지', () => {
             sendInterviewMessage(ws, questionReady(1));
           }
 
-          if (destination.includes('/answers')) {
-            answerPublished = true;
+          if (destination === `/app/interviews/${SESSION_ID}/answers`) {
+            capturedAnswerPayload = parseStompBody<typeof capturedAnswerPayload>(frame);
           }
         }
       });
@@ -804,13 +812,11 @@ test.describe('AC7: 빈 답변 제출 방지', () => {
     await page.getByRole('button', { name: '답변하기' }).click();
     await page.getByRole('button', { name: '제출하기' }).click();
 
-    // Then: 유효성 검사 메시지 표시
-    await expect(page.getByText('답변 내용이 없어요. 다시 말씀해 주세요.')).toBeVisible({
-      timeout: 3000,
-    });
-
-    await page.waitForTimeout(300);
-    expect(answerPublished).toBe(false);
+    // Then: 공백은 trim되어 빈 문자열 answer payload로 전송된다
+    await expect.poll(() => capturedAnswerPayload, { timeout: 3000 }).not.toBeNull();
+    expect(capturedAnswerPayload?.answer).toBe('');
+    expect(capturedAnswerPayload?.sequence).toBe(1);
+    expect(capturedAnswerPayload?.question_code).toBe('Q001');
   });
 });
 
