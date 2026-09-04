@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+
+import { useRouteNavigation } from '@/hooks/use-route-navigation';
 
 import {
   type ApplicantProfileOverview,
@@ -21,7 +22,7 @@ const EMPTY_PROGRESS: OnboardingProgress = {
 };
 
 export default function ApplicantDashboardPage() {
-  const router = useRouter();
+  const { push } = useRouteNavigation();
   const [overview, setOverview] = useState<ApplicantProfileOverview | null>(null);
   const [hasOverviewError, setHasOverviewError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +56,7 @@ export default function ApplicantDashboardPage() {
   const isProfileReady = Object.values(progress).every(Boolean);
 
   const handleProfileEdit = () => {
-    router.push(getProfileEditPath(progress));
+    push(getProfileEditPath(progress));
   };
 
   return (

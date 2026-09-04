@@ -2,9 +2,10 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+
+import { useRouteNavigation } from '@/hooks/use-route-navigation';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -32,7 +33,7 @@ interface ExistingPortfolioFile {
 }
 
 export default function PortfolioPage() {
-  const router = useRouter();
+  const { push } = useRouteNavigation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [portfolioId, setPortfolioId] = useState<number | null>(null);
@@ -127,7 +128,7 @@ export default function PortfolioPage() {
         await postPortfolio(formData);
       }
 
-      router.push('/applicant/dashboard');
+      push('/applicant/dashboard');
     } catch {
       setSubmitError('업로드 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
@@ -136,11 +137,11 @@ export default function PortfolioPage() {
   };
 
   const handleSkip = () => {
-    router.push('/applicant/dashboard');
+    push('/applicant/dashboard');
   };
 
   const handleBack = () => {
-    if (prevStep) router.push(getOnboardingPath(prevStep));
+    if (prevStep) push(getOnboardingPath(prevStep));
   };
 
   return (

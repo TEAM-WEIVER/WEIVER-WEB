@@ -3,6 +3,8 @@ import localFont from 'next/font/local';
 import 'pretendard/dist/web/variable/pretendardvariable.css';
 import './globals.css';
 
+import { RouteProgressBar } from '@/components/common/route-progress-bar';
+
 const pretendard = localFont({
   src: '../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2',
   variable: '--font-pretendard',
@@ -22,7 +24,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${pretendard.variable} font-sans antialiased`}>{children}</body>
+      <body className={`${pretendard.variable} font-sans antialiased`}>
+        <RouteProgressBar />
+        {children}
+      </body>
     </html>
   );
 }
