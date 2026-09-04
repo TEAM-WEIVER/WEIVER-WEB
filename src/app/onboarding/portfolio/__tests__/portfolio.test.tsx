@@ -65,6 +65,28 @@ describe('포트폴리오 온보딩 페이지', () => {
     vi.clearAllMocks();
   });
 
+  describe('스켈레톤 분기', () => {
+    it('isLoading=true 시 파일 업로드/외부 링크/동의 로딩 섹션을 렌더링한다', () => {
+      vi.mocked(getPortfolio).mockImplementation(() => new Promise(() => {}));
+
+      render(<PortfolioPage />);
+
+      expect(screen.getByRole('region', { name: '파일 업로드 로딩 중' })).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: '외부 링크 로딩 중' })).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: '동의 로딩 중' })).toBeInTheDocument();
+    });
+
+    it('isLoading=true 시 이전 단계/나중에 작성/제출 버튼이 모두 disabled이다', () => {
+      vi.mocked(getPortfolio).mockImplementation(() => new Promise(() => {}));
+
+      render(<PortfolioPage />);
+
+      expect(screen.getByRole('button', { name: /이전 단계/ })).toBeDisabled();
+      expect(screen.getByRole('button', { name: '나중에 작성' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: '제출' })).toBeDisabled();
+    });
+  });
+
   it('기존 포트폴리오가 없으면 파일과 requestDTO를 POST로 저장한다', async () => {
     const user = userEvent.setup();
     const { container } = render(<PortfolioPage />);

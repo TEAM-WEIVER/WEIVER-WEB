@@ -76,4 +76,15 @@ export const test = base.extend<{ applicantAuth: void; corporateAuth: void }>({
   ],
 });
 
+/** 기업 담당자 인증 픽스처를 사용하는 테스트용 test 인스턴스 */
+export const corporateTest = base.extend<{ corporateAuth: void }>({
+  corporateAuth: [
+    async ({ page }, use) => {
+      await mockCorporateAuth(page);
+      await use();
+    },
+    { auto: true },
+  ],
+});
+
 export { expect };
