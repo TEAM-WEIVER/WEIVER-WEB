@@ -2,8 +2,9 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+
+import { useRouteNavigation } from '@/hooks/use-route-navigation';
 import { useFieldArray, useForm, type FieldErrors } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -160,7 +161,7 @@ function getResumeValidationMessage(errors: FieldErrors<ResumeData>) {
 }
 
 export default function ResumePage() {
-  const router = useRouter();
+  const { push } = useRouteNavigation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -229,7 +230,7 @@ export default function ResumePage() {
   }, [reset]);
 
   const navigateNext = () => {
-    if (nextStep) router.push(getOnboardingPath(nextStep));
+    if (nextStep) push(getOnboardingPath(nextStep));
   };
 
   const onSubmit = async (data: ResumeData) => {

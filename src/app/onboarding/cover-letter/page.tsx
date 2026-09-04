@@ -1,7 +1,8 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+
+import { useRouteNavigation } from '@/hooks/use-route-navigation';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
@@ -26,7 +27,7 @@ const CURRENT_STEP = 'cover-letter' as const;
 const FALLBACK_QUESTION_IDS = [1, 2, 3];
 
 export default function CoverLetterPage() {
-  const router = useRouter();
+  const { push } = useRouteNavigation();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -94,7 +95,7 @@ export default function CoverLetterPage() {
   }, [setValue]);
 
   const navigateNext = () => {
-    if (nextStep) router.push(getOnboardingPath(nextStep));
+    if (nextStep) push(getOnboardingPath(nextStep));
   };
 
   const onSubmit = async (data: CoverLetterData) => {
@@ -139,7 +140,7 @@ export default function CoverLetterPage() {
   };
 
   const handleBack = () => {
-    if (prevStep) router.push(getOnboardingPath(prevStep));
+    if (prevStep) push(getOnboardingPath(prevStep));
   };
 
   return (
