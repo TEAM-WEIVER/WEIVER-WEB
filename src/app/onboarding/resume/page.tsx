@@ -162,6 +162,7 @@ function getResumeValidationMessage(errors: FieldErrors<ResumeData>) {
 
 export default function ResumePage() {
   const { push } = useRouteNavigation();
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -217,8 +218,10 @@ export default function ResumePage() {
         setPhotoUrl(response.data.ApplicantDTO?.photoUrl ?? null);
         const resumeForm = mapApplicantsToResumeForm(response.data);
         reset(resumeForm);
-      } catch (err) {
-        console.error('[resume] getApplicantsAll 실패:', err);
+      } catch {
+        // GET 실패 시 빈 폼으로 진행
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     }
 
@@ -384,7 +387,7 @@ export default function ResumePage() {
               variant="outline"
               size="xs"
               onClick={handleSkip}
-              disabled={isSubmitting}
+              disabled={isLoading || isSubmitting}
               className="border-error text-error hover:bg-error/5"
             >
               나중에 작성
@@ -392,9 +395,9 @@ export default function ResumePage() {
             <Button
               type="submit"
               size="xs"
-              disabled={isSubmitting || !isValid}
+              disabled={isLoading || isSubmitting || !isValid}
               aria-busy={isSubmitting}
-              aria-disabled={isSubmitting || !isValid}
+              aria-disabled={isLoading || isSubmitting || !isValid}
             >
               {isSubmitting ? (
                 <>
@@ -412,49 +415,99 @@ export default function ResumePage() {
         </div>
       }
     >
-      <PersonalInfoSection
-        control={control}
-        errors={errors}
-        photoUrl={photoUrl}
-        setValue={setValue}
-        showErrors={submitCount > 0}
-      />
-      <EducationSection
-        fields={education.fields}
-        control={control}
-        errors={errors}
-        register={register}
-        append={education.append}
-        remove={education.remove}
-        showErrors={submitCount > 0}
-      />
-      <CertificationSection
-        fields={certifications.fields}
-        control={control}
-        errors={errors}
-        register={register}
-        append={certifications.append}
-        remove={certifications.remove}
-        showErrors={submitCount > 0}
-      />
-      <AwardSection
-        fields={awards.fields}
-        control={control}
-        errors={errors}
-        register={register}
-        append={awards.append}
-        remove={awards.remove}
-        showErrors={submitCount > 0}
-      />
-      <CareerSection
-        fields={careers.fields}
-        control={control}
-        errors={errors}
-        register={register}
-        append={careers.append}
-        remove={careers.remove}
-        showErrors={submitCount > 0}
-      />
+      {isLoading ? (
+        <>
+          <section aria-label="기본 정보 로딩 중">
+            <div className="flex animate-pulse flex-col gap-4">
+              <div className="bg-bg-tertiary h-6 w-24 rounded-md" />
+              <div className="flex gap-4">
+                <div className="bg-bg-tertiary size-20 shrink-0 rounded-full" />
+                <div className="flex flex-1 flex-col gap-2">
+                  <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+                  <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+                  <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+                  <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+                  <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section aria-label="학력 로딩 중">
+            <div className="flex animate-pulse flex-col gap-3">
+              <div className="bg-bg-tertiary h-6 w-16 rounded-md" />
+              <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+            </div>
+          </section>
+
+          <section aria-label="자격증 로딩 중">
+            <div className="flex animate-pulse flex-col gap-3">
+              <div className="bg-bg-tertiary h-6 w-20 rounded-md" />
+              <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+            </div>
+          </section>
+
+          <section aria-label="수상 로딩 중">
+            <div className="flex animate-pulse flex-col gap-3">
+              <div className="bg-bg-tertiary h-6 w-16 rounded-md" />
+              <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+            </div>
+          </section>
+
+          <section aria-label="경력 로딩 중">
+            <div className="flex animate-pulse flex-col gap-3">
+              <div className="bg-bg-tertiary h-6 w-16 rounded-md" />
+              <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <PersonalInfoSection
+            control={control}
+            errors={errors}
+            photoUrl={photoUrl}
+            setValue={setValue}
+            showErrors={submitCount > 0}
+          />
+          <EducationSection
+            fields={education.fields}
+            control={control}
+            errors={errors}
+            register={register}
+            append={education.append}
+            remove={education.remove}
+            showErrors={submitCount > 0}
+          />
+          <CertificationSection
+            fields={certifications.fields}
+            control={control}
+            errors={errors}
+            register={register}
+            append={certifications.append}
+            remove={certifications.remove}
+            showErrors={submitCount > 0}
+          />
+          <AwardSection
+            fields={awards.fields}
+            control={control}
+            errors={errors}
+            register={register}
+            append={awards.append}
+            remove={awards.remove}
+            showErrors={submitCount > 0}
+          />
+          <CareerSection
+            fields={careers.fields}
+            control={control}
+            errors={errors}
+            register={register}
+            append={careers.append}
+            remove={careers.remove}
+            showErrors={submitCount > 0}
+          />
+        </>
+      )}
     </OnboardingStepShell>
   );
 }

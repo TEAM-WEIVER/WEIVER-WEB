@@ -171,7 +171,24 @@ export function CorporateDashboardView() {
         )}
       </div>
 
-      <JobPostingList postings={jobPostings.data?.content ?? []} />
+      {jobPostings.isLoading ? (
+        <section aria-label="채용공고 로딩 중">
+          <div className="border-border-light bg-bg-primary flex animate-pulse flex-col gap-4 rounded-[20px] border p-6 lg:p-[34px]">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div key={index} className="flex flex-col gap-2">
+                <div className="bg-bg-tertiary h-6 w-3/4 rounded-md" />
+                <div className="flex gap-2">
+                  <div className="bg-bg-tertiary h-5 w-16 rounded-full" />
+                  <div className="bg-bg-tertiary h-5 w-16 rounded-full" />
+                </div>
+                <div className="bg-bg-tertiary h-4 w-1/2 rounded-md" />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <JobPostingList postings={jobPostings.data?.content ?? []} />
+      )}
     </div>
   );
 }

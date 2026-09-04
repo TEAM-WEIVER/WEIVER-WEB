@@ -166,7 +166,7 @@ export default function CoverLetterPage() {
               variant="outline"
               size="xs"
               onClick={handleBack}
-              disabled={isSubmitting}
+              disabled={isLoading || isSubmitting}
             >
               <ArrowLeft size={20} />
               이전 단계
@@ -214,18 +214,31 @@ export default function CoverLetterPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-6">
-        {COVER_LETTER_QUESTIONS.map((question, index) => (
-          <CoverLetterQuestionField
-            key={question.number}
-            question={question}
-            currentLength={questionValues[index]?.length ?? 0}
-            error={errors[question.field]?.message}
-            register={register}
-            showErrors={submitCount > 0}
-          />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex flex-col gap-6">
+          {[1, 2, 3].map((num) => (
+            <section key={num} aria-label={`자기소개서 ${num}번 로딩 중`}>
+              <div className="flex animate-pulse flex-col gap-3">
+                <div className="bg-bg-tertiary h-5 w-48 rounded-md" />
+                <div className="bg-bg-tertiary h-40 w-full rounded-md" />
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {COVER_LETTER_QUESTIONS.map((question, index) => (
+            <CoverLetterQuestionField
+              key={question.number}
+              question={question}
+              currentLength={questionValues[index]?.length ?? 0}
+              error={errors[question.field]?.message}
+              register={register}
+              showErrors={submitCount > 0}
+            />
+          ))}
+        </div>
+      )}
     </OnboardingStepShell>
   );
 }
