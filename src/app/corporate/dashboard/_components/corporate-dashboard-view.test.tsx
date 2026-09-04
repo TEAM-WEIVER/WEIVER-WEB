@@ -54,6 +54,8 @@ const defaultNotifications = {
 
 const defaultReadNotification = {
   mutate: vi.fn(),
+  isPending: false,
+  error: null,
 };
 
 const defaultJobPostings = {
