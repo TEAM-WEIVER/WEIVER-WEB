@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -65,7 +65,7 @@ describe('자기소개서 온보딩 페이지', () => {
     render(<CoverLetterPage />);
 
     const [firstQuestion] = await screen.findAllByPlaceholderText('내용을 입력해주세요.');
-    await user.type(firstQuestion, '가'.repeat(1001));
+    fireEvent.change(firstQuestion, { target: { value: '가'.repeat(1001) } });
     await user.click(screen.getByRole('button', { name: '다음' }));
 
     await waitFor(() => {
