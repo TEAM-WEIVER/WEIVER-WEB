@@ -1,7 +1,8 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+
+import { useRouteNavigation } from '@/hooks/use-route-navigation';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
@@ -26,7 +27,7 @@ const CURRENT_STEP = 'cover-letter' as const;
 const FALLBACK_QUESTION_IDS = [1, 2, 3];
 
 export default function CoverLetterPage() {
-  const router = useRouter();
+  const { push } = useRouteNavigation();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -94,7 +95,7 @@ export default function CoverLetterPage() {
   }, [setValue]);
 
   const navigateNext = () => {
-    if (nextStep) router.push(getOnboardingPath(nextStep));
+    if (nextStep) push(getOnboardingPath(nextStep));
   };
 
   const onSubmit = async (data: CoverLetterData) => {
@@ -139,7 +140,7 @@ export default function CoverLetterPage() {
   };
 
   const handleBack = () => {
-    if (prevStep) router.push(getOnboardingPath(prevStep));
+    if (prevStep) push(getOnboardingPath(prevStep));
   };
 
   return (
@@ -165,7 +166,7 @@ export default function CoverLetterPage() {
               variant="outline"
               size="xs"
               onClick={handleBack}
-              disabled={isSubmitting}
+              disabled={isLoading || isSubmitting}
             >
               <ArrowLeft size={20} />
               이전 단계
@@ -213,18 +214,31 @@ export default function CoverLetterPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-6">
-        {COVER_LETTER_QUESTIONS.map((question, index) => (
-          <CoverLetterQuestionField
-            key={question.number}
-            question={question}
-            currentLength={questionValues[index]?.length ?? 0}
-            error={errors[question.field]?.message}
-            register={register}
-            showErrors={submitCount > 0}
-          />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex flex-col gap-6">
+          {[1, 2, 3].map((num) => (
+            <section key={num} aria-label={`자기소개서 ${num}번 로딩 중`}>
+              <div className="flex animate-pulse flex-col gap-3">
+                <div className="bg-bg-tertiary h-5 w-48 rounded-md" />
+                <div className="bg-bg-tertiary h-40 w-full rounded-md" />
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {COVER_LETTER_QUESTIONS.map((question, index) => (
+            <CoverLetterQuestionField
+              key={question.number}
+              question={question}
+              currentLength={questionValues[index]?.length ?? 0}
+              error={errors[question.field]?.message}
+              register={register}
+              showErrors={submitCount > 0}
+            />
+          ))}
+        </div>
+      )}
     </OnboardingStepShell>
   );
 }

@@ -2,9 +2,10 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+
+import { useRouteNavigation } from '@/hooks/use-route-navigation';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -32,7 +33,8 @@ interface ExistingPortfolioFile {
 }
 
 export default function PortfolioPage() {
-  const router = useRouter();
+  const { push } = useRouteNavigation();
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [portfolioId, setPortfolioId] = useState<number | null>(null);
@@ -63,9 +65,12 @@ export default function PortfolioPage() {
   const portfolioFile = usePortfolioFile();
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadPortfolio() {
       try {
         const portfolioRes = await getPortfolio();
+        if (cancelled) return;
         const portfolio = portfolioRes.data;
         if (portfolio.urlGithub) setValue('githubUrl', portfolio.urlGithub);
         if (portfolio.urlTech) setValue('notionUrl', portfolio.urlTech);
@@ -82,10 +87,16 @@ export default function PortfolioPage() {
         }
       } catch {
         // 로드 실패 시 빈 폼으로 진행
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     }
 
     loadPortfolio();
+
+    return () => {
+      cancelled = true;
+    };
   }, [setValue]);
 
   const [githubUrl, notionUrl, otherUrl, agreement] = watch([
@@ -127,7 +138,7 @@ export default function PortfolioPage() {
         await postPortfolio(formData);
       }
 
-      router.push('/applicant/dashboard');
+      push('/applicant/dashboard');
     } catch {
       setSubmitError('업로드 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
@@ -136,11 +147,11 @@ export default function PortfolioPage() {
   };
 
   const handleSkip = () => {
-    router.push('/applicant/dashboard');
+    push('/applicant/dashboard');
   };
 
   const handleBack = () => {
-    if (prevStep) router.push(getOnboardingPath(prevStep));
+    if (prevStep) push(getOnboardingPath(prevStep));
   };
 
   return (
@@ -166,7 +177,7 @@ export default function PortfolioPage() {
               variant="outline"
               size="xs"
               onClick={handleBack}
-              disabled={isSubmitting}
+              disabled={isLoading || isSubmitting}
             >
               <ArrowLeft size={20} />
               이전 단계
@@ -178,7 +189,7 @@ export default function PortfolioPage() {
                 variant="outline"
                 size="xs"
                 onClick={handleSkip}
-                disabled={isSubmitting}
+                disabled={isLoading || isSubmitting}
                 className="border-error text-error hover:bg-error/5"
               >
                 나중에 작성
@@ -187,11 +198,17 @@ export default function PortfolioPage() {
                 type="submit"
                 size="xs"
                 disabled={
-                  isSubmitting || !!portfolioFile.fileError || (agreement === true && !hasContent)
+                  isLoading ||
+                  isSubmitting ||
+                  !!portfolioFile.fileError ||
+                  (agreement === true && !hasContent)
                 }
                 aria-busy={isSubmitting}
                 aria-disabled={
-                  isSubmitting || !!portfolioFile.fileError || (agreement === true && !hasContent)
+                  isLoading ||
+                  isSubmitting ||
+                  !!portfolioFile.fileError ||
+                  (agreement === true && !hasContent)
                 }
               >
                 {isSubmitting ? (
@@ -208,26 +225,58 @@ export default function PortfolioPage() {
         </div>
       }
     >
-      <FileUploadSection
-        fileInputRef={portfolioFile.fileInputRef}
-        uploadedFile={portfolioFile.uploadedFile}
-        existingFile={existingFile}
-        fileError={portfolioFile.fileError}
-        isDragging={portfolioFile.isDragging}
-        onBrowse={portfolioFile.openFileDialog}
-        onFileChange={portfolioFile.handleFileChange}
-        onDragOver={portfolioFile.handleDragOver}
-        onDragLeave={portfolioFile.handleDragLeave}
-        onDrop={portfolioFile.handleDrop}
-        onRemove={portfolioFile.removeFile}
-        missingContentError={missingContentError}
-      />
-      <ExternalLinksSection errors={errors} register={register} showErrors={showErrors} />
-      <AgreementSection
-        control={control}
-        error={errors.agreement?.message}
-        showErrors={showErrors}
-      />
+      {isLoading ? (
+        <>
+          <section aria-label="파일 업로드 로딩 중">
+            <div className="flex animate-pulse flex-col gap-3">
+              <div className="bg-bg-tertiary h-6 w-32 rounded-md" />
+              <div className="bg-bg-tertiary h-40 w-full rounded-[10px] border-2 border-dashed" />
+            </div>
+          </section>
+
+          <section aria-label="외부 링크 로딩 중">
+            <div className="flex animate-pulse flex-col gap-3">
+              <div className="bg-bg-tertiary h-6 w-32 rounded-md" />
+              <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+              <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+              <div className="bg-bg-tertiary h-10 w-full rounded-md" />
+            </div>
+          </section>
+
+          <section aria-label="동의 로딩 중">
+            <div className="flex animate-pulse flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <div className="bg-bg-tertiary size-5 rounded" />
+                <div className="bg-bg-tertiary h-4 w-64 rounded-md" />
+              </div>
+              <div className="bg-bg-tertiary h-4 w-full rounded-md" />
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <FileUploadSection
+            fileInputRef={portfolioFile.fileInputRef}
+            uploadedFile={portfolioFile.uploadedFile}
+            existingFile={existingFile}
+            fileError={portfolioFile.fileError}
+            isDragging={portfolioFile.isDragging}
+            onBrowse={portfolioFile.openFileDialog}
+            onFileChange={portfolioFile.handleFileChange}
+            onDragOver={portfolioFile.handleDragOver}
+            onDragLeave={portfolioFile.handleDragLeave}
+            onDrop={portfolioFile.handleDrop}
+            onRemove={portfolioFile.removeFile}
+            missingContentError={missingContentError}
+          />
+          <ExternalLinksSection errors={errors} register={register} showErrors={showErrors} />
+          <AgreementSection
+            control={control}
+            error={errors.agreement?.message}
+            showErrors={showErrors}
+          />
+        </>
+      )}
     </OnboardingStepShell>
   );
 }

@@ -34,10 +34,53 @@ export async function mockApplicantAuth(page: Page) {
   );
 }
 
-export const test = base.extend<{ applicantAuth: void }>({
+export async function mockCorporateAuth(page: Page) {
+  await page.addInitScript(
+    ({ storageKey }) => {
+      window.sessionStorage.setItem(storageKey, 'CORPORATE');
+    },
+    { storageKey: AUTH_ROLE_STORAGE_KEY },
+  );
+
+  await page.route('**/api/auth/csrf', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(apiResponse({ csrfToken: 'mock-csrf-token' })),
+    }),
+  );
+
+  await page.route('**/api/auth/reissue', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(apiResponse({ accessToken: 'mock-access-token' })),
+    }),
+  );
+}
+
+export const test = base.extend<{ applicantAuth: void; corporateAuth: void }>({
   applicantAuth: [
     async ({ page }, use) => {
       await mockApplicantAuth(page);
+      await use();
+    },
+    { auto: true },
+  ],
+  corporateAuth: [
+    async ({ page }, use) => {
+      await mockCorporateAuth(page);
+      await use();
+    },
+    { auto: false },
+  ],
+});
+
+/** 기업 담당자 인증 픽스처를 사용하는 테스트용 test 인스턴스 */
+export const corporateTest = base.extend<{ corporateAuth: void }>({
+  corporateAuth: [
+    async ({ page }, use) => {
+      await mockCorporateAuth(page);
       await use();
     },
     { auto: true },

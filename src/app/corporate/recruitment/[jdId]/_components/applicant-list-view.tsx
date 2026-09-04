@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+
+import { useRouteLoadingStore } from '@/store/route-loading-store';
 
 import { Button } from '@/components/ui/button';
 import { useApplicants } from '@/hooks/corporate/use-applicant';
@@ -328,11 +330,13 @@ function ApplicantTable({
   applicants,
   isLoading,
   error,
+  onApplicantNavigate,
 }: {
   jdId: number;
   applicants: ApplicantListItem[];
   isLoading: boolean;
   error: Error | null;
+  onApplicantNavigate: () => void;
 }) {
   const hasApplicants = applicants.length > 0;
 
@@ -378,6 +382,7 @@ function ApplicantTable({
                   href={`/corporate/recruitment/${jdId}/applicants/${applicant.publicId}/report`}
                   aria-label={`${applicant.applicantName} 상세 리포트 보기`}
                   className="absolute inset-0 z-10"
+                  onNavigate={onApplicantNavigate}
                 />
                 <div
                   className={cn(
@@ -526,6 +531,9 @@ function Pagination({
 export function ApplicantListView({ jdId }: { jdId: string }) {
   const numericJdId = Number(jdId);
   const isValidJdId = Number.isFinite(numericJdId) && numericJdId > 0;
+  const handleNavigate = useCallback(() => {
+    useRouteLoadingStore.getState().startNavigation();
+  }, []);
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [filterDraft, setFilterDraft] = useState<ApplicantFilterDraft>(
@@ -583,7 +591,11 @@ export function ApplicantListView({ jdId }: { jdId: string }) {
         <div className="border-border-light mx-auto flex w-full max-w-[1208px] items-end justify-between border-b py-6">
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-1.5">
-              <Link href="/corporate/dashboard" className="text-caption text-text-disabled">
+              <Link
+                href="/corporate/dashboard"
+                className="text-caption text-text-disabled"
+                onNavigate={handleNavigate}
+              >
                 공고목록
               </Link>
               <ChevronRight className="text-text-disabled size-4" />
@@ -644,6 +656,7 @@ export function ApplicantListView({ jdId }: { jdId: string }) {
           applicants={isValidJdId ? applicants : []}
           isLoading={isValidJdId && isLoading}
           error={isValidJdId ? error : new Error('Invalid job posting id')}
+          onApplicantNavigate={handleNavigate}
         />
         <Pagination applicantList={applicantList} currentPage={page} onPageChange={setPage} />
       </main>
