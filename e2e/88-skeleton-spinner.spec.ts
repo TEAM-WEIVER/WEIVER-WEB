@@ -37,6 +37,17 @@ async function setAuthRole(page: import('@playwright/test').Page, role: 'APPLICA
   );
 }
 
+async function completeInterviewChecklist(page: import('@playwright/test').Page) {
+  const checkboxes = page.getByRole('checkbox');
+  await expect(checkboxes).toHaveCount(3);
+
+  for (let index = 0; index < 3; index += 1) {
+    await checkboxes.nth(index).check();
+  }
+
+  await expect(page.getByRole('button', { name: '면접 시작하기' })).toBeEnabled();
+}
+
 /**
  * Skeleton / Spinner 공통 컴포넌트 추상화 인수 테스트 (#88)
  *
@@ -171,12 +182,7 @@ test.describe('AC2: Spinner 컴포넌트 접근성 속성', () => {
     await setAuthRole(page, 'APPLICANT');
     await page.goto('/applicant/interview');
 
-    const checkboxes = page.getByRole('checkbox');
-    const count = await checkboxes.count();
-
-    for (let i = 0; i < count; i++) {
-      await checkboxes.nth(i).check();
-    }
+    await completeInterviewChecklist(page);
 
     // WebSocket이 연결되지 않아 isConnecting 상태를 유지할 수 있도록 WS를 차단
     await page.routeWebSocket(/ws/, (ws) => {
@@ -232,12 +238,7 @@ test.describe('AC2: Spinner 컴포넌트 접근성 속성', () => {
     await setAuthRole(page, 'APPLICANT');
     await page.goto('/applicant/interview');
 
-    const checkboxes = page.getByRole('checkbox');
-    const count = await checkboxes.count();
-
-    for (let i = 0; i < count; i++) {
-      await checkboxes.nth(i).check();
-    }
+    await completeInterviewChecklist(page);
 
     await page.routeWebSocket(/ws/, (ws) => {
       ws.onMessage(() => {
@@ -301,12 +302,7 @@ test.describe('AC3: Button isLoading prop', () => {
     await setAuthRole(page, 'APPLICANT');
     await page.goto('/applicant/interview');
 
-    const checkboxes = page.getByRole('checkbox');
-    const count = await checkboxes.count();
-
-    for (let i = 0; i < count; i++) {
-      await checkboxes.nth(i).check();
-    }
+    await completeInterviewChecklist(page);
 
     await page.routeWebSocket(/ws/, (ws) => {
       ws.onMessage(() => {
