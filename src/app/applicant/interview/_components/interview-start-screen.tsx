@@ -5,6 +5,7 @@ import { Video, Mic, Bookmark, Info, UserRound, AlertCircle } from 'lucide-react
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface InterviewStartScreenProps {
   onStart: () => void;
@@ -161,7 +162,7 @@ export function InterviewStartScreen({ onStart, isConnecting }: InterviewStartSc
               </div>
             ) : (
               <>
-                <div className="absolute inset-0 animate-pulse bg-slate-200" />
+                <Skeleton className="absolute inset-0 rounded-none bg-slate-200" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <UserRound size={64} className="text-slate-400" />
                 </div>
@@ -292,8 +293,8 @@ export function InterviewStartScreen({ onStart, isConnecting }: InterviewStartSc
       <Button
         type="button"
         onClick={onStart}
-        disabled={!allChecked || isConnecting}
-        aria-disabled={!allChecked || isConnecting}
+        disabled={!allChecked}
+        isLoading={isConnecting}
         className={`w-full ${!allChecked ? 'bg-slate-200 text-slate-500 hover:bg-slate-200' : ''}`}
       >
         {isConnecting ? '연결 중...' : '면접 시작하기'}
