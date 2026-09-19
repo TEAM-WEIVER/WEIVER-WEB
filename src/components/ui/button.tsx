@@ -50,6 +50,8 @@ function Button({
   disabled,
   onClick,
   tabIndex,
+  'aria-busy': ariaBusy,
+  'aria-disabled': ariaDisabled,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
@@ -75,8 +77,8 @@ function Button({
       data-variant={variant}
       data-size={size}
       disabled={asChild ? undefined : isDisabled}
-      aria-disabled={isDisabled || undefined}
-      aria-busy={isLoading || undefined}
+      aria-disabled={isDisabled || ariaDisabled}
+      aria-busy={isLoading || ariaBusy}
       tabIndex={asChild && isDisabled ? -1 : tabIndex}
       onClick={isDisabled ? handleClick : onClick}
       className={cn(
