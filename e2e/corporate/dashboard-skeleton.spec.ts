@@ -6,7 +6,7 @@
  * 전제:
  * - Next.js 앱이 http://localhost:3000 에서 실행 중이어야 한다.
  * - `/corporate/dashboard` 라우트가 존재한다.
- * - NODE_ENV=development 이므로 CorporateShell이 bypassGuard=true로 동작한다.
+ * - Playwright 설정은 production server를 사용하므로 sessionStorage에 COMPANY 역할을 주입한다.
  *
  * 목킹 전략:
  * - Playwright page.route()로 API 응답을 직접 가로채 지연/즉시 응답을 시뮬레이션한다.
@@ -19,7 +19,7 @@ import {
   MOCK_JOB_POSTINGS_SUMMARY,
   MOCK_COMPANY_DASHBOARD,
   MOCK_COMPANY_INFO,
-} from '../../src/mocks/handlers/corporate-dashboard';
+} from '../mocks/corporate-dashboard-fixtures';
 
 // ──────────────────────────────────────────────
 // 상수

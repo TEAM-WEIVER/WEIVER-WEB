@@ -191,7 +191,7 @@ export function CorporateDashboardView() {
   const shouldShowCompanySkeleton =
     (companyDashboard.isLoading || companyInfo.isLoading) && !company;
   const shouldShowNotificationSkeleton = notifications.isLoading && !notifications.data;
-  const shouldShowJobPostingSkeleton = jobPostings.isLoading && !jobPostings.data;
+  const shouldShowJobPostingSkeleton = jobPostings.isLoading;
 
   return (
     <div className="flex w-full flex-col gap-6">
