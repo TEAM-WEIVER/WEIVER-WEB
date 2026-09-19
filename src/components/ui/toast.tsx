@@ -74,12 +74,12 @@ export function Toast({ toast }: ToastProps) {
     >
       {/* 왼쪽 컬러 세로 바 4px */}
       <div
-        className="h-[68px] w-1 flex-shrink-0 rounded-bl-[10px] rounded-tl-[10px]"
+        className="w-1 flex-shrink-0 self-stretch rounded-tl-[10px] rounded-bl-[10px]"
         style={{ backgroundColor: color }}
       />
 
       {/* 본문 */}
-      <div className="flex flex-1 items-center gap-3 rounded-br-[10px] rounded-tr-[10px] p-[14px]">
+      <div className="flex flex-1 items-center gap-3 rounded-tr-[10px] rounded-br-[10px] p-[14px]">
         {/* 아이콘 컨테이너 40×40px */}
         <div
           className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[4px]"
@@ -90,15 +90,13 @@ export function Toast({ toast }: ToastProps) {
 
         {/* 텍스트 */}
         <div className="flex flex-1 flex-col justify-center gap-0.5">
-          <p
-            className="w-[220px] text-[14px] font-medium leading-5 tracking-[-0.28px] text-[#0f172a]"
-          >
+          <p className="w-[220px] text-[14px] leading-5 font-medium tracking-[-0.28px] text-[#0f172a]">
             {title}
           </p>
           {description && (
             <p
               data-toast-description
-              className="text-[12px] font-normal leading-4 tracking-[-0.24px] text-[#64748b]"
+              className="text-[12px] leading-4 font-normal tracking-[-0.24px] text-[#64748b]"
             >
               {description}
             </p>
@@ -111,7 +109,7 @@ export function Toast({ toast }: ToastProps) {
         type="button"
         aria-label="알림 닫기"
         onClick={handleClose}
-        className="absolute right-3 top-3 flex h-[18px] w-[18px] items-center justify-center rounded text-[#64748b] transition-colors hover:text-[#0f172a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3b82f6]"
+        className="absolute top-3 right-3 flex h-[18px] w-[18px] items-center justify-center rounded text-[#64748b] transition-colors hover:text-[#0f172a] focus-visible:ring-2 focus-visible:ring-[#3b82f6] focus-visible:outline-none"
       >
         <X size={14} />
       </button>

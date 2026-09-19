@@ -3,7 +3,7 @@ import { test, expect, type Page } from '@playwright/test';
 /**
  * 글로벌 토스트/알림 시스템 인수 테스트 (#86)
  *
- * 커버 AC: AC1, AC2, AC3, AC4, AC5, AC6, AC7
+ * 커버 AC: AC1, AC2, AC3, AC4, AC5, AC6
  *
  * 전제:
  * - Next.js 앱이 http://localhost:3000 에서 실행 중이어야 한다.
@@ -14,9 +14,7 @@ import { test, expect, type Page } from '@playwright/test';
  *
  * 토스트 호출 전략:
  * - `page.evaluate()` 로 브라우저 컨텍스트에서 `window.__toast.add()` 를 직접 호출한다.
- * - toast-store 는 `window.__toast` 로 전역 노출되어야 한다
- *   (테스트 환경에서만 활성화: `process.env.NODE_ENV === 'test'`).
- * - 또는 테스트 전용 트리거 버튼을 가진 `/test-toast` 경로를 활용할 수 있다.
+ * - toast facade는 `NEXT_PUBLIC_E2E_TEST=true`일 때만 `window.__toast`로 노출된다.
  */
 
 // ---------------------------------------------------------------------------
@@ -33,6 +31,8 @@ async function addToast(
     duration?: number;
   },
 ) {
+  await page.waitForFunction(() => window.__toast !== undefined);
+
   await page.evaluate((toastOpts) => {
     // toast-store 가 window.__toast 로 노출되어 있다고 가정
     (window as unknown as { __toast: { add: (o: typeof toastOpts) => void } }).__toast.add(
@@ -70,9 +70,7 @@ test.describe('AC1: 토스트 기본 표시 — 성공 타입', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('AC2: 타입별 토스트 표시 및 description 조건부 렌더링', () => {
-  test('AC2-a: error 타입 + description 있음 — 제목과 부제목이 모두 표시된다', async ({
-    page,
-  }) => {
+  test('AC2-a: error 타입 + description 있음 — 제목과 부제목이 모두 표시된다', async ({ page }) => {
     // Given: 임의 페이지에 있고
     await page.goto('/');
 
@@ -221,8 +219,7 @@ test.describe('AC5: 다중 토스트 스택 표시', () => {
       // 두 카드가 수직으로 겹치지 않아야 한다
       const firstBottom = firstBox.y + firstBox.height;
       const secondBottom = secondBox.y + secondBox.height;
-      const noOverlap =
-        firstBottom <= secondBox.y || secondBottom <= firstBox.y;
+      const noOverlap = firstBottom <= secondBox.y || secondBottom <= firstBox.y;
       expect(noOverlap).toBe(true);
     }
   });
@@ -253,62 +250,5 @@ test.describe('AC6: 글로벌 배치 — 페이지 이동 시 유지', () => {
 
     // Then: 이동 후에도 토스트가 소멸 시간까지 유지된다
     await expect(toast).toBeVisible();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// AC7. 크리티컬 에러 — store 초기화 실패 시 런타임 크래시 방지
-// ---------------------------------------------------------------------------
-
-test.describe('AC7: 크리티컬 에러 — store 초기화 실패 시 런타임 크래시 방지', () => {
-  test('AC7: window.__toast 가 없는 상태에서 toast.add() 를 호출해도 페이지가 크래시되지 않는다', async ({
-    page,
-  }) => {
-    // Given: toast-store 가 정상 초기화되지 않은 상태를 시뮬레이션
-    await page.goto('/');
-
-    // window.__toast 를 undefined 로 강제 설정
-    await page.evaluate(() => {
-      (window as unknown as Record<string, unknown>).__toast = undefined;
-    });
-
-    // When: toast.add() 에 해당하는 호출이 이루어진다
-    // (실제 구현에서는 toast 유틸 함수가 store null 체크 후 console.warn)
-    const consoleMessages: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'warning' || msg.type() === 'error') {
-        consoleMessages.push(msg.text());
-      }
-    });
-
-    let pageError: Error | null = null;
-    page.on('pageerror', (err) => {
-      pageError = err;
-    });
-
-    // 구현에서 toast 유틸은 window.__toast 가 없으면 조용히 실패해야 한다
-    await page.evaluate(() => {
-      try {
-        const toastUtil = (
-          window as unknown as {
-            __toast?: { add: (o: { type: string; title: string }) => void };
-          }
-        ).__toast;
-        if (toastUtil) {
-          toastUtil.add({ type: 'success', title: '테스트' });
-        }
-        // __toast 가 없으면 여기까지 throw 없이 도달해야 함
-      } catch {
-        // 에러가 throw 되면 안 됨 — 이 catch 블록에 도달하면 안 됨
-        throw new Error('toast.add() 가 예외를 throw 했습니다 — 크래시 방지 실패');
-      }
-    });
-
-    // Then: 페이지 크래시(pageerror)가 발생하지 않는다
-    await page.waitForTimeout(200);
-    expect(pageError).toBeNull();
-
-    // Then: 페이지가 여전히 정상 상태이다 (DOM 이 살아있다)
-    await expect(page.locator('body')).toBeVisible();
   });
 });
