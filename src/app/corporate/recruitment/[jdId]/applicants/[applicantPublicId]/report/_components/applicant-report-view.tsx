@@ -1,5 +1,6 @@
 'use client';
 
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   useAiSummary,
   useCardSummary,
@@ -91,16 +92,16 @@ function ReportSectionFallback({ message }: { message: string }) {
 
 function ReportSectionSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <ReportCard className="flex flex-col gap-5">
-        <div className="bg-bg-tertiary h-8 w-40 rounded" />
-        <div className="bg-bg-tertiary h-5 w-full rounded" />
-        <div className="bg-bg-tertiary h-5 w-3/4 rounded" />
+        <Skeleton className="h-8 w-40 rounded" />
+        <Skeleton className="h-5 w-full rounded" />
+        <Skeleton className="h-5 w-3/4 rounded" />
       </ReportCard>
       <ReportCard className="flex flex-col gap-4">
-        <div className="bg-bg-tertiary h-8 w-36 rounded" />
+        <Skeleton className="h-8 w-36 rounded" />
         {Array.from({ length: 3 }, (_, index) => (
-          <div key={index} className="bg-bg-tertiary h-16 rounded-xl" />
+          <Skeleton key={index} className="h-16 rounded-xl" />
         ))}
       </ReportCard>
     </div>

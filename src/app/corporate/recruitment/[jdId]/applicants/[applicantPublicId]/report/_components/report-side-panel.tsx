@@ -1,6 +1,7 @@
 import { Download, Edit3, Rocket } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import type { CardSummary } from '@/schemas/corporate/report';
 
@@ -51,7 +52,7 @@ function KeywordGroup({
 }
 
 function SidePanelValueSkeleton() {
-  return <div className="bg-bg-tertiary h-7 w-full animate-pulse rounded" />;
+  return <Skeleton className="h-7 w-full rounded" />;
 }
 
 export function ReportSidePanel({
@@ -70,7 +71,7 @@ export function ReportSidePanel({
             <p className="text-body2 text-text-tertiary">스킬핏 점수</p>
             <div className="border-border-default bg-bg-tertiary flex h-[68px] items-center justify-center rounded-lg border">
               {isLoading ? (
-                <div className="bg-bg-primary h-9 w-12 animate-pulse rounded" />
+                <Skeleton className="bg-bg-primary h-9 w-12" />
               ) : (
                 <span className="text-text-secondary text-[32px] leading-10 font-bold">
                   {error ? '-' : (card?.skillScore ?? '-')}
@@ -101,9 +102,9 @@ export function ReportSidePanel({
           <div className="flex flex-wrap gap-1.5">
             {isLoading ? (
               <>
-                <div className="bg-bg-tertiary h-7 w-14 animate-pulse rounded" />
-                <div className="bg-bg-tertiary h-7 w-20 animate-pulse rounded" />
-                <div className="bg-bg-tertiary h-7 w-16 animate-pulse rounded" />
+                <Skeleton className="h-7 w-14" />
+                <Skeleton className="h-7 w-20" />
+                <Skeleton className="h-7 w-16" />
               </>
             ) : (
               (card?.skillTags ?? []).map((tag) => <KeywordTag key={tag}>{tag}</KeywordTag>)

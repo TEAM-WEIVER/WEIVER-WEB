@@ -12,6 +12,8 @@ import { useMyCompany } from '@/hooks/corporate/use-company';
 import type { CompanyType } from '@/schemas/corporate/company';
 import type { Notification } from '@/schemas/corporate/dashboard';
 
+import { Skeleton } from '@/components/ui/skeleton';
+
 import { CompanySummaryCard } from './company-summary-card';
 import { JobPostingList } from './job-posting-list';
 import { MatchingNotificationCard } from './matching-notification-card';
@@ -53,19 +55,19 @@ function CompanySummarySkeleton() {
       className="border-border-light bg-bg-primary flex min-h-[286px] flex-col rounded-[20px] border p-6 lg:p-[34px]"
       aria-label="기업 요약 로딩 중"
     >
-      <div className="flex animate-pulse flex-col gap-3.5">
+      <div className="flex flex-col gap-3.5">
         <div className="flex items-center gap-6">
-          <div className="bg-bg-tertiary size-[88px] shrink-0 rounded-[10px]" />
+          <Skeleton className="size-[88px] shrink-0 rounded-[10px]" />
           <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <div className="bg-bg-tertiary h-7 w-40 rounded-md" />
-            <div className="bg-bg-tertiary h-5 w-24 rounded-md" />
+            <Skeleton className="h-7 w-40" />
+            <Skeleton className="h-5 w-24" />
           </div>
         </div>
         <div className="grid gap-3.5 min-[560px]:grid-cols-[154px_1fr]">
-          <div className="bg-bg-tertiary h-[70px] rounded-[10px]" />
-          <div className="bg-bg-tertiary h-[70px] rounded-[10px]" />
-          <div className="bg-bg-tertiary h-[70px] rounded-[10px]" />
-          <div className="bg-bg-tertiary h-[70px] rounded-[10px]" />
+          <Skeleton className="h-[70px] rounded-[10px]" />
+          <Skeleton className="h-[70px] rounded-[10px]" />
+          <Skeleton className="h-[70px] rounded-[10px]" />
+          <Skeleton className="h-[70px] rounded-[10px]" />
         </div>
       </div>
     </section>
@@ -124,19 +126,19 @@ function NotificationSkeleton() {
       aria-label="매칭 알림 로딩 중"
     >
       <div className="border-border-light flex h-[70px] flex-col gap-2 border-b">
-        <div className="bg-bg-tertiary h-7 w-40 animate-pulse rounded-md" />
-        <div className="bg-bg-tertiary h-4 w-52 animate-pulse rounded-md" />
+        <Skeleton className="h-7 w-40" />
+        <Skeleton className="h-4 w-52" />
       </div>
       <div className="flex flex-col">
         {Array.from({ length: 3 }, (_, index) => (
           <div
             key={index}
-            className="border-border-light flex h-[66px] animate-pulse items-center gap-3.5 border-b px-3.5"
+            className="border-border-light flex h-[66px] items-center gap-3.5 border-b px-3.5"
           >
-            <div className="bg-bg-tertiary h-[38px] w-[39px] shrink-0 rounded-md" />
+            <Skeleton className="h-[38px] w-[39px] shrink-0" />
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div className="bg-bg-tertiary h-5 w-full max-w-[300px] rounded-md" />
-              <div className="bg-bg-tertiary h-4 w-20 rounded-md" />
+              <Skeleton className="h-5 w-full max-w-[300px]" />
+              <Skeleton className="h-4 w-20" />
             </div>
           </div>
         ))}
