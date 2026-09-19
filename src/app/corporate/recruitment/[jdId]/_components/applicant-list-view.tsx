@@ -7,6 +7,7 @@ import { Check, ChevronDown, ChevronLeft, ChevronRight, Search, X } from 'lucide
 import { useRouteLoadingStore } from '@/store/route-loading-store';
 
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useApplicants } from '@/hooks/corporate/use-applicant';
 import { cn } from '@/lib/utils';
 import type { ApplicantListItem, ApplicantListResponse } from '@/schemas/corporate/applicant';
@@ -296,7 +297,7 @@ function ApplicantTableSkeleton() {
   return (
     <>
       {Array.from({ length: APPLICANTS_PAGE_SIZE }, (_, index) => (
-        <div key={index} className="grid animate-pulse grid-cols-[174px_220px_220px_423px_171px]">
+        <div key={index} className="grid grid-cols-[174px_220px_220px_423px_171px]">
           {Array.from({ length: 5 }, (_, cellIndex) => (
             <div
               key={cellIndex}
@@ -308,7 +309,7 @@ function ApplicantTableSkeleton() {
                 index === APPLICANTS_PAGE_SIZE - 1 && cellIndex === 4 && 'rounded-br-[20px]',
               )}
             >
-              <div className="bg-bg-tertiary h-5 w-full rounded" />
+              <Skeleton className="h-5 w-full rounded" />
             </div>
           ))}
         </div>

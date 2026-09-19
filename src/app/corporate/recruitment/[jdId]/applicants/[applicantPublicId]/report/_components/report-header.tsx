@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight, Mail, Phone } from 'lucide-react';
 
+import { Skeleton } from '@/components/ui/skeleton';
 import type { CardSummary } from '@/schemas/corporate/report';
 
 import { ReportHeaderActions } from './report-header-actions';
@@ -47,7 +48,7 @@ export function ReportHeader({
           <div className="flex min-w-0 items-center gap-6">
             <div className="bg-primary-200 flex size-[104px] shrink-0 items-center justify-center rounded-full">
               {isLoading ? (
-                <span className="bg-primary-300 size-12 animate-pulse rounded-full" />
+                <Skeleton className="bg-primary-300 size-12 rounded-full" />
               ) : (
                 <span className="text-h1 text-primary-700">{applicantName.slice(0, 1)}</span>
               )}
@@ -59,7 +60,7 @@ export function ReportHeader({
                   {profile?.position ?? '경력 정보 없음'}
                 </span>
                 {isLoading ? (
-                  <div className="bg-bg-tertiary h-11 w-40 animate-pulse rounded" />
+                  <Skeleton className="h-11 w-40 rounded" />
                 ) : (
                   <h1 className="text-h1 text-text-primary">{applicantName}</h1>
                 )}
