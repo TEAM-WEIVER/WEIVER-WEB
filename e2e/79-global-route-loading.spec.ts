@@ -27,6 +27,7 @@ const PROGRESS_BAR = '[role="progressbar"][aria-label="페이지 전환 중"]';
 const AUTH_ROLE_STORAGE_KEY = 'weiver.auth.role';
 
 const APPLICANTS_API = '**/api/applicants';
+const DOCUMENT_STATUS_API = '**/api/applicants/document-status';
 const APPLICANT_INFO_API = '**/api/applicants/info';
 const ESSAY_API = '**/api/essay-answers';
 const PORTFOLIOS_API = '**/api/portfolios';
@@ -64,11 +65,40 @@ async function mockSlowJson(
   });
 }
 
+/** App Router가 경로 전환에 사용하는 RSC 요청을 지연한다. */
+async function mockSlowRouteSegment(page: Page, pathname: string, delayMs = 300) {
+  await page.route(
+    (url) => url.pathname === pathname && url.searchParams.has('_rsc'),
+    async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      await route.continue();
+    },
+  );
+}
+
+/** 새 내비게이션으로 중단되는 상황을 검증하기 위해 RSC 요청을 수동으로 해제한다. */
+async function mockBlockedRouteSegment(page: Page, pathname: string) {
+  let release!: () => void;
+  const releasePromise = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  await page.route(
+    (url) => url.pathname === pathname && url.searchParams.has('_rsc'),
+    async (route) => {
+      await releasePromise;
+      await route.continue();
+    },
+  );
+
+  return release;
+}
+
 /** 기업 사용자로 role을 재설정한다 (applicantAuth fixture 이후 override) */
 async function overrideToCorporateRole(page: Page) {
   await page.addInitScript(
     ({ storageKey }) => {
-      window.sessionStorage.setItem(storageKey, 'CORPORATE');
+      window.sessionStorage.setItem(storageKey, 'COMPANY');
     },
     { storageKey: AUTH_ROLE_STORAGE_KEY },
   );
@@ -84,6 +114,46 @@ const EMPTY_RESUME = OK({
   AwardDTO: [],
   WorkExperienceDTO: [],
   CertificateDTO: [],
+});
+
+const APPLICANT_DASHBOARD_PROFILE = OK({
+  ApplicantDTO: {
+    photoUrl: null,
+    name: '홍길동',
+    birthday: '2000-01-01',
+    phoneNumber: '010-1234-5678',
+    email: 'hong@example.com',
+    address: '서울특별시 강남구',
+  },
+  EducationDTO: [],
+  AwardDTO: [],
+  WorkExperienceDTO: [],
+  CertificateDTO: [],
+});
+
+const INCOMPLETE_DOCUMENT_STATUS = OK({
+  resumeCompleted: false,
+  essayCompleted: false,
+  portfolioCompleted: false,
+});
+
+const APPLICANT_LIST = OK({
+  content: [
+    {
+      publicId: 'applicant-public-id-1',
+      profileImageUrl: null,
+      applicantName: '홍길동',
+      position: '프론트엔드 개발자',
+      skillScore: 85,
+      cultureStyle: '협업형',
+      cultureTags: ['소통'],
+      techStacks: ['React'],
+    },
+  ],
+  totalElements: 1,
+  totalPages: 1,
+  number: 0,
+  size: 10,
 });
 
 const EMPTY_ESSAY = OK({ answers: [] });
@@ -155,6 +225,7 @@ test.describe('AC1: 온보딩 이력서 저장 후 다음 단계 전환', () => 
 
     await fillRequiredResumeFields(page);
     await expect(page.getByRole('button', { name: '다음' })).toBeEnabled();
+    await mockSlowRouteSegment(page, '/onboarding/cover-letter');
 
     // When — 다음 버튼 클릭 → router.push 실행, 200ms+ 소요
     await page.getByRole('button', { name: '다음' }).click();
@@ -238,6 +309,7 @@ test.describe('AC2: 온보딩 자기소개서 — 버튼 클릭 시 로딩 바',
     });
 
     await page.goto('/onboarding/cover-letter');
+    await mockSlowRouteSegment(page, '/onboarding/portfolio');
 
     // When — 다음 버튼 클릭
     await page.getByRole('button', { name: '다음' }).click();
@@ -255,6 +327,7 @@ test.describe('AC2: 온보딩 자기소개서 — 버튼 클릭 시 로딩 바',
     await mockSlowJson(page, PORTFOLIOS_API, 200, EMPTY_PORTFOLIO_DATA, 300);
 
     await page.goto('/onboarding/cover-letter');
+    await mockSlowRouteSegment(page, '/onboarding/portfolio');
 
     // When — 나중에 작성 클릭
     await page.getByRole('button', { name: '나중에 작성' }).click();
@@ -270,6 +343,7 @@ test.describe('AC2: 온보딩 자기소개서 — 버튼 클릭 시 로딩 바',
     await mockSlowJson(page, APPLICANTS_API, 200, EMPTY_RESUME, 300);
 
     await page.goto('/onboarding/cover-letter');
+    await mockSlowRouteSegment(page, '/onboarding/resume');
 
     // When — 이전 단계 클릭
     await page.getByRole('button', { name: '이전 단계' }).click();
@@ -308,6 +382,7 @@ test.describe('AC2: 온보딩 포트폴리오 — 버튼 클릭 시 로딩 바',
     );
     await page.goto('/onboarding/portfolio');
     await loadResponse;
+    await mockSlowRouteSegment(page, '/applicant/dashboard');
 
     // When — 나중에 작성 클릭 → router.push('/applicant/dashboard')
     await page.getByRole('button', { name: '나중에 작성' }).click();
@@ -327,6 +402,7 @@ test.describe('AC2: 온보딩 포트폴리오 — 버튼 클릭 시 로딩 바',
     );
     await page.goto('/onboarding/portfolio');
     await loadResponse;
+    await mockSlowRouteSegment(page, '/onboarding/cover-letter');
 
     // When — 이전 단계 클릭
     await page.getByRole('button', { name: '이전 단계' }).click();
@@ -344,21 +420,25 @@ test.describe('AC2: 온보딩 포트폴리오 — 버튼 클릭 시 로딩 바',
 
 test.describe('AC3: 지원자 대시보드 프로필 편집 전환', () => {
   test('프로필 편집 버튼 클릭 후 300ms 소요 시 프로그레스 바가 노출된다', async ({ page }) => {
-    // Given — 대시보드 API는 즉시 응답
-    await page.route('**/api/applicants**', async (route) => {
-      await route.continue();
+    // Given — 대시보드 데이터를 목으로 제공하고, 프로필 편집 대상인 이력서 로드를 두 번째 요청부터 지연
+    let applicantsRequestCount = 0;
+    await page.route(APPLICANTS_API, async (route) => {
+      applicantsRequestCount += 1;
+      if (applicantsRequestCount > 1) {
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      await fulfillJson(route, 200, APPLICANT_DASHBOARD_PROFILE);
     });
+    await page.route(DOCUMENT_STATUS_API, (route) =>
+      fulfillJson(route, 200, INCOMPLETE_DOCUMENT_STATUS),
+    );
 
     await page.goto('/applicant/dashboard');
-
-    // 편집 페이지 이동 후 로드될 API를 300ms 지연
-    await page.route(APPLICANT_INFO_API, async (route) => {
-      await new Promise((r) => setTimeout(r, 300));
-      await route.continue();
-    });
+    await expect(page.getByRole('button', { name: '프로필 수정' })).toBeVisible();
+    await mockSlowRouteSegment(page, '/onboarding/resume');
 
     // When — 프로필 편집 버튼 클릭 → router.push(getProfileEditPath(progress))
-    await page.getByRole('button', { name: '프로필 편집' }).click();
+    await page.getByRole('button', { name: '프로필 수정' }).click();
 
     // Then — 전환 중 프로그레스 바 노출
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
@@ -374,7 +454,7 @@ test.describe('AC3: 지원자 대시보드 프로필 편집 전환', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('AC4: 기업 지원자 리스트 breadcrumb 공고목록 이동', () => {
-  const JD_ID = 'test-jd-1';
+  const JD_ID = '1';
 
   test.beforeEach(async ({ page }) => {
     // 기업 사용자로 role override (applicantAuth fixture의 APPLICANT를 CORPORATE로 재설정)
@@ -388,6 +468,7 @@ test.describe('AC4: 기업 지원자 리스트 breadcrumb 공고목록 이동', 
     });
 
     await page.goto(`/corporate/recruitment/${JD_ID}`);
+    await mockSlowRouteSegment(page, '/corporate/dashboard');
 
     // corporate dashboard 로드 시 job-descriptions 목록 API를 300ms 지연
     await page.route('**/api/job-descriptions', async (route) => {
@@ -416,7 +497,7 @@ test.describe('AC4: 기업 지원자 리스트 breadcrumb 공고목록 이동', 
 // ---------------------------------------------------------------------------
 
 test.describe('AC5: 기업 지원자 리스트 지원자 행 클릭', () => {
-  const JD_ID = 'test-jd-1';
+  const JD_ID = '1';
   const PUBLIC_ID = 'applicant-public-id-1';
 
   test.beforeEach(async ({ page }) => {
@@ -425,22 +506,29 @@ test.describe('AC5: 기업 지원자 리스트 지원자 행 클릭', () => {
 
   test('지원자 행 클릭 후 300ms 소요 시 프로그레스 바가 노출된다', async ({ page }) => {
     // Given — corporate recruitment 페이지에 지원자 목록이 표시된 상태
-    await page.route(`**/api/job-descriptions/${JD_ID}**`, async (route) => {
-      await route.continue();
-    });
+    await page.route(`**/api/job-postings/${JD_ID}/applicants**`, (route) =>
+      fulfillJson(route, 200, APPLICANT_LIST),
+    );
 
     await page.goto(`/corporate/recruitment/${JD_ID}`);
+    const applicantLink = page.getByRole('link', { name: '홍길동 상세 리포트 보기' });
+    await expect(applicantLink).toBeVisible();
+    await mockSlowRouteSegment(
+      page,
+      `/corporate/recruitment/${JD_ID}/applicants/${PUBLIC_ID}/report`,
+    );
 
     // 리포트 페이지 로드 API를 300ms 지연
-    await page.route(`**/api/applicants/${PUBLIC_ID}/report**`, async (route) => {
-      await new Promise((r) => setTimeout(r, 300));
-      await route.continue();
-    });
+    await page.route(
+      `**/api/job-postings/${JD_ID}/applicants/${PUBLIC_ID}/reports/**`,
+      async (route) => {
+        await new Promise((r) => setTimeout(r, 300));
+        await route.continue();
+      },
+    );
 
     // When — 지원자 행 Link 클릭 (onNavigate → SPA 내비게이션)
-    // 헤더를 제외한 첫 번째 지원자 행을 클릭한다
-    const applicantRow = page.getByRole('row').nth(1);
-    await applicantRow.click();
+    await applicantLink.click();
 
     // Then — 전환 중 프로그레스 바 노출
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
@@ -481,6 +569,7 @@ test.describe('AC6: 전환 완료 및 인터럽션 시 프로그레스 바 자�
     await loadResponse;
 
     await fillRequiredResumeFields(page);
+    await mockSlowRouteSegment(page, '/onboarding/cover-letter');
     await page.getByRole('button', { name: '다음' }).click();
 
     // 바가 노출됨을 확인
@@ -507,21 +596,9 @@ test.describe('AC6: 전환 완료 및 인터럽션 시 프로그레스 바 자�
 
     await page.goto('/onboarding/cover-letter');
 
-    // portfolio 로드를 명시적 해제 전까지 블로킹 — 첫 번째 전환 중단용
-    let releasePortfolio: (() => void) | undefined;
-    await page.route(PORTFOLIOS_API, async (route) => {
-      if (route.request().method() !== 'GET') {
-        await route.continue();
-        return;
-      }
-      await new Promise<void>((r) => {
-        releasePortfolio = r;
-      });
-      await fulfillJson(route, 200, EMPTY_PORTFOLIO_DATA);
-    });
-
-    // resume 로드도 300ms 지연
-    await mockSlowJson(page, APPLICANTS_API, 200, EMPTY_RESUME, 300);
+    // 첫 번째 portfolio 전환은 수동 해제 전까지 보류하고, 두 번째 resume 전환은 300ms 지연
+    const releasePortfolio = await mockBlockedRouteSegment(page, '/onboarding/portfolio');
+    await mockSlowRouteSegment(page, '/onboarding/resume');
 
     // When — "나중에 작성" 클릭 → portfolio 전환 시작
     await page.getByRole('button', { name: '나중에 작성' }).click();
@@ -529,15 +606,14 @@ test.describe('AC6: 전환 완료 및 인터럽션 시 프로그레스 바 자�
     // 바가 노출될 때까지 대기
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
 
-    // When — portfolio 로드가 완료되기 전에 "이전 단계" 클릭으로 새 내비게이션 발생
-    // (실제로는 브라우저 뒤로가기나 다른 버튼 클릭으로 인터럽션 발생)
-    // 여기서는 portfolio 로드를 해제하여 URL commit 후 즉시 소멸 검증
-    releasePortfolio!();
+    // When — 첫 번째 전환이 끝나기 전에 이전 단계 클릭으로 새 내비게이션 발생
+    await page.getByRole('button', { name: '이전 단계' }).click();
+    releasePortfolio();
 
-    // Then — 최종 전환 완료 후 바가 사라진다 (리셋 포함)
+    // Then — 새 전환이 완료된 후 바가 사라진다
     await expect(page.locator(PROGRESS_BAR)).toBeHidden({ timeout: 1000 });
 
-    // Then — 최종 URL이 portfolio로 정착한다
-    await expect(page).toHaveURL('/onboarding/portfolio');
+    // Then — 두 번째 전환 대상인 resume으로 정착한다
+    await expect(page).toHaveURL('/onboarding/resume');
   });
 });
