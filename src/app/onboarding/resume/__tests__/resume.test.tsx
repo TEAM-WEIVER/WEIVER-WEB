@@ -57,6 +57,38 @@ async function fillDate(user: ReturnType<typeof userEvent.setup>, label: string,
   await user.click(within(picker).getAllByRole('button', { name: '1' })[0]);
 }
 
+describe('이력서 온보딩 페이지 — 스켈레톤 분기', () => {
+  beforeEach(() => {
+    navigationMock.push.mockClear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it('isLoading=true 시 기본 정보/학력/자격증/수상/경력 로딩 섹션을 렌더링한다', () => {
+    vi.mocked(getApplicantsAll).mockImplementation(() => new Promise(() => {}));
+
+    render(<ResumePage />);
+
+    expect(screen.getByRole('region', { name: '기본 정보 로딩 중' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '학력 로딩 중' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '자격증 로딩 중' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '수상 로딩 중' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '경력 로딩 중' })).toBeInTheDocument();
+  });
+
+  it('isLoading=true 시 나중에 작성/다음 버튼이 모두 disabled이다', () => {
+    vi.mocked(getApplicantsAll).mockImplementation(() => new Promise(() => {}));
+
+    render(<ResumePage />);
+
+    expect(screen.getByRole('button', { name: '나중에 작성' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /다음/ })).toBeDisabled();
+  });
+});
+
 describe('이력서 온보딩 페이지', () => {
   beforeEach(() => {
     navigationMock.push.mockClear();
