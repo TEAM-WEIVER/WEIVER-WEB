@@ -31,12 +31,12 @@ async function setupApplicantSession(page: Page) {
 
 async function gotoInquiry(page: Page) {
   await setupApplicantSession(page);
-  await page.goto('/applicant/inquiries/new');
-  await expect(page.getByRole('heading', { name: '문의' })).toBeVisible();
+  await page.goto('/applicant/inquiries');
+  await expect(page.getByRole('heading', { name: '문의', exact: true })).toBeVisible();
 }
 
 async function openInquiryForm(page: Page) {
-  await page.getByRole('button', { name: '문의사항 작성' }).click();
+  await page.getByRole('link', { name: '문의사항 작성' }).click();
   await expect(page.getByRole('textbox', { name: '문의 제목' })).toBeVisible();
   await expect(page.getByRole('textbox', { name: '문의 내용' })).toBeVisible();
 }
@@ -47,27 +47,16 @@ test('AC1: 사이드바의 문의 아이콘을 선택하면 문의 페이지로 
 
   await page.getByRole('link', { name: '문의' }).click();
 
-  await expect(page).toHaveURL('/applicant/inquiries/new');
-  await expect(page.getByRole('heading', { name: '문의' })).toBeVisible();
+  await expect(page).toHaveURL('/applicant/inquiries');
+  await expect(page.getByRole('heading', { name: '문의', exact: true })).toBeVisible();
 });
 
-test('AC2: 문의 페이지는 Figma 기본 카드와 확장 가능한 문의 작성 폼을 제공한다', async ({
-  page,
-}) => {
+test('AC2: 문의 페이지 카드에서 Figma 문의 작성 폼으로 이동한다', async ({ page }) => {
   await gotoInquiry(page);
 
   await expect(page.getByText('위버 CS팀으로 문의사항을 전달합니다.')).toBeVisible();
-  await expect(page.getByRole('button', { name: '문의사항 작성' })).toHaveAttribute(
-    'aria-expanded',
-    'false',
-  );
-
   await openInquiryForm(page);
-
-  await expect(page.getByRole('button', { name: '문의사항 작성' })).toHaveAttribute(
-    'aria-expanded',
-    'true',
-  );
+  await expect(page.getByRole('heading', { name: '문의사항 작성' })).toBeVisible();
 });
 
 test('AC3: 제목과 내용을 제출하면 문의 API를 호출하고 성공 토스트를 표시한다', async ({ page }) => {
@@ -78,11 +67,10 @@ test('AC3: 제목과 내용을 제출하면 문의 API를 호출하고 성공 �
     await fulfillJson(route, 200, apiResponse(null));
   });
   await page.goto('/applicant/inquiries/new');
-  await openInquiryForm(page);
   await page.getByRole('textbox', { name: '문의 제목' }).fill('면접 일정 문의');
   await page.getByRole('textbox', { name: '문의 내용' }).fill('면접 일정을 변경하고 싶습니다.');
 
-  await page.getByRole('button', { name: '문의 제출' }).click();
+  await page.getByRole('button', { name: '작성 완료' }).click();
 
   await expect
     .poll(() => requestBody)
@@ -90,9 +78,9 @@ test('AC3: 제목과 내용을 제출하면 문의 API를 호출하고 성공 �
       title: '면접 일정 문의',
       content: '면접 일정을 변경하고 싶습니다.',
     });
-  await expect(page.getByRole('alert', { name: '문의 알림' })).toContainText(
-    '문의가 접수되었습니다.',
-  );
+  await expect(page.getByRole('dialog')).toContainText('문의사항이 제출되었습니다.');
+  await page.getByRole('button', { name: '확인' }).click();
+  await expect(page).toHaveURL('/applicant/inquiries');
 });
 
 test('AC4: 빈 제목 또는 내용은 요청 없이 토스트로 안내한다', async ({ page }) => {
@@ -105,7 +93,7 @@ test('AC4: 빈 제목 또는 내용은 요청 없이 토스트로 안내한다',
   await openInquiryForm(page);
   await page.getByRole('textbox', { name: '문의 제목' }).fill(' ');
 
-  await page.getByRole('button', { name: '문의 제출' }).click();
+  await page.getByRole('button', { name: '작성 완료' }).click();
 
   await expect(page.getByRole('alert', { name: '문의 알림' })).toContainText(
     '문의 제목과 내용을 입력해주세요.',
@@ -124,11 +112,10 @@ test('AC5: 문의 API 실패 시 입력값을 유지하고 오류 토스트를 �
     }),
   );
   await page.goto('/applicant/inquiries/new');
-  await openInquiryForm(page);
   await page.getByRole('textbox', { name: '문의 제목' }).fill('면접 일정 문의');
   await page.getByRole('textbox', { name: '문의 내용' }).fill('면접 일정을 변경하고 싶습니다.');
 
-  await page.getByRole('button', { name: '문의 제출' }).click();
+  await page.getByRole('button', { name: '작성 완료' }).click();
 
   await expect(page.getByRole('alert', { name: '문의 알림' })).toContainText(
     '문의 전송에 실패했습니다. 다시 시도해주세요.',

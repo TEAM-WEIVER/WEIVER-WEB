@@ -16,7 +16,7 @@ export default function ApplicantLayout({ children }: { children: React.ReactNod
         homeHref="/applicant/dashboard"
         items={NAV_ITEMS}
         profileHref="/applicant/mypage"
-        inquiryHref="/applicant/inquiries/new"
+        inquiryHref="/applicant/inquiries"
       />
 
       <main className="min-w-0 flex-1 overflow-y-auto">
