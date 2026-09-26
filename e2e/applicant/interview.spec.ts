@@ -374,7 +374,7 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
             // When: 동일한 sequence=1 QUESTION_READY 중복 전송
             setTimeout(() => {
               ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
-            }, 300);
+            }, 50);
           }
         }
       });
@@ -388,8 +388,8 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
       timeout: 5000,
     });
 
-    // 300ms 대기 후에도 동일한 질문이 유지됨 (중복 메시지 무시됨)
-    await page.waitForTimeout(500);
+    // 중복 메시지 수신 후에도 동일한 질문이 유지됨
+    await page.waitForTimeout(100);
     await expect(page.getByText('1번째 기술 면접 질문입니다.', { exact: false })).toBeVisible();
   });
 
@@ -419,7 +419,7 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
             // When: 이후 오래된 sequence 1이 재도착
             setTimeout(() => {
               ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
-            }, 200);
+            }, 50);
           }
         }
       });
@@ -439,7 +439,7 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
       timeout: 5000,
     });
 
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(100);
     // 여전히 2번 질문이 표시됨 (1번 무시됨)
     await expect(page.getByText('2번째 기술 면접 질문입니다.', { exact: false })).toBeVisible();
   });
@@ -864,8 +864,6 @@ test.describe('AC8: 브라우저 탭 비활성화 복귀 시 소켓 상태 확�
       document.dispatchEvent(new Event('visibilitychange'));
     });
 
-    await page.waitForTimeout(200);
-
     await page.evaluate(() => {
       Object.defineProperty(document, 'visibilityState', {
         value: 'visible',
@@ -932,8 +930,6 @@ test.describe('AC8: 브라우저 탭 비활성화 복귀 시 소켓 상태 확�
       });
       document.dispatchEvent(new Event('visibilitychange'));
     });
-
-    await page.waitForTimeout(100);
 
     await page.evaluate(() => {
       Object.defineProperty(document, 'visibilityState', {
