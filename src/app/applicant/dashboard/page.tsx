@@ -4,16 +4,22 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useRouteNavigation } from '@/hooks/use-route-navigation';
 
+import { ApiError } from '@/lib/api-client';
 import {
   type ApplicantProfileOverview,
   getApplicantProfileOverview,
 } from '@/lib/applicant-profile-api';
 import { getSubmissionStatus } from '@/lib/onboarding-api';
 import { getProfileEditPath, type OnboardingProgress } from '@/lib/onboarding-flow';
-import { getInterviewRemaining, type InterviewRemainingData } from '@/lib/interview-api';
+import {
+  getInterviewRemaining,
+  requestInterviewAnalysis,
+  type InterviewRemainingData,
+} from '@/lib/interview-api';
 
 import { HiringProcessCard } from './_components/hiring-process-card';
 import { InterviewCallout } from './_components/interview-callout';
+import { InterviewResultSubmitModal } from './_components/interview-result-submit-modal';
 import { ProfileOverviewCard } from './_components/profile-overview-card';
 import { ReapplyNotice } from './_components/reapply-notice';
 
@@ -33,25 +39,31 @@ export default function ApplicantDashboardPage() {
   const [interviewRemaining, setInterviewRemaining] = useState<InterviewRemainingData | null>(null);
   const [isInterviewLoading, setIsInterviewLoading] = useState(true);
   const [hasInterviewError, setHasInterviewError] = useState(false);
+  const [isResultSubmitOpen, setIsResultSubmitOpen] = useState(false);
+  const [isResultSubmitting, setIsResultSubmitting] = useState(false);
+  const [resultSubmitError, setResultSubmitError] = useState<string | null>(null);
   const pollingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const isMountedRef = useRef(true);
+  const submittedSessionIdsRef = useRef(new Set<string>());
 
   const clearAllPollingTimers = useCallback(() => {
     pollingTimersRef.current.forEach((id: ReturnType<typeof setTimeout>) => clearTimeout(id));
     pollingTimersRef.current = [];
   }, []);
 
-  const loadInterviewRemaining = useCallback(async () => {
+  const loadInterviewRemaining = useCallback(async (): Promise<boolean> => {
     setIsInterviewLoading(true);
     try {
       const response = await getInterviewRemaining();
-      if (!isMountedRef.current) return;
+      if (!isMountedRef.current) return false;
       setInterviewRemaining(response.data);
       setHasInterviewError(false);
+      return true;
     } catch {
-      if (!isMountedRef.current) return;
+      if (!isMountedRef.current) return false;
       setInterviewRemaining(null);
       setHasInterviewError(true);
+      return false;
     } finally {
       if (isMountedRef.current) setIsInterviewLoading(false);
     }
@@ -146,6 +158,64 @@ export default function ApplicantDashboardPage() {
     push(getProfileEditPath(progress));
   };
 
+  const handleOpenResultSubmit = () => {
+    setResultSubmitError(null);
+    setIsResultSubmitOpen(true);
+  };
+
+  const handleSubmitResult = async () => {
+    const sessionId = interviewRemaining?.pendingSubmissionSessionId;
+    if (!sessionId || isResultSubmitting) return;
+
+    if (submittedSessionIdsRef.current.has(sessionId)) {
+      setIsResultSubmitting(true);
+      setResultSubmitError(null);
+      const didRefresh = await loadInterviewRemaining();
+      if (didRefresh) {
+        setIsResultSubmitOpen(false);
+      } else {
+        setResultSubmitError('제출 상태를 확인하지 못했습니다. 잠시 후 다시 확인해 주세요.');
+      }
+      if (isMountedRef.current) setIsResultSubmitting(false);
+      return;
+    }
+
+    submittedSessionIdsRef.current.add(sessionId);
+    setIsResultSubmitting(true);
+    setResultSubmitError(null);
+
+    try {
+      await requestInterviewAnalysis(sessionId);
+      const didRefresh = await loadInterviewRemaining();
+      if (!didRefresh) {
+        setResultSubmitError('제출 상태를 확인하지 못했습니다. 잠시 후 다시 확인해 주세요.');
+        return;
+      }
+      setIsResultSubmitOpen(false);
+    } catch (error) {
+      if (error instanceof ApiError && error.apiStatus === 'INTERVIEW_ANALYSIS_ALREADY_REQUESTED') {
+        const didRefresh = await loadInterviewRemaining();
+        if (didRefresh) {
+          setIsResultSubmitOpen(false);
+          return;
+        }
+        setResultSubmitError('제출 상태를 확인하지 못했습니다. 잠시 후 다시 확인해 주세요.');
+        return;
+      }
+
+      submittedSessionIdsRef.current.delete(sessionId);
+      setResultSubmitError('면접 결과 제출에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      if (isMountedRef.current) setIsResultSubmitting(false);
+    }
+  };
+
+  const isInterviewLocked =
+    !isInterviewLoading &&
+    !hasInterviewError &&
+    interviewRemaining?.remainingCount === 0 &&
+    interviewRemaining.pendingSubmissionSessionId === null;
+
   return (
     <div className="flex w-full flex-col gap-6">
       {hasOverviewError && (
@@ -196,13 +266,6 @@ export default function ApplicantDashboardPage() {
               </div>
             </section>
           </div>
-
-          <ReapplyNotice
-            reapplyDDay={null}
-            isLoading={isInterviewLoading}
-            hasError={hasInterviewError}
-            onRetry={() => void loadInterviewRemaining()}
-          />
         </>
       ) : (
         <>
@@ -218,21 +281,39 @@ export default function ApplicantDashboardPage() {
             <HiringProcessCard isDocumentAnalysisReady={isProfileReady} />
             <InterviewCallout
               canStartInterview={isProfileReady}
+              totalCount={interviewRemaining?.totalCount ?? null}
               remainingCount={interviewRemaining?.remainingCount ?? null}
+              hasPendingSubmission={interviewRemaining?.pendingSubmissionSessionId !== null}
+              isLocked={isInterviewLocked}
+              isLoading={isInterviewLoading}
+              hasError={hasInterviewError}
+              onRetry={() => void loadInterviewRemaining()}
+              onSubmitResult={handleOpenResultSubmit}
+            />
+          </div>
+
+          {isInterviewLocked && (
+            <ReapplyNotice
+              reapplyDDay={interviewRemaining?.reapplyDDay ?? null}
               isLoading={isInterviewLoading}
               hasError={hasInterviewError}
               onRetry={() => void loadInterviewRemaining()}
             />
-          </div>
-
-          <ReapplyNotice
-            reapplyDDay={interviewRemaining?.reapplyDDay ?? null}
-            isLoading={isInterviewLoading}
-            hasError={hasInterviewError}
-            onRetry={() => void loadInterviewRemaining()}
-          />
+          )}
         </>
       )}
+      <InterviewResultSubmitModal
+        open={isResultSubmitOpen}
+        isSubmitting={isResultSubmitting}
+        errorMessage={resultSubmitError}
+        canContinueInterview={(interviewRemaining?.remainingCount ?? 0) > 0}
+        onClose={() => {
+          if (isResultSubmitting) return;
+          setIsResultSubmitOpen(false);
+          setResultSubmitError(null);
+        }}
+        onSubmit={() => void handleSubmitResult()}
+      />
     </div>
   );
 }
