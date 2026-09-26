@@ -606,8 +606,8 @@ export function ApplicantListView({ jdId }: { jdId: string }) {
           </div>
           <div className="flex items-center gap-6">
             <SearchField value={keywordInput} onChange={setKeywordInput} onSubmit={submitKeyword} />
-            <Button type="button" size="xs" className="h-[42px] rounded-[10px]">
-              공고 수정
+            <Button asChild size="xs" className="h-[42px] rounded-[10px]">
+              <Link href={`/corporate/recruitment/${jdId}/edit`}>공고 수정</Link>
             </Button>
           </div>
         </div>

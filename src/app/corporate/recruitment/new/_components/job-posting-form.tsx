@@ -27,24 +27,59 @@ import {
 import { SkillStackInput } from './skill-stack-input';
 import { TraitPrioritySortableList } from './trait-priority-sortable-list';
 
-export function JobPostingForm() {
+type JobPostingFormProps = {
+  initialValue?: JobPostingRequest;
+  mode?: 'create' | 'edit';
+  isSubmitting?: boolean;
+  onSubmit?: (request: JobPostingRequest, isTemp: boolean) => Promise<void>;
+  onDelete?: () => void;
+};
+
+function getTraitPriorities(traitTitles: string[] | undefined) {
+  const traitsByNormalizedTitle = new Map(
+    TRAITS.map((trait) => [normalizeTraitTitle(trait.title), trait]),
+  );
+  const selectedTraits = (traitTitles ?? [])
+    .map((title) => traitsByNormalizedTitle.get(normalizeTraitTitle(title)))
+    .filter((trait): trait is TraitPriority => trait !== undefined);
+  const normalizedTraitTitles = new Set(
+    selectedTraits.map((trait) => normalizeTraitTitle(trait.title)),
+  );
+  const remainingTraits = TRAITS.filter(
+    (trait) => !normalizedTraitTitles.has(normalizeTraitTitle(trait.title)),
+  );
+
+  return [...selectedTraits, ...remainingTraits];
+}
+
+export function JobPostingForm({
+  initialValue,
+  mode = 'create',
+  isSubmitting: externalIsSubmitting,
+  onSubmit,
+  onDelete,
+}: JobPostingFormProps) {
   const router = useRouter();
   const createJobPosting = useCreateJobPosting();
-  const [jobCategory, setJobCategory] = useState('');
-  const [detailedJob, setDetailedJob] = useState('');
-  const [competencyPriorities, setCompetencyPriorities] = useState(['', '', '', '']);
-  const [requiredTechs, setRequiredTechs] = useState<string[]>([]);
-  const [traitPriorities, setTraitPriorities] = useState<TraitPriority[]>(() => [...TRAITS]);
+  const [jobCategory, setJobCategory] = useState(initialValue?.jobCategory ?? '');
+  const [detailedJob, setDetailedJob] = useState(initialValue?.detailedJob ?? '');
+  const [competencyPriorities, setCompetencyPriorities] = useState(() =>
+    [...(initialValue?.competencyPriorities ?? []), '', '', '', ''].slice(0, 4),
+  );
+  const [requiredTechs, setRequiredTechs] = useState<string[]>(initialValue?.requiredTechs ?? []);
+  const [traitPriorities, setTraitPriorities] = useState<TraitPriority[]>(() =>
+    getTraitPriorities(initialValue?.traitPriorities),
+  );
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [form, setForm] = useState({
-    title: '',
-    deadline: '',
-    jobDescription: '',
-    qualifications: '',
-    requirements: '',
-    preferredQualifications: '',
-    emailTitle: '',
-    emailContent: '',
+    title: initialValue?.title ?? '',
+    deadline: initialValue?.deadline ?? '',
+    jobDescription: initialValue?.jobDescription ?? '',
+    qualifications: initialValue?.qualifications ?? '',
+    requirements: initialValue?.requirements ?? '',
+    preferredQualifications: initialValue?.preferredQualifications ?? '',
+    emailTitle: initialValue?.emailTitle ?? '',
+    emailContent: initialValue?.emailContent ?? '',
   });
 
   const detailedJobOptions = useMemo(() => {
@@ -62,7 +97,7 @@ export function JobPostingForm() {
     form.emailContent.trim(),
   );
 
-  const isSubmitting = createJobPosting.isPending;
+  const isSubmitting = externalIsSubmitting ?? createJobPosting.isPending;
 
   const traitPriorityIds = useMemo(
     () => traitPriorities.map((trait) => trait.title),
@@ -117,8 +152,13 @@ export function JobPostingForm() {
     setSubmitMessage(null);
 
     try {
-      await createJobPosting.mutate(toRequestFormData(buildRequestDTO()), isTemp);
-      router.push('/corporate/dashboard');
+      const requestDTO = buildRequestDTO();
+      if (onSubmit) {
+        await onSubmit(requestDTO, isTemp);
+      } else {
+        await createJobPosting.mutate(toRequestFormData(requestDTO), isTemp);
+        router.push('/corporate/dashboard');
+      }
     } catch {
       setSubmitMessage('공고 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     }
@@ -129,7 +169,9 @@ export function JobPostingForm() {
       <FormCard>
         <div className="flex flex-col gap-[34px]">
           <div className="flex flex-col gap-2">
-            <h1 className="text-h2 text-text-secondary">공고를 작성해주세요.</h1>
+            <h1 className="text-h2 text-text-secondary">
+              {mode === 'edit' ? '공고를 수정해주세요.' : '공고를 작성해주세요.'}
+            </h1>
             <p className="text-body2 text-text-tertiary">
               기본 공고 및 원하는 지원자의 역량, 성향을 입력해주세요.
             </p>
@@ -274,16 +316,30 @@ export function JobPostingForm() {
               </p>
             )}
             <div className="flex justify-end gap-3.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="xs"
-                disabled={isSubmitting}
-                onClick={() => void handleSubmit(true)}
-                className="border-border-default bg-bg-primary h-[42px] rounded-[10px] shadow-none"
-              >
-                {isSubmitting ? '저장 중...' : '임시저장'}
-              </Button>
+              {mode === 'edit' && onDelete && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  disabled={isSubmitting}
+                  onClick={onDelete}
+                  className="text-error h-[42px] rounded-[10px]"
+                >
+                  공고 삭제
+                </Button>
+              )}
+              {mode === 'create' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  disabled={isSubmitting}
+                  onClick={() => void handleSubmit(true)}
+                  className="border-border-default bg-bg-primary h-[42px] rounded-[10px] shadow-none"
+                >
+                  {isSubmitting ? '저장 중...' : '임시저장'}
+                </Button>
+              )}
               <Button
                 type="button"
                 size="xs"
@@ -291,7 +347,7 @@ export function JobPostingForm() {
                 disabled={isSubmitting || !requiredFieldsFilled}
                 onClick={() => void handleSubmit(false)}
               >
-                {isSubmitting ? '저장 중...' : '저장'}
+                {isSubmitting ? '저장 중...' : mode === 'edit' ? '수정 저장' : '저장'}
               </Button>
             </div>
           </div>
