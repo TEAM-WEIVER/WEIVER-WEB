@@ -396,7 +396,7 @@ describe('이력서 온보딩 페이지', () => {
         AwardDTO: [],
         WorkExperienceDTO: [
           {
-            experienceId: 1,
+            workExperienceId: 1,
             companyName: '에이블리',
             position: '인턴',
             startDate: '2026-02-01',
@@ -454,7 +454,7 @@ describe('이력서 온보딩 페이지', () => {
         AwardDTO: [],
         WorkExperienceDTO: [
           {
-            experienceId: 1,
+            workExperienceId: 1,
             companyName: '에이블리',
             position: '인턴',
             startDate: '2026-02-01',

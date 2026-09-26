@@ -15,17 +15,20 @@ import { test, expect } from '../fixtures/auth';
 // ---------------------------------------------------------------------------
 
 const API = {
-  DOCUMENT_STATUS: '**/api/applicants/document-status',
+  SUBMISSION_STATUS: '**/api/applicants/submission-status',
   APPLICANTS: '**/api/applicants',
 } as const;
 
-const DOCUMENT_STATUS_OK = {
+const SUBMISSION_STATUS_OK = {
   status: 'OK',
   code: 200,
   data: {
     resumeCompleted: true,
     essayCompleted: true,
     portfolioCompleted: true,
+    submitted: false,
+    syncStatus: 'PENDING',
+    submittable: true,
   },
   message: 'OK',
 };
@@ -55,11 +58,11 @@ const APPLICANTS_OK = {
 
 /** API 즉시 응답 — 로딩 완료 상태 */
 async function mockDashboardSuccess(page: import('@playwright/test').Page) {
-  await page.route(API.DOCUMENT_STATUS, (route) =>
+  await page.route(API.SUBMISSION_STATUS, (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(DOCUMENT_STATUS_OK),
+      body: JSON.stringify(SUBMISSION_STATUS_OK),
     }),
   );
 
@@ -84,7 +87,7 @@ async function mockDashboardError(page: import('@playwright/test').Page) {
     message: '서버 오류',
   };
 
-  await page.route(API.DOCUMENT_STATUS, (route) =>
+  await page.route(API.SUBMISSION_STATUS, (route) =>
     route.fulfill({
       status: 500,
       contentType: 'application/json',
@@ -108,7 +111,7 @@ async function mockDashboardError(page: import('@playwright/test').Page) {
 
 test('AC1: API 응답 전 스켈레톤이 표시되고 "로딩 중..." 텍스트는 없다', async ({ page }) => {
   // Given — API 응답을 무기한 지연
-  await page.route(API.DOCUMENT_STATUS, (_route) => {
+  await page.route(API.SUBMISSION_STATUS, (_route) => {
     // 응답을 보내지 않아 로딩 상태 유지
   });
   await page.route(API.APPLICANTS, (route) => {
@@ -130,7 +133,7 @@ test('AC1: API 응답 전 스켈레톤이 표시되고 "로딩 중..." 텍스트
 
 test('AC1: 로딩 중에도 ReapplyNotice는 항상 렌더링된다', async ({ page }) => {
   // Given — API 응답 지연
-  await page.route(API.DOCUMENT_STATUS, (_route) => {});
+  await page.route(API.SUBMISSION_STATUS, (_route) => {});
   await page.route(API.APPLICANTS, (route) => {
     if (route.request().method() !== 'GET') return route.continue();
     // 응답 없음 — 로딩 상태 유지

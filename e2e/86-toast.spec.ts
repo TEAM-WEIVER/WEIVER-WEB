@@ -156,12 +156,8 @@ test.describe('AC3: 자동 소멸', () => {
     const toast = page.getByRole('status').filter({ hasText: '자동소멸 테스트' });
     await expect(toast).toBeVisible();
 
-    // When: duration(1000ms) 이 경과한다
-    // (기본값 3000ms 대신 1000ms 를 사용해 테스트 실행 시간 단축)
-    await page.waitForTimeout(1500);
-
-    // Then: 토스트가 화면에서 제거된다
-    await expect(toast).toHaveCount(0);
+    // Then: duration(1000ms) 경과 후 토스트가 제거된다
+    await expect(toast).toHaveCount(0, { timeout: 1500 });
   });
 });
 
