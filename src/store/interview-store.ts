@@ -82,7 +82,7 @@ interface InterviewState {
   setQuestion: (payload: QuestionReadyPayload) => void;
   setAnswerAccepted: () => void;
   setError: (message: string | null) => void;
-  setFinished: () => void;
+  setFinished: (sessionId: string) => boolean;
   reset: () => void;
 }
 
@@ -137,15 +137,18 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
       errorMessage: message,
     }),
 
-  setFinished: () =>
+  // 종료 이벤트가 현재 세션과 일치할 때만 세션 ID를 보존한 채 종료한다.
+  // 분석 요청이 이 ID를 사용하므로 대시보드 이탈 전에는 초기화하지 않는다.
+  setFinished: (sessionId) => {
+    if (!sessionId || get().interviewSessionId !== sessionId) return false;
+
     set({
       status: 'FINISHED',
-      interviewSessionId: null,
       currentQuestion: null,
-      currentQuestionCode: null,
-      currentSequence: null,
       lastReceivedKey: null,
-    }),
+    });
+    return true;
+  },
 
   reset: () => set(initialState),
 }));
