@@ -27,6 +27,10 @@ import {
   putExperiences,
   saveApplicantInfo,
   type ApplicantsAllData,
+  type AwardUpdateDTO,
+  type CertificateUpdateDTO,
+  type EducationUpdateDTO,
+  type WorkExperienceUpdateDTO,
 } from '@/lib/onboarding-api';
 import { resumeSchema, type ResumeData } from '@/schemas/onboarding';
 
@@ -123,7 +127,7 @@ function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
     careers:
       careers.length > 0
         ? careers.map((c) => ({
-            workExperienceId: c.experienceId,
+            workExperienceId: c.workExperienceId,
             isRecognized: c.isRecognized ?? true,
             company: c.companyName ?? '',
             startDate: c.startDate ?? '',
@@ -152,6 +156,23 @@ function mapApplicantsToResumeForm(data: ApplicantsAllData): ResumeData {
           }))
         : [{ ...EMPTY_AWARD }],
   };
+}
+
+function buildSnapshotRequest(
+  hasSaved: boolean,
+  hasItems: boolean,
+  postFn: () => Promise<unknown>,
+  putFn: () => Promise<unknown>,
+): Promise<unknown> | null {
+  if (hasSaved) {
+    // 기존 데이터가 있으면 항상 PUT (빈 배열 PUT = 전체 삭제)
+    return putFn();
+  }
+  if (hasItems) {
+    // 신규 항목이 있을 때만 POST
+    return postFn();
+  }
+  return null;
 }
 
 function getResumeValidationMessage(errors: FieldErrors<ResumeData>) {
@@ -259,10 +280,8 @@ export default function ResumePage() {
 
       await saveApplicantInfo(formData);
 
-      const subRequests: Promise<unknown>[] = [];
-
       const validEducations = data.education.filter((e) => !isEmptyEducation(e));
-      const educationPayload = validEducations.map((e) => ({
+      const educationPayload: EducationUpdateDTO[] = validEducations.map((e) => ({
         educationId: e.educationId,
         degreeType: e.type ? (DEGREE_LABEL_TO_ENUM[e.type] ?? e.type) : '',
         schoolName: e.school,
@@ -272,17 +291,9 @@ export default function ResumePage() {
         endDate: e.graduationDate,
         status: e.status ? (EDUCATION_STATUS_LABEL_TO_ENUM[e.status] ?? e.status) : undefined,
       }));
-      // 빈 배열 PUT = 전체 삭제 의도 (사용자가 항목을 모두 제거한 경우)
-      if (hasSavedEducationsRef.current) {
-        subRequests.push(putEducations(educationPayload));
-      } else if (educationPayload.length > 0) {
-        subRequests.push(
-          postEducations(educationPayload.map(({ educationId: _id, ...rest }) => rest)),
-        );
-      }
 
       const validCareers = data.careers.filter((c) => !isEmptyCareer(c));
-      const careerPayload = validCareers.map((c) => ({
+      const careerPayload: WorkExperienceUpdateDTO[] = validCareers.map((c) => ({
         workExperienceId: c.workExperienceId,
         companyName: c.company,
         startDate: c.startDate,
@@ -292,41 +303,58 @@ export default function ResumePage() {
         duties: c.duty,
         isRecognized: c.isRecognized ?? true,
       }));
-      if (hasSavedExperiencesRef.current) {
-        subRequests.push(putExperiences(careerPayload));
-      } else if (careerPayload.length > 0) {
-        subRequests.push(
-          postExperiences(careerPayload.map(({ workExperienceId: _id, ...rest }) => rest)),
-        );
-      }
 
       const validCertifications = data.certifications.filter((c) => !isEmptyCertification(c));
-      const certificatePayload = validCertifications.map((c) => ({
+      const certificatePayload: CertificateUpdateDTO[] = validCertifications.map((c) => ({
         certificateId: c.certificateId,
         certificateName: c.name,
         acquisitionDate: c.acquiredDate,
         issuer: c.issuer,
       }));
-      if (hasSavedCertificatesRef.current) {
-        subRequests.push(putCertificates(certificatePayload));
-      } else if (certificatePayload.length > 0) {
-        subRequests.push(
-          postCertificates(certificatePayload.map(({ certificateId: _id, ...rest }) => rest)),
-        );
-      }
 
       const validAwards = data.awards.filter((a) => !isEmptyAward(a));
-      const awardPayload = validAwards.map((a) => ({
+      const awardPayload: AwardUpdateDTO[] = validAwards.map((a) => ({
         awardId: a.awardId,
         awardName: a.name,
         awardDate: a.date,
         issuer: a.issuer,
       }));
-      if (hasSavedAwardsRef.current) {
-        subRequests.push(putAwards(awardPayload));
-      } else if (awardPayload.length > 0) {
-        subRequests.push(postAwards(awardPayload.map(({ awardId: _id, ...rest }) => rest)));
-      }
+
+      // 빈 배열 PUT = 전체 삭제 의도 (사용자가 항목을 모두 제거한 경우)
+      // POST는 ID 필드 없이 전송하므로 별도의 create payload를 준비한다
+      const educationCreatePayload = educationPayload.map(({ educationId: _id, ...rest }) => rest);
+      const careerCreatePayload = careerPayload.map(({ workExperienceId: _id, ...rest }) => rest);
+      const certificateCreatePayload = certificatePayload.map(
+        ({ certificateId: _id, ...rest }) => rest,
+      );
+      const awardCreatePayload = awardPayload.map(({ awardId: _id, ...rest }) => rest);
+
+      const subRequests: Promise<unknown>[] = [
+        buildSnapshotRequest(
+          hasSavedEducationsRef.current,
+          educationCreatePayload.length > 0,
+          () => postEducations(educationCreatePayload),
+          () => putEducations(educationPayload),
+        ),
+        buildSnapshotRequest(
+          hasSavedExperiencesRef.current,
+          careerCreatePayload.length > 0,
+          () => postExperiences(careerCreatePayload),
+          () => putExperiences(careerPayload),
+        ),
+        buildSnapshotRequest(
+          hasSavedCertificatesRef.current,
+          certificateCreatePayload.length > 0,
+          () => postCertificates(certificateCreatePayload),
+          () => putCertificates(certificatePayload),
+        ),
+        buildSnapshotRequest(
+          hasSavedAwardsRef.current,
+          awardCreatePayload.length > 0,
+          () => postAwards(awardCreatePayload),
+          () => putAwards(awardPayload),
+        ),
+      ].filter((p): p is Promise<unknown> => p !== null);
 
       const results = await Promise.allSettled(subRequests);
       const hasFailure = results.some((r) => r.status === 'rejected');
@@ -347,6 +375,12 @@ export default function ResumePage() {
         setSubmitError('오류가 발생했습니다. 다시 시도해주세요.');
         return;
       }
+
+      // 제출 성공 후 ref를 서버 응답 기반으로 갱신하여 다음 제출 시 PUT을 사용하도록 한다
+      hasSavedEducationsRef.current = educationPayload.length > 0;
+      hasSavedExperiencesRef.current = careerPayload.length > 0;
+      hasSavedCertificatesRef.current = certificatePayload.length > 0;
+      hasSavedAwardsRef.current = awardPayload.length > 0;
 
       navigateNext();
     } catch {

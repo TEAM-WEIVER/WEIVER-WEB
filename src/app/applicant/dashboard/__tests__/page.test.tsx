@@ -51,6 +51,9 @@ describe('지원자 대시보드 페이지 — 스켈레톤 분기', () => {
         'cover-letter': true,
         portfolio: true,
       },
+      submitted: false,
+      syncStatus: 'PENDING',
+      submittable: false,
     });
   });
 
