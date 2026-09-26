@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>#103 채용공고 수정 목업</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f6f7f9;
+        color: #202124;
+        font:
+          14px system-ui,
+          sans-serif;
+      }
+      main {
+        width: min(1040px, calc(100% - 48px));
+        margin: 48px auto;
+      }
+      section {
+        margin: 28px 0;
+        padding: 28px;
+        border: 1px solid #ddd;
+        border-radius: 16px;
+        background: #fff;
+      }
+      h1,
+      h2 {
+        margin: 0 0 10px;
+      }
+      h2 {
+        font-size: 18px;
+      }
+      .hint {
+        color: #69707a;
+      }
+      .row {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      label {
+        display: grid;
+        gap: 7px;
+        flex: 1 1 260px;
+        font-weight: 600;
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        min-height: 42px;
+        padding: 10px;
+        border: 1px solid #b8bec8;
+        border-radius: 8px;
+        background: white;
+        font: inherit;
+      }
+      textarea {
+        min-height: 88px;
+        resize: vertical;
+      }
+      button {
+        min-height: 40px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 8px;
+        background: #4f46e5;
+        color: white;
+        font: inherit;
+        font-weight: 700;
+      }
+      button.secondary {
+        border: 1px solid #b8bec8;
+        background: white;
+        color: #30343a;
+      }
+      button.danger {
+        background: #c73535;
+      }
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 24px;
+      }
+      .alert {
+        padding: 12px;
+        border-radius: 8px;
+        background: #fff0f0;
+        color: #a32222;
+      }
+      .skeleton {
+        height: 42px;
+        margin: 12px 0;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #edf0f3, #f8f9fa, #edf0f3);
+      }
+      dialog {
+        border: 0;
+        border-radius: 16px;
+        box-shadow: 0 16px 50px #0004;
+        padding: 24px;
+      }
+      dialog::backdrop {
+        background: #0006;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>채용공고 수정 — #103</h1>
+      <p class="hint">지원자 목록 → 공고 수정 → 수정/삭제 상태를 검증하는 구조 목업</p>
+
+      <section aria-labelledby="loading-title">
+        <h2 id="loading-title">AC1 — 로딩</h2>
+        <p class="hint">GET /api/job-postings/{jdId} 요청 중</p>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </section>
+
+      <section aria-labelledby="edit-title">
+        <h2 id="edit-title">AC1·AC2 — 조회 성공 및 전체 스냅샷 수정</h2>
+        <p class="hint">
+          모든 폼 값은 GET 응답으로 초기화되고, 저장 시 updateDTO JSON Blob으로 전송됩니다.
+        </p>
+        <div class="row">
+          <label>공고 제목<input value="2026 상반기 프론트엔드 개발자 채용" /></label>
+          <label>공고 마감일<input value="2026-05-31" /></label>
+        </div>
+        <div class="row">
+          <label
+            >직무 선택<select>
+              <option>개발</option>
+            </select></label
+          >
+          <label
+            >세부 직무 선택<select>
+              <option>프론트엔드 개발자</option>
+            </select></label
+          >
+        </div>
+        <label>업무 소개<textarea>사용자 경험을 만드는 웹 서비스를 개발합니다.</textarea></label>
+        <label>지원 자격<textarea>React와 TypeScript 경험</textarea></label>
+        <label>메일 제목<input value="[WEIVER] 지원 결과 안내" /></label>
+        <label>메일 내용<textarea>지원해 주셔서 감사합니다.</textarea></label>
+        <p class="hint">
+          역량 우선순위 · 기술 스택 · 성향 우선순위도 기존 생성 폼과 동일하게 표시합니다.
+        </p>
+        <div class="actions">
+          <button
+            class="danger"
+            type="button"
+            onclick="document.querySelector('dialog').showModal()"
+          >
+            공고 삭제
+          </button>
+          <button class="secondary" type="button">지원자 목록으로</button>
+          <button type="button">수정 저장</button>
+        </div>
+      </section>
+
+      <section aria-labelledby="error-title">
+        <h2 id="error-title">AC3·AC5 — 조회/저장/삭제 실패</h2>
+        <p class="alert" role="alert">
+          공고 저장에 실패했습니다. 입력한 내용을 확인한 뒤 다시 시도해 주세요.
+        </p>
+        <div class="actions"><button type="button">다시 시도</button></div>
+      </section>
+
+      <dialog aria-labelledby="delete-title">
+        <h2 id="delete-title">공고를 삭제할까요?</h2>
+        <p>삭제한 공고는 복구할 수 없습니다.</p>
+        <div class="actions">
+          <button class="secondary" type="button" onclick="this.closest('dialog').close()">
+            취소
+          </button>
+          <button class="danger" type="button">삭제</button>
+        </div>
+      </dialog>
+    </main>
+  </body>
+</html>
