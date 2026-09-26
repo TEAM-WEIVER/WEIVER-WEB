@@ -450,21 +450,18 @@ test('AC2: education PUT 실패 시 GET으로 서버 데이터 재조회 후 에
 
 test('AC2: GET 재조회도 실패 시 "페이지 새로고침" 안내 메시지를 표시한다', async ({ page }) => {
   // Given — education PUT 실패, GET 재조회도 실패
-  let getCallCount = 0;
+  let failReload = false;
 
   await page.route(API.APPLICANTS_GET, async (route) => {
     if (route.request().method() !== 'GET') {
       await route.continue();
       return;
     }
-    getCallCount++;
-    // React StrictMode(개발 서버)에서 useEffect가 두 번 실행되므로 초기 로드 시 GET이 최대 2회
-    // 발생할 수 있다. getCallCount <= 2까지는 성공으로 처리하고 이후(재조회)를 실패로 설정한다.
-    if (getCallCount <= 2) {
-      await fulfillJson(route, 200, APPLICANTS_WITH_DATA);
-    } else {
-      await fulfillJson(route, 500, SERVER_ERROR);
-    }
+    await fulfillJson(
+      route,
+      failReload ? 500 : 200,
+      failReload ? SERVER_ERROR : APPLICANTS_WITH_DATA,
+    );
   });
 
   // mockSnapshotSuccess로 기본 성공 목 등록 후 education만 실패로 덮어씀
@@ -479,9 +476,11 @@ test('AC2: GET 재조회도 실패 시 "페이지 새로고침" 안내 메시지
   });
 
   await gotoResume(page);
-  // StrictMode의 두 번째 fetch가 완료될 때까지 안정화 대기
+  // 개발 모드 StrictMode의 추가 GET까지 모두 초기 로드 성공으로 처리한다.
   await page.waitForLoadState('networkidle');
   await fillRequiredPersonalInfo(page);
+  // 저장 실패 이후에 발생하는 재조회만 실패시킨다.
+  failReload = true;
   await page.getByRole('button', { name: '다음' }).click();
 
   // Then — 재조회 실패 시 더 강한 안내 메시지 표시

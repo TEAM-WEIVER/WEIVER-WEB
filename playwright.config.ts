@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const e2ePort = process.env.E2E_PORT ?? '3000';
+
 export default defineConfig({
   testDir: './e2e',
   testIgnore: '**/*.live.spec.ts',
@@ -9,7 +11,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'html',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: `http://localhost:${e2ePort}`,
     trace: 'on-first-retry',
   },
   projects: [
@@ -20,9 +22,9 @@ export default defineConfig({
   ],
   webServer: {
     command: process.env.CI
-      ? 'NEXT_PUBLIC_E2E_TEST=true pnpm start'
-      : 'NEXT_PUBLIC_E2E_TEST=true pnpm dev',
-    url: 'http://localhost:3000',
+      ? `NEXT_PUBLIC_E2E_TEST=true pnpm exec next start --port ${e2ePort}`
+      : `NEXT_PUBLIC_E2E_TEST=true pnpm exec next dev --port ${e2ePort}`,
+    url: `http://localhost:${e2ePort}`,
     reuseExistingServer: !process.env.CI,
   },
 });

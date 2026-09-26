@@ -187,19 +187,6 @@ async function gotoDashboard(page: Page) {
   await loadResponse;
 }
 
-/**
- * submission-status 초기 호출 횟수를 반환한다.
- *
- * getApplicantProfileOverview()는 내부에서 getSubmissionStatus()를 호출한다.
- * React StrictMode나 개발 환경의 double-invoke로 인해 초기 로드 시 2회 호출될 수 있다.
- * waitForResponse를 통해 실제 초기 호출 횟수를 파악한 뒤 이후 폴링 횟수를 검증한다.
- */
-async function waitForInitialLoad(page: Page): Promise<number> {
-  // 대기 중인 submission-status 요청이 더 없을 때까지 짧게 기다린다
-  await page.waitForLoadState('networkidle');
-  return 0; // 실제 count는 외부에서 관리
-}
-
 // ---------------------------------------------------------------------------
 // AC9: submission-status API 호출 + 세 필드 각각 개별 매핑 검증
 // Major: resumeCompleted/essayCompleted/portfolioCompleted 각 필드 false→true 전환 시 UI 매핑
@@ -370,10 +357,11 @@ test('AC11: syncStatus가 REQUESTED이면 폴링이 시작된다 (fake clock, 10
   const initialCallCount = callCount;
 
   // 10초 경과 시뮬레이션 (1차 폴링 트리거)
-  await page.clock.fastForward(11_000);
-  await page.waitForResponse((response) =>
+  const pollingResponse = page.waitForResponse((response) =>
     response.url().includes('/api/applicants/submission-status'),
   );
+  await page.clock.fastForward(11_000);
+  await pollingResponse;
 
   // Then — 폴링이 1회 발생했음 (초기 호출 이후 +1)
   expect(callCount).toBe(initialCallCount + 1);
@@ -386,14 +374,15 @@ test('AC11: syncStatus REQUESTED → COMPLETED로 전환되면 폴링을 중단�
   await page.clock.install({ time: 0 });
 
   let callCount = 0;
+  let returnCompleted = false;
 
   await page.route(API.SUBMISSION_STATUS, async (route) => {
     callCount++;
-    if (callCount === 1) {
-      await fulfillJson(route, 200, SUBMISSION_STATUS_REQUESTED);
-    } else {
-      await fulfillJson(route, 200, SUBMISSION_STATUS_COMPLETED);
-    }
+    await fulfillJson(
+      route,
+      200,
+      returnCompleted ? SUBMISSION_STATUS_COMPLETED : SUBMISSION_STATUS_REQUESTED,
+    );
   });
   await mockApplicantsGet(page);
 
@@ -402,14 +391,15 @@ test('AC11: syncStatus REQUESTED → COMPLETED로 전환되면 폴링을 중단�
   // 초기 응답 대기 — 개발 환경 StrictMode double-invoke 포함한 모든 초기 호출 완료
   await page.waitForLoadState('networkidle');
   const initialCallCount = callCount;
+  // StrictMode 여부와 관계없이 초기 로드는 REQUESTED, 첫 폴링부터 COMPLETED로 응답한다.
+  returnCompleted = true;
 
   // 10초 경과 시뮬레이션 (1차 폴링 트리거)
-  await page.clock.fastForward(11_000);
-
-  // 폴링 응답 대기
-  await page.waitForResponse((response) =>
+  const pollingResponse = page.waitForResponse((response) =>
     response.url().includes('/api/applicants/submission-status'),
   );
+  await page.clock.fastForward(11_000);
+  await pollingResponse;
 
   // Then — 폴링이 1회 발생했음 (초기 호출 이후 +1)
   expect(callCount).toBe(initialCallCount + 1);
@@ -440,17 +430,19 @@ test('AC11: 2회 폴링 후에도 REQUESTED이면 폴링을 중단한다 (2회 �
   const initialCallCount = callCount;
 
   // 10초 경과 → 1차 폴링
-  await page.clock.fastForward(11_000);
-  await page.waitForResponse((response) =>
+  const firstPollingResponse = page.waitForResponse((response) =>
     response.url().includes('/api/applicants/submission-status'),
   );
+  await page.clock.fastForward(11_000);
+  await firstPollingResponse;
   expect(callCount).toBe(initialCallCount + 1);
 
   // 10초 더 경과(총 20초) → 2차 폴링
-  await page.clock.fastForward(11_000);
-  await page.waitForResponse((response) =>
+  const secondPollingResponse = page.waitForResponse((response) =>
     response.url().includes('/api/applicants/submission-status'),
   );
+  await page.clock.fastForward(11_000);
+  await secondPollingResponse;
   expect(callCount).toBe(initialCallCount + 2);
 
   // Then — 이후 추가 폴링 없음 (폴링 중단 확인, callCount 고정)
