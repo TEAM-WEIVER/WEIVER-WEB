@@ -15,7 +15,12 @@ import {
   getOnboardingStepTitle,
   getPrevOnboardingStep,
 } from '@/lib/onboarding-flow';
-import { getPortfolio, patchPortfolio, postPortfolio } from '@/lib/onboarding-api';
+import {
+  getPortfolio,
+  patchPortfolio,
+  postPortfolio,
+  postProfileSubmit,
+} from '@/lib/onboarding-api';
 import { portfolioSchema, type PortfolioData } from '@/schemas/onboarding';
 
 import { OnboardingStepShell } from '../_components/onboarding-step-shell';
@@ -117,6 +122,8 @@ export default function PortfolioPage() {
     setIsSubmitting(true);
     setSubmitError(null);
 
+    let uploadSuccess = false;
+
     try {
       const formData = new FormData();
       const requestDTO = {
@@ -135,14 +142,29 @@ export default function PortfolioPage() {
       if (portfolioId != null) {
         await patchPortfolio(portfolioId, formData);
       } else {
-        await postPortfolio(formData);
+        const postRes = await postPortfolio(formData);
+        const maybeId = (postRes.data as unknown as { portfolioId?: number } | null)?.portfolioId;
+        if (typeof maybeId === 'number') {
+          setPortfolioId(maybeId);
+        }
       }
 
-      push('/applicant/dashboard');
+      uploadSuccess = true;
     } catch {
       setSubmitError('업로드 중 오류가 발생했습니다. 다시 시도해주세요.');
-    } finally {
       setIsSubmitting(false);
+      return;
+    }
+
+    if (uploadSuccess) {
+      try {
+        await postProfileSubmit();
+        push('/applicant/dashboard');
+      } catch {
+        setSubmitError('제출 중 오류가 발생했습니다. 다시 시도해주세요.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 

@@ -11,7 +11,7 @@ vi.mock('../api-client', async (importOriginal) => ({
 describe('applicant-profile-api', () => {
   beforeEach(() => {
     vi.mocked(apiRequest).mockImplementation((path) => {
-      if (path === '/api/applicants/document-status') {
+      if (path === '/api/applicants/submission-status') {
         return Promise.resolve({
           status: 'OK',
           code: 200,
@@ -19,6 +19,9 @@ describe('applicant-profile-api', () => {
             resumeCompleted: true,
             essayCompleted: true,
             portfolioCompleted: true,
+            submitted: false,
+            syncStatus: 'PENDING',
+            submittable: false,
           },
           message: 'OK',
         });
@@ -64,16 +67,19 @@ describe('applicant-profile-api', () => {
         'cover-letter': true,
         portfolio: true,
       },
+      submitted: false,
+      syncStatus: 'PENDING',
+      submittable: false,
     });
 
     expect(apiRequest).toHaveBeenCalledTimes(2);
-    expect(apiRequest).toHaveBeenCalledWith('/api/applicants/document-status');
+    expect(apiRequest).toHaveBeenCalledWith('/api/applicants/submission-status');
     expect(apiRequest).toHaveBeenCalledWith('/api/applicants');
   });
 
   it('지원자 전화번호가 없고 제출 서류가 미완료이면 그대로 반환한다', async () => {
     vi.mocked(apiRequest).mockImplementation((path) => {
-      if (path === '/api/applicants/document-status') {
+      if (path === '/api/applicants/submission-status') {
         return Promise.resolve({
           status: 'OK',
           code: 200,
@@ -81,6 +87,9 @@ describe('applicant-profile-api', () => {
             resumeCompleted: false,
             essayCompleted: false,
             portfolioCompleted: false,
+            submitted: false,
+            syncStatus: 'PENDING',
+            submittable: false,
           },
           message: 'OK',
         });
@@ -120,6 +129,9 @@ describe('applicant-profile-api', () => {
         'cover-letter': false,
         portfolio: false,
       },
+      submitted: false,
+      syncStatus: 'PENDING',
+      submittable: false,
     });
   });
 });

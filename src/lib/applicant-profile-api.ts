@@ -1,4 +1,5 @@
-import { getApplicantsAll, getDocumentStatus } from './onboarding-api';
+import { getApplicantsAll, getSubmissionStatus } from './onboarding-api';
+import type { SyncStatus } from './onboarding-api';
 import type { OnboardingProgress } from './onboarding-flow';
 
 export interface ApplicantDetail {
@@ -12,29 +13,42 @@ export interface ApplicantDetail {
 export interface ApplicantProfileOverview {
   applicant?: ApplicantDetail;
   progress: OnboardingProgress;
+  submitted: boolean;
+  syncStatus: SyncStatus;
+  submittable: boolean;
 }
 
 export async function getApplicantProfileOverview(): Promise<ApplicantProfileOverview> {
-  const [documentStatusResponse, applicantsAllResponse] = await Promise.all([
-    getDocumentStatus(),
+  const [submissionStatusResult, applicantsAllResult] = await Promise.allSettled([
+    getSubmissionStatus(),
     getApplicantsAll(),
   ]);
-  const applicant = applicantsAllResponse.data.ApplicantDTO;
+
+  if (submissionStatusResult.status === 'rejected') {
+    throw submissionStatusResult.reason;
+  }
+
+  const status = submissionStatusResult.value.data;
+  const applicantDTO =
+    applicantsAllResult.status === 'fulfilled' ? applicantsAllResult.value.data.ApplicantDTO : null;
 
   return {
-    applicant: applicant
+    applicant: applicantDTO
       ? {
-          photoUrl: applicant.photoUrl,
-          name: applicant.name,
-          birthday: applicant.birthday,
-          phoneNumber: applicant.phoneNumber,
-          email: applicant.email,
+          photoUrl: applicantDTO.photoUrl,
+          name: applicantDTO.name,
+          birthday: applicantDTO.birthday,
+          phoneNumber: applicantDTO.phoneNumber,
+          email: applicantDTO.email,
         }
       : undefined,
     progress: {
-      resume: documentStatusResponse.data.resumeCompleted,
-      'cover-letter': documentStatusResponse.data.essayCompleted,
-      portfolio: documentStatusResponse.data.portfolioCompleted,
+      resume: status.resumeCompleted,
+      'cover-letter': status.essayCompleted,
+      portfolio: status.portfolioCompleted,
     },
+    submitted: status.submitted,
+    syncStatus: status.syncStatus,
+    submittable: status.submittable,
   };
 }

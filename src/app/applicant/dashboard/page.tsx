@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useRouteNavigation } from '@/hooks/use-route-navigation';
 
@@ -8,6 +8,7 @@ import {
   type ApplicantProfileOverview,
   getApplicantProfileOverview,
 } from '@/lib/applicant-profile-api';
+import { getSubmissionStatus } from '@/lib/onboarding-api';
 import { getProfileEditPath, type OnboardingProgress } from '@/lib/onboarding-flow';
 
 import { HiringProcessCard } from './_components/hiring-process-card';
@@ -21,36 +22,100 @@ const EMPTY_PROGRESS: OnboardingProgress = {
   portfolio: false,
 };
 
+const POLLING_INTERVALS = [10_000, 10_000] as const; // 10초 후 1회, 20초 후 1회
+
 export default function ApplicantDashboardPage() {
   const { push } = useRouteNavigation();
   const [overview, setOverview] = useState<ApplicantProfileOverview | null>(null);
   const [hasOverviewError, setHasOverviewError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const pollingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const isMountedRef = useRef(true);
+
+  const clearAllPollingTimers = useCallback(() => {
+    pollingTimersRef.current.forEach((id: ReturnType<typeof setTimeout>) => clearTimeout(id));
+    pollingTimersRef.current = [];
+  }, []);
+
+  const startPolling = useCallback(() => {
+    clearAllPollingTimers();
+
+    let pollCount = 0;
+
+    function scheduleNext(delay: number) {
+      const timerId = setTimeout(async () => {
+        if (!isMountedRef.current) return;
+
+        try {
+          const res = await getSubmissionStatus();
+          if (!isMountedRef.current) return;
+
+          const { syncStatus } = res.data;
+
+          setOverview((prev: ApplicantProfileOverview | null) =>
+            prev
+              ? {
+                  ...prev,
+                  syncStatus: res.data.syncStatus,
+                  submitted: res.data.submitted,
+                  submittable: res.data.submittable,
+                  progress: {
+                    resume: res.data.resumeCompleted,
+                    'cover-letter': res.data.essayCompleted,
+                    portfolio: res.data.portfolioCompleted,
+                  },
+                }
+              : prev,
+          );
+
+          if (syncStatus === 'COMPLETED' || syncStatus === 'FAILED') {
+            clearAllPollingTimers();
+            return;
+          }
+
+          pollCount += 1;
+          if (pollCount < POLLING_INTERVALS.length) {
+            scheduleNext(POLLING_INTERVALS[pollCount]);
+          }
+        } catch {
+          // 폴링 중 에러는 무시하고 중단
+          clearAllPollingTimers();
+        }
+      }, delay);
+
+      pollingTimersRef.current.push(timerId);
+    }
+
+    scheduleNext(POLLING_INTERVALS[0]);
+  }, [clearAllPollingTimers]);
 
   useEffect(() => {
-    let isMounted = true;
+    isMountedRef.current = true;
 
     getApplicantProfileOverview()
       .then((nextOverview) => {
-        if (isMounted) {
-          setOverview(nextOverview);
-          setHasOverviewError(false);
+        if (!isMountedRef.current) return;
+        setOverview(nextOverview);
+        setHasOverviewError(false);
+
+        if (nextOverview.syncStatus === 'REQUESTED') {
+          startPolling();
         }
       })
       .catch(() => {
-        if (isMounted) {
-          setOverview(null);
-          setHasOverviewError(true);
-        }
+        if (!isMountedRef.current) return;
+        setOverview(null);
+        setHasOverviewError(true);
       })
       .finally(() => {
-        if (isMounted) setIsLoading(false);
+        if (isMountedRef.current) setIsLoading(false);
       });
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
+      clearAllPollingTimers();
     };
-  }, []);
+  }, [startPolling, clearAllPollingTimers]);
 
   const progress = overview?.progress ?? EMPTY_PROGRESS;
   const isProfileReady = Object.values(progress).every(Boolean);
@@ -62,7 +127,6 @@ export default function ApplicantDashboardPage() {
   return (
     <div className="flex w-full flex-col gap-6">
       {hasOverviewError && (
-        // TODO: 실패 창이나 모달 추후에 하나 만들긴 해야 할 듯
         <p className="text-body2 text-text-tertiary">
           프로필 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
         </p>
@@ -118,6 +182,8 @@ export default function ApplicantDashboardPage() {
           <ProfileOverviewCard
             applicant={overview?.applicant}
             progress={progress}
+            submitted={overview?.submitted ?? false}
+            submittable={overview?.submittable ?? false}
             onEditProfile={handleProfileEdit}
           />
 
