@@ -21,6 +21,7 @@ const API = {
   SUBMISSION_STATUS: '**/api/applicants/submission-status',
   DOCUMENT_STATUS: '**/api/applicants/document-status',
   APPLICANTS: '**/api/applicants',
+  INTERVIEW_REMAINING: '**/api/interviews/remaining',
 } as const;
 
 // submission-status 응답 — 모든 항목 완료, 미제출
@@ -167,6 +168,26 @@ const SERVER_ERROR = {
   data: null,
   message: '서버 오류',
 };
+
+const INTERVIEW_REMAINING_OK = {
+  status: 'OK',
+  code: 200,
+  data: {
+    totalCount: 1,
+    remainingCount: 1,
+    reapplyDDay: 0,
+    reapplyAvailableDate: '2026-10-13',
+    pendingSubmissionSessionId: null,
+  },
+  message: 'OK',
+};
+
+test.beforeEach(async ({ page }) => {
+  // #101: 대시보드의 독립 면접 상태 조회가 fake-clock 폴링 검증의 networkidle을 막지 않도록 한다.
+  await page.route(API.INTERVIEW_REMAINING, async (route) => {
+    await fulfillJson(route, 200, INTERVIEW_REMAINING_OK);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // 헬퍼

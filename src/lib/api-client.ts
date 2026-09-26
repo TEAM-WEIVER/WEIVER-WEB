@@ -14,7 +14,7 @@ const CSRF_EXCLUDED_PATHS = new Set([
 ]);
 const AUTHORIZATION_EXCLUDED_PATHS = new Set([...CSRF_EXCLUDED_PATHS, REISSUE_PATH]);
 
-interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
+export interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown | FormData;
   skipCsrf?: boolean;
   skipAuthorization?: boolean;
@@ -30,6 +30,9 @@ interface ApiResponse<TData> {
 
 interface ApiErrorResponse {
   message?: unknown;
+  status?: unknown;
+  errorCode?: unknown;
+  code?: unknown;
 }
 
 interface CsrfData {
@@ -44,6 +47,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    public readonly apiStatus?: string,
+    public readonly code?: number,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -147,17 +152,27 @@ export async function reissueAccessTokenWithRefreshCookie() {
 async function parseResponse<TResponse>(response: Response) {
   if (!response.ok) {
     let message = 'API request failed';
+    let apiStatus: string | undefined;
+    let code: number | undefined;
 
     try {
       const errorResponse = (await response.json()) as ApiErrorResponse;
       if (typeof errorResponse.message === 'string' && errorResponse.message.trim() !== '') {
         message = errorResponse.message;
       }
+      if (typeof errorResponse.errorCode === 'string') {
+        apiStatus = errorResponse.errorCode;
+      } else if (typeof errorResponse.status === 'string') {
+        apiStatus = errorResponse.status;
+      }
+      if (typeof errorResponse.code === 'number') {
+        code = errorResponse.code;
+      }
     } catch {
       // Keep the default message when the error response has no JSON body.
     }
 
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, apiStatus, code);
   }
 
   if (response.status === 204) {
