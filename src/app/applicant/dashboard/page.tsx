@@ -10,6 +10,7 @@ import {
 } from '@/lib/applicant-profile-api';
 import { getSubmissionStatus } from '@/lib/onboarding-api';
 import { getProfileEditPath, type OnboardingProgress } from '@/lib/onboarding-flow';
+import { getInterviewRemaining, type InterviewRemainingData } from '@/lib/interview-api';
 
 import { HiringProcessCard } from './_components/hiring-process-card';
 import { InterviewCallout } from './_components/interview-callout';
@@ -29,12 +30,31 @@ export default function ApplicantDashboardPage() {
   const [overview, setOverview] = useState<ApplicantProfileOverview | null>(null);
   const [hasOverviewError, setHasOverviewError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [interviewRemaining, setInterviewRemaining] = useState<InterviewRemainingData | null>(null);
+  const [isInterviewLoading, setIsInterviewLoading] = useState(true);
+  const [hasInterviewError, setHasInterviewError] = useState(false);
   const pollingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const isMountedRef = useRef(true);
 
   const clearAllPollingTimers = useCallback(() => {
     pollingTimersRef.current.forEach((id: ReturnType<typeof setTimeout>) => clearTimeout(id));
     pollingTimersRef.current = [];
+  }, []);
+
+  const loadInterviewRemaining = useCallback(async () => {
+    setIsInterviewLoading(true);
+    try {
+      const response = await getInterviewRemaining();
+      if (!isMountedRef.current) return;
+      setInterviewRemaining(response.data);
+      setHasInterviewError(false);
+    } catch {
+      if (!isMountedRef.current) return;
+      setInterviewRemaining(null);
+      setHasInterviewError(true);
+    } finally {
+      if (isMountedRef.current) setIsInterviewLoading(false);
+    }
   }, []);
 
   const startPolling = useCallback(() => {
@@ -92,6 +112,8 @@ export default function ApplicantDashboardPage() {
   useEffect(() => {
     isMountedRef.current = true;
 
+    void loadInterviewRemaining();
+
     getApplicantProfileOverview()
       .then((nextOverview) => {
         if (!isMountedRef.current) return;
@@ -115,7 +137,7 @@ export default function ApplicantDashboardPage() {
       isMountedRef.current = false;
       clearAllPollingTimers();
     };
-  }, [startPolling, clearAllPollingTimers]);
+  }, [startPolling, clearAllPollingTimers, loadInterviewRemaining]);
 
   const progress = overview?.progress ?? EMPTY_PROGRESS;
   const isProfileReady = Object.values(progress).every(Boolean);
@@ -175,7 +197,12 @@ export default function ApplicantDashboardPage() {
             </section>
           </div>
 
-          <ReapplyNotice />
+          <ReapplyNotice
+            reapplyDDay={null}
+            isLoading={isInterviewLoading}
+            hasError={hasInterviewError}
+            onRetry={() => void loadInterviewRemaining()}
+          />
         </>
       ) : (
         <>
@@ -189,10 +216,21 @@ export default function ApplicantDashboardPage() {
 
           <div className="grid gap-[23px] min-[1440px]:grid-cols-[798px_387px]">
             <HiringProcessCard isDocumentAnalysisReady={isProfileReady} />
-            <InterviewCallout canStartInterview={isProfileReady} />
+            <InterviewCallout
+              canStartInterview={isProfileReady}
+              remainingCount={interviewRemaining?.remainingCount ?? null}
+              isLoading={isInterviewLoading}
+              hasError={hasInterviewError}
+              onRetry={() => void loadInterviewRemaining()}
+            />
           </div>
 
-          <ReapplyNotice />
+          <ReapplyNotice
+            reapplyDDay={interviewRemaining?.reapplyDDay ?? null}
+            isLoading={isInterviewLoading}
+            hasError={hasInterviewError}
+            onRetry={() => void loadInterviewRemaining()}
+          />
         </>
       )}
     </div>

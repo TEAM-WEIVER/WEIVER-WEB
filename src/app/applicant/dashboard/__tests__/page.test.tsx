@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getApplicantProfileOverview } from '@/lib/applicant-profile-api';
+import { getInterviewRemaining } from '@/lib/interview-api';
 
 import ApplicantDashboardPage from '../page';
 
@@ -17,6 +18,10 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/lib/applicant-profile-api', () => ({
   getApplicantProfileOverview: vi.fn(),
+}));
+
+vi.mock('@/lib/interview-api', () => ({
+  getInterviewRemaining: vi.fn(),
 }));
 
 vi.mock('../_components/profile-overview-card', () => ({
@@ -54,6 +59,18 @@ describe('지원자 대시보드 페이지 — 스켈레톤 분기', () => {
       submitted: false,
       syncStatus: 'PENDING',
       submittable: false,
+    });
+    vi.mocked(getInterviewRemaining).mockResolvedValue({
+      status: 'OK',
+      code: 200,
+      data: {
+        totalCount: 1,
+        remainingCount: 1,
+        reapplyDDay: 0,
+        reapplyAvailableDate: '2026-10-13',
+        pendingSubmissionSessionId: null,
+      },
+      message: 'OK',
     });
   });
 
