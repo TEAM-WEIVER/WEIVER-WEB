@@ -134,6 +134,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Build
+        env:
+          NEXT_PUBLIC_E2E_TEST: 'true'
         run: pnpm build
 
       - name: Run E2E tests
