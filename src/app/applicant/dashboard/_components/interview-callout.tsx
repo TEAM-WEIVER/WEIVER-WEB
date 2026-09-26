@@ -4,9 +4,19 @@ import { Button } from '@/components/ui/button';
 
 type InterviewCalloutProps = {
   canStartInterview: boolean;
+  remainingCount: number | null;
+  isLoading: boolean;
+  hasError: boolean;
+  onRetry: () => void;
 };
 
-export function InterviewCallout({ canStartInterview }: InterviewCalloutProps) {
+export function InterviewCallout({
+  canStartInterview,
+  remainingCount,
+  isLoading,
+  hasError,
+  onRetry,
+}: InterviewCalloutProps) {
   const buttonClassName =
     'h-[42px] w-full rounded-[10px] shadow-none disabled:bg-primary-200 disabled:text-text-disabled';
 
@@ -18,8 +28,23 @@ export function InterviewCallout({ canStartInterview }: InterviewCalloutProps) {
           <p className="text-body2 text-primary-200">
             면접은 1차 기술면접, 2차 인적성면접으로 진행되며 약 1시간 정도 소요됩니다.
           </p>
+          {!isLoading && remainingCount !== null && (
+            <p className="text-primary-100 text-sm font-semibold">
+              남은 면접 횟수 {remainingCount}회
+            </p>
+          )}
         </div>
-        {canStartInterview ? (
+        {hasError ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onRetry}
+            className={buttonClassName}
+          >
+            면접 상태 다시 불러오기
+          </Button>
+        ) : canStartInterview && remainingCount !== null && remainingCount > 0 ? (
           <Button
             type="button"
             size="sm"
@@ -29,8 +54,15 @@ export function InterviewCallout({ canStartInterview }: InterviewCalloutProps) {
             <Link href="/applicant/interview">AI 면접 진행하기</Link>
           </Button>
         ) : (
-          <Button type="button" size="sm" className={buttonClassName} disabled>
-            AI 면접 진행하기
+          <Button
+            type="button"
+            size="sm"
+            className={buttonClassName}
+            disabled={
+              isLoading || !canStartInterview || remainingCount === null || remainingCount <= 0
+            }
+          >
+            {isLoading ? '면접 상태 확인 중...' : 'AI 면접 진행하기'}
           </Button>
         )}
       </div>

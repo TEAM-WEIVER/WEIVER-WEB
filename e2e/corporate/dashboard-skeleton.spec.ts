@@ -1,228 +1,300 @@
-import { type Page } from '@playwright/test';
-
-import { corporateTest as test, expect } from '../fixtures/auth';
-
 /**
- * 기업 대시보드 채용공고 스켈레톤 UI 인수 테스트 (#80)
+ * 기업 대시보드 JobPostingList 스켈레톤 인수 테스트 (#87)
  *
- * AC9: API 응답 지연 시 JobPostingList 영역 스켈레톤 표시
- * AC10: API 완료 후 실제 JobPostingList 렌더링
+ * 커버 AC: AC9, AC10
  *
- * Next.js rewrites: /api/* → https://api.piuda.site/api/*
+ * 전제:
+ * - Next.js 앱이 http://localhost:3000 에서 실행 중이어야 한다.
+ * - `/corporate/dashboard` 라우트가 존재한다.
+ * - Playwright 설정은 production server를 사용하므로 sessionStorage에 COMPANY 역할을 주입한다.
+ *
+ * 목킹 전략:
+ * - Playwright page.route()로 API 응답을 직접 가로채 지연/즉시 응답을 시뮬레이션한다.
+ * - 기업 인증 상태는 sessionStorage에 COMPANY 역할을 주입하여 설정한다.
  */
 
-// ---------------------------------------------------------------------------
+import { test, expect, type Page } from '@playwright/test';
+
+import {
+  MOCK_JOB_POSTINGS_SUMMARY,
+  MOCK_COMPANY_DASHBOARD,
+  MOCK_COMPANY_INFO,
+} from '../mocks/corporate-dashboard-fixtures';
+
+// ──────────────────────────────────────────────
 // 상수
-// ---------------------------------------------------------------------------
+// ──────────────────────────────────────────────
 
-const API = {
-  COMPANY_DASHBOARD: '**/api/dashboards/company',
-  JOB_POSTINGS: '**/api/dashboards/job-postings**',
-  NOTIFICATIONS: '**/api/dashboards/notifications',
-  MY_COMPANY: '**/api/companies/my',
-} as const;
+const DASHBOARD_URL = '/corporate/dashboard';
+const AUTH_ROLE_STORAGE_KEY = 'weiver.auth.role';
 
-const COMPANY_DASHBOARD_OK = {
+const apiResponse = <TData>(data: TData) => ({
   status: 'OK',
   code: 200,
-  data: {
-    companyId: 1,
-    companyLogoUrl: null,
-    companyCeoName: '김대표',
-    address: '서울특별시 강남구',
-    employeeNum: 50,
-    foundedYear: 2020,
-    wayOfWorkingDetail: {
-      workPace: '빠른 실행',
-      decisionMaking: '팀 합의',
-      roleDefinition: '명확한 역할',
-      operationStyle: '실험 지향',
+  data,
+  message: 'OK',
+});
+
+// ──────────────────────────────────────────────
+// 헬퍼: 기업 담당자 인증 상태 주입
+// ──────────────────────────────────────────────
+
+async function mockCorporateAuth(page: Page) {
+  await page.addInitScript(
+    ({ storageKey }) => {
+      window.sessionStorage.setItem(storageKey, 'COMPANY');
     },
-  },
-  message: 'OK',
-};
+    { storageKey: AUTH_ROLE_STORAGE_KEY },
+  );
 
-const MY_COMPANY_OK = {
-  status: 'OK',
-  code: 200,
-  data: {
-    companyId: 1,
-    companyName: '위버 주식회사',
-    companyLogoUrl: null,
-    companyType: 'STARTUP',
-    companyCeoName: '김대표',
-    address: '서울특별시 강남구',
-    employeeNum: 50,
-    foundedYear: 2020,
-    workPace: 'FAST_EXECUTION',
-    decisionMaking: 'TEAM_CONSENSUS',
-    roleDefinition: 'CLEAR_RESPONSIBILITY',
-    operationStyle: 'EXPERIMENT_ORIENTED',
-  },
-  message: 'OK',
-};
-
-const JOB_POSTINGS_OK = {
-  status: 'OK',
-  code: 200,
-  data: {
-    content: [
-      {
-        jobPostingId: 1,
-        title: '프론트엔드 개발자',
-        status: 'ACTIVE',
-        deadline: '2026-12-31',
-        applicantCount: 10,
-      },
-      {
-        jobPostingId: 2,
-        title: '백엔드 개발자',
-        status: 'ACTIVE',
-        deadline: '2026-12-31',
-        applicantCount: 5,
-      },
-    ],
-    totalElements: 2,
-    totalPages: 1,
-    size: 3,
-    number: 0,
-  },
-  message: 'OK',
-};
-
-const JOB_POSTINGS_EMPTY = {
-  status: 'OK',
-  code: 200,
-  data: {
-    content: [],
-    totalElements: 0,
-    totalPages: 0,
-    size: 3,
-    number: 0,
-  },
-  message: 'OK',
-};
-
-const NOTIFICATIONS_OK = {
-  status: 'OK',
-  code: 200,
-  data: {},
-  message: 'OK',
-};
-
-// ---------------------------------------------------------------------------
-// 헬퍼
-// ---------------------------------------------------------------------------
-
-/** 기업 대시보드 공통 API (CompanySummary + Notification)를 정상 응답으로 모킹 */
-async function mockCommonDashboardApis(page: Page) {
-  await page.route(API.COMPANY_DASHBOARD, (route) =>
+  await page.route('**/api/auth/csrf', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(COMPANY_DASHBOARD_OK),
+      body: JSON.stringify(apiResponse({ csrfToken: 'mock-csrf-token' })),
     }),
   );
 
-  await page.route(API.MY_COMPANY, (route) =>
+  await page.route('**/api/auth/reissue', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(MY_COMPANY_OK),
-    }),
-  );
-
-  await page.route(API.NOTIFICATIONS, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(NOTIFICATIONS_OK),
+      body: JSON.stringify(apiResponse({ accessToken: 'mock-access-token' })),
     }),
   );
 }
 
-// ---------------------------------------------------------------------------
-// AC9: 로딩 중 스켈레톤 표시
-// ---------------------------------------------------------------------------
+// ──────────────────────────────────────────────
+// 헬퍼: 보조 API 목킹 (회사 정보, 알림 — 즉시 응답)
+// ──────────────────────────────────────────────
 
-test('AC9: 채용공고 API 응답 전 JobPostingList 영역에 스켈레톤이 표시된다', async ({ page }) => {
-  // Given — 공통 API는 즉시 응답, 채용공고 API만 지연
-  await mockCommonDashboardApis(page);
-  await page.route(API.JOB_POSTINGS, (_route) => {
-    // 응답 없음 — 로딩 상태 유지
+async function mockSupportApis(page: Page) {
+  await page.route('**/api/dashboards/company', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(apiResponse(MOCK_COMPANY_DASHBOARD)),
+    }),
+  );
+
+  await page.route('**/api/companies/me', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(apiResponse(MOCK_COMPANY_INFO)),
+    }),
+  );
+
+  await page.route('**/api/dashboards/notifications', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(apiResponse({})),
+    }),
+  );
+}
+
+/** 응답 시점을 테스트가 직접 제어할 수 있는 채용공고 API mock을 등록한다. */
+async function mockPendingJobPostings(page: Page) {
+  let release!: () => void;
+  const pendingResponse = new Promise<void>((resolve) => {
+    release = resolve;
   });
 
-  // When
-  await page.goto('/corporate/dashboard');
-
-  // Then — 채용공고 스켈레톤 영역 표시 (aria-label로 식별)
-  await expect(page.getByRole('region', { name: '채용공고 로딩 중' })).toBeVisible();
-});
-
-test('AC9: 채용공고 로딩 중 "등록된 공고가 없습니다" 빈 상태 메시지가 표시되지 않는다', async ({
-  page,
-}) => {
-  // Given — 채용공고 API 지연
-  await mockCommonDashboardApis(page);
-  await page.route(API.JOB_POSTINGS, (_route) => {
-    // 응답 없음
+  await page.route('**/api/dashboards/job-postings**', async (route) => {
+    await pendingResponse;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(apiResponse(MOCK_JOB_POSTINGS_SUMMARY)),
+    });
   });
 
-  // When
-  await page.goto('/corporate/dashboard');
+  return release;
+}
 
-  // Then — 빈 상태 메시지 없음 (로딩 중이므로)
-  await expect(page.getByText('등록된 공고가 없습니다')).toHaveCount(0);
+// ──────────────────────────────────────────────
+// AC9: JobPostingList 로딩 중 스켈레톤 표시
+// ──────────────────────────────────────────────
 
-  // Then — 스켈레톤 표시됨
-  await expect(page.getByRole('region', { name: '채용공고 로딩 중' })).toBeVisible();
+test.describe('AC9: JobPostingList 로딩 중 스켈레톤 표시', () => {
+  test('채용공고 API 요청 진행 중에 스켈레톤이 렌더링된다', async ({ page }) => {
+    // Given: 인증된 기업 담당자
+    await mockCorporateAuth(page);
+    await mockSupportApis(page);
+
+    // Given: 채용공고 API 응답을 테스트가 해제할 때까지 보류한다.
+    const releaseJobPostings = await mockPendingJobPostings(page);
+
+    // When: 기업 대시보드에 진입
+    await page.goto(DASHBOARD_URL);
+
+    // Then: 채용공고 로딩 중 스켈레톤이 표시된다
+    const skeleton = page.getByLabel('채용공고 로딩 중');
+    await expect(skeleton).toBeVisible({ timeout: 5000 });
+    releaseJobPostings();
+    await expect(page.getByRole('heading', { name: '프론트엔드 개발자' })).toBeVisible();
+  });
+
+  test('로딩 중에는 "등록된 공고가 없습니다" 빈 상태 메시지가 표시되지 않는다', async ({
+    page,
+  }) => {
+    // Given: 인증된 기업 담당자
+    await mockCorporateAuth(page);
+    await mockSupportApis(page);
+
+    // Given: 채용공고 API 응답을 테스트가 해제할 때까지 보류한다.
+    const releaseJobPostings = await mockPendingJobPostings(page);
+
+    // When: 기업 대시보드에 진입
+    await page.goto(DASHBOARD_URL);
+
+    // Then: 스켈레톤이 보이는 동안 빈 상태 메시지가 없다
+    await expect(page.getByLabel('채용공고 로딩 중')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('등록된 공고가 없습니다.')).not.toBeVisible();
+    releaseJobPostings();
+    await expect(page.getByRole('heading', { name: '프론트엔드 개발자' })).toBeVisible();
+  });
+
+  test('스켈레톤 섹션에 aria-label="채용공고 로딩 중" 속성이 포함된다', async ({ page }) => {
+    // Given: 인증된 기업 담당자
+    await mockCorporateAuth(page);
+    await mockSupportApis(page);
+
+    // Given: 채용공고 API 응답을 테스트가 해제할 때까지 보류한다.
+    const releaseJobPostings = await mockPendingJobPostings(page);
+
+    // When: 기업 대시보드에 진입
+    await page.goto(DASHBOARD_URL);
+
+    // Then: aria-label 속성을 가진 스켈레톤 요소가 DOM에 존재한다
+    const skeleton = page.locator('[aria-label="채용공고 로딩 중"]');
+    await expect(skeleton).toBeVisible({ timeout: 5000 });
+    releaseJobPostings();
+    await expect(page.getByRole('heading', { name: '프론트엔드 개발자' })).toBeVisible();
+  });
 });
 
-// ---------------------------------------------------------------------------
+// ──────────────────────────────────────────────
 // AC10: API 완료 후 실제 JobPostingList 렌더링
-// ---------------------------------------------------------------------------
+// ──────────────────────────────────────────────
 
-test('AC10: 채용공고 API 완료 후 스켈레톤이 제거되고 실제 채용공고 목록이 렌더링된다', async ({
-  page,
-}) => {
-  // Given — 모든 API 즉시 응답
-  await mockCommonDashboardApis(page);
-  await page.route(API.JOB_POSTINGS, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(JOB_POSTINGS_OK),
-    }),
-  );
+test.describe('AC10: API 완료 후 실제 JobPostingList 렌더링', () => {
+  test('API 응답 도착 후 스켈레톤이 제거되고 실제 채용공고 목록이 렌더링된다', async ({ page }) => {
+    // Given: 인증된 기업 담당자
+    await mockCorporateAuth(page);
+    await mockSupportApis(page);
 
-  // When
-  await page.goto('/corporate/dashboard');
+    // Given: 채용공고 API 즉시 응답
+    await page.route('**/api/dashboards/job-postings**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(apiResponse(MOCK_JOB_POSTINGS_SUMMARY)),
+      }),
+    );
 
-  // Then — 스켈레톤 없음
-  await expect(page.getByRole('region', { name: '채용공고 로딩 중' })).toHaveCount(0);
+    // When: 기업 대시보드에 진입 후 API 응답 대기
+    await page.goto(DASHBOARD_URL);
 
-  // Then — 실제 채용공고 목록 표시
-  await expect(page.getByText('프론트엔드 개발자')).toBeVisible();
-  await expect(page.getByText('백엔드 개발자')).toBeVisible();
-});
+    // Then: 스켈레톤이 사라지고 실제 채용공고 제목이 표시된다
+    await expect(page.getByLabel('채용공고 로딩 중')).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: '프론트엔드 개발자' })).toBeVisible({
+      timeout: 5000,
+    });
+  });
 
-test('AC10: 채용공고 데이터가 없을 때 빈 상태 메시지가 표시된다', async ({ page }) => {
-  // Given — 빈 채용공고 목록
-  await mockCommonDashboardApis(page);
-  await page.route(API.JOB_POSTINGS, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(JOB_POSTINGS_EMPTY),
-    }),
-  );
+  test('API 응답 도착 후 목 데이터의 공고 2건 이상이 화면에 표시된다', async ({ page }) => {
+    // Given: 인증된 기업 담당자
+    await mockCorporateAuth(page);
+    await mockSupportApis(page);
 
-  // When
-  await page.goto('/corporate/dashboard');
+    // Given: 채용공고 API 즉시 응답
+    await page.route('**/api/dashboards/job-postings**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(apiResponse(MOCK_JOB_POSTINGS_SUMMARY)),
+      }),
+    );
 
-  // Then — 스켈레톤 없음
-  await expect(page.getByRole('region', { name: '채용공고 로딩 중' })).toHaveCount(0);
+    // When: 기업 대시보드에 진입
+    await page.goto(DASHBOARD_URL);
 
-  // Then — 빈 상태 메시지 표시 (로딩 완료 후에만 표시)
-  await expect(page.getByText('등록된 공고가 없습니다')).toBeVisible();
+    // Then: 3개의 채용공고가 렌더링된다
+    await expect(page.getByRole('heading', { name: '프론트엔드 개발자' })).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(page.getByRole('heading', { name: '백엔드 개발자' })).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(page.getByRole('heading', { name: 'UX 디자이너' })).toBeVisible({
+      timeout: 5000,
+    });
+  });
+
+  test('공고가 없을 때 API 완료 후 "등록된 공고가 없습니다" 메시지가 표시된다', async ({
+    page,
+  }) => {
+    // Given: 인증된 기업 담당자
+    await mockCorporateAuth(page);
+    await mockSupportApis(page);
+
+    // Given: 빈 채용공고 목록 응답
+    await page.route('**/api/dashboards/job-postings**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          apiResponse({
+            content: [],
+            pageable: { pageNumber: 0, pageSize: 3, totalElements: 0, totalPages: 0 },
+          }),
+        ),
+      }),
+    );
+
+    // When: 기업 대시보드에 진입
+    await page.goto(DASHBOARD_URL);
+
+    // Then: 스켈레톤이 제거되고 빈 상태 메시지가 표시된다
+    await expect(page.getByLabel('채용공고 로딩 중')).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('등록된 공고가 없습니다.')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('로딩 전환 — 스켈레톤 표시 후 실제 데이터로 전환된다', async ({ page }) => {
+    // Given: 인증된 기업 담당자
+    await mockCorporateAuth(page);
+    await mockSupportApis(page);
+
+    let resolveJobPostings!: () => void;
+    const jobPostingsPromise = new Promise<void>((resolve) => {
+      resolveJobPostings = resolve;
+    });
+
+    // Given: 수동으로 제어 가능한 채용공고 API 응답
+    await page.route('**/api/dashboards/job-postings**', async (route) => {
+      await jobPostingsPromise;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(apiResponse(MOCK_JOB_POSTINGS_SUMMARY)),
+      });
+    });
+
+    // When: 기업 대시보드에 진입
+    await page.goto(DASHBOARD_URL);
+
+    // Then (로딩 중): 스켈레톤이 보인다
+    await expect(page.getByLabel('채용공고 로딩 중')).toBeVisible({ timeout: 5000 });
+
+    // When: API 응답 완료
+    resolveJobPostings();
+
+    // Then (로딩 완료): 스켈레톤이 사라지고 실제 데이터가 렌더링된다
+    await expect(page.getByLabel('채용공고 로딩 중')).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: '프론트엔드 개발자' })).toBeVisible({
+      timeout: 5000,
+    });
+  });
 });

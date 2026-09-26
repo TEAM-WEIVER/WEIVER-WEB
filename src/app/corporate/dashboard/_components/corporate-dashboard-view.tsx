@@ -12,6 +12,8 @@ import { useMyCompany } from '@/hooks/corporate/use-company';
 import type { CompanyType } from '@/schemas/corporate/company';
 import type { Notification } from '@/schemas/corporate/dashboard';
 
+import { Skeleton } from '@/components/ui/skeleton';
+
 import { CompanySummaryCard } from './company-summary-card';
 import { JobPostingList } from './job-posting-list';
 import { MatchingNotificationCard } from './matching-notification-card';
@@ -53,20 +55,65 @@ function CompanySummarySkeleton() {
       className="border-border-light bg-bg-primary flex min-h-[286px] flex-col rounded-[20px] border p-6 lg:p-[34px]"
       aria-label="기업 요약 로딩 중"
     >
-      <div className="flex animate-pulse flex-col gap-3.5">
+      <div className="flex flex-col gap-3.5">
         <div className="flex items-center gap-6">
-          <div className="bg-bg-tertiary size-[88px] shrink-0 rounded-[10px]" />
+          <Skeleton className="size-[88px] shrink-0 rounded-[10px]" />
           <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <div className="bg-bg-tertiary h-7 w-40 rounded-md" />
-            <div className="bg-bg-tertiary h-5 w-24 rounded-md" />
+            <Skeleton className="h-7 w-40" />
+            <Skeleton className="h-5 w-24" />
           </div>
         </div>
         <div className="grid gap-3.5 min-[560px]:grid-cols-[154px_1fr]">
-          <div className="bg-bg-tertiary h-[70px] rounded-[10px]" />
-          <div className="bg-bg-tertiary h-[70px] rounded-[10px]" />
-          <div className="bg-bg-tertiary h-[70px] rounded-[10px]" />
-          <div className="bg-bg-tertiary h-[70px] rounded-[10px]" />
+          <Skeleton className="h-[70px] rounded-[10px]" />
+          <Skeleton className="h-[70px] rounded-[10px]" />
+          <Skeleton className="h-[70px] rounded-[10px]" />
+          <Skeleton className="h-[70px] rounded-[10px]" />
         </div>
+      </div>
+    </section>
+  );
+}
+
+function JobPostingListSkeleton() {
+  return (
+    <section
+      className="border-border-light bg-bg-primary flex flex-col rounded-[20px] border"
+      aria-label="채용공고 로딩 중"
+    >
+      <div className="flex animate-pulse flex-col">
+        <div className="flex min-h-[98px] flex-col gap-5 px-6 py-6 lg:flex-row lg:items-end lg:justify-between lg:px-[34px]">
+          <div className="flex min-w-0 flex-col gap-2">
+            <div className="bg-bg-tertiary h-7 w-28 rounded-md" />
+            <div className="bg-bg-tertiary h-4 w-52 rounded-md" />
+          </div>
+          <div className="flex flex-wrap items-center gap-4 lg:gap-6">
+            <div className="bg-bg-tertiary h-[50px] w-[340px] rounded-lg" />
+            <div className="bg-bg-tertiary h-[42px] w-[88px] rounded-[10px]" />
+          </div>
+        </div>
+
+        <div className="flex flex-col">
+          {Array.from({ length: 3 }, (_, index) => (
+            <div
+              key={index}
+              className="border-border-light flex min-h-[108px] items-center justify-between border-t px-6 py-6 lg:px-[34px]"
+            >
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="bg-bg-tertiary h-6 w-48 rounded-md" />
+                  <div className="bg-bg-tertiary h-5 w-16 rounded-md" />
+                </div>
+                <div className="bg-bg-tertiary h-4 w-40 rounded-md" />
+              </div>
+              <div className="flex shrink-0 items-center gap-6 sm:gap-[34px]">
+                <div className="bg-bg-tertiary h-[52px] w-[60px] rounded-lg" />
+                <div className="bg-bg-tertiary size-6 rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="border-border-light bg-bg-tertiary h-12 rounded-b-[20px] border-t" />
       </div>
     </section>
   );
@@ -79,19 +126,19 @@ function NotificationSkeleton() {
       aria-label="매칭 알림 로딩 중"
     >
       <div className="border-border-light flex h-[70px] flex-col gap-2 border-b">
-        <div className="bg-bg-tertiary h-7 w-40 animate-pulse rounded-md" />
-        <div className="bg-bg-tertiary h-4 w-52 animate-pulse rounded-md" />
+        <Skeleton className="h-7 w-40" />
+        <Skeleton className="h-4 w-52" />
       </div>
       <div className="flex flex-col">
         {Array.from({ length: 3 }, (_, index) => (
           <div
             key={index}
-            className="border-border-light flex h-[66px] animate-pulse items-center gap-3.5 border-b px-3.5"
+            className="border-border-light flex h-[66px] items-center gap-3.5 border-b px-3.5"
           >
-            <div className="bg-bg-tertiary h-[38px] w-[39px] shrink-0 rounded-md" />
+            <Skeleton className="h-[38px] w-[39px] shrink-0" />
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div className="bg-bg-tertiary h-5 w-full max-w-[300px] rounded-md" />
-              <div className="bg-bg-tertiary h-4 w-20 rounded-md" />
+              <Skeleton className="h-5 w-full max-w-[300px]" />
+              <Skeleton className="h-4 w-20" />
             </div>
           </div>
         ))}
@@ -146,6 +193,7 @@ export function CorporateDashboardView() {
   const shouldShowCompanySkeleton =
     (companyDashboard.isLoading || companyInfo.isLoading) && !company;
   const shouldShowNotificationSkeleton = notifications.isLoading && !notifications.data;
+  const shouldShowJobPostingSkeleton = jobPostings.isLoading;
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -171,21 +219,8 @@ export function CorporateDashboardView() {
         )}
       </div>
 
-      {jobPostings.isLoading ? (
-        <section aria-label="채용공고 로딩 중">
-          <div className="border-border-light bg-bg-primary flex animate-pulse flex-col gap-4 rounded-[20px] border p-6 lg:p-[34px]">
-            {Array.from({ length: 3 }, (_, index) => (
-              <div key={index} className="flex flex-col gap-2">
-                <div className="bg-bg-tertiary h-6 w-3/4 rounded-md" />
-                <div className="flex gap-2">
-                  <div className="bg-bg-tertiary h-5 w-16 rounded-full" />
-                  <div className="bg-bg-tertiary h-5 w-16 rounded-full" />
-                </div>
-                <div className="bg-bg-tertiary h-4 w-1/2 rounded-md" />
-              </div>
-            ))}
-          </div>
-        </section>
+      {shouldShowJobPostingSkeleton ? (
+        <JobPostingListSkeleton />
       ) : (
         <JobPostingList postings={jobPostings.data?.content ?? []} />
       )}

@@ -15,12 +15,16 @@ const PROFILE_STEPS: Array<{ key: OnboardingStep; label: string }> = [
 type ProfileOverviewCardProps = {
   applicant?: ApplicantDetail;
   progress: OnboardingProgress;
+  submitted: boolean;
+  submittable: boolean;
   onEditProfile: () => void;
 };
 
 function ProfilePhoto({ photoUrl }: { photoUrl?: string | null }) {
   if (photoUrl) {
     return (
+      // photoUrl은 서버에서 동적으로 제공되는 외부 CDN URL이며, next.config.js에 해당 도메인이
+      // 등록되지 않아 next/image를 사용할 수 없다. 의도적으로 <img>를 사용한다.
       // eslint-disable-next-line @next/next/no-img-element
       <img src={photoUrl} alt="" className="size-full rounded-[10px] object-cover" />
     );
@@ -43,7 +47,7 @@ function ProfileStepCard({ complete, label }: { complete: boolean; label: string
     >
       <div className="flex min-w-0 flex-col gap-1.5">
         <p className="text-body1 text-text-primary whitespace-nowrap">{label}</p>
-        <p className={`text-body2 ${complete ? 'text-success' : 'text-text-disabled'}`}>
+        <p className={`text-body2 ${complete ? 'text-[#2dd4bf]' : 'text-text-disabled'}`}>
           {complete ? '작성완료' : '미작성'}
         </p>
       </div>
@@ -55,9 +59,10 @@ function ProfileStepCard({ complete, label }: { complete: boolean; label: string
 export function ProfileOverviewCard({
   applicant,
   progress,
+  submitted,
+  submittable,
   onEditProfile,
 }: ProfileOverviewCardProps) {
-  const isProfileReady = PROFILE_STEPS.every((step) => progress[step.key]);
   const applicantName = applicant?.name?.trim();
 
   return (
@@ -87,11 +92,13 @@ export function ProfileOverviewCard({
 
         <div className="flex min-w-0 flex-col gap-4 min-[1208px]:w-[439px]">
           <h2 className="text-h4 text-text-primary">프로필 완성도</h2>
-          <div className="flex flex-wrap gap-3.5">
+          <ul className="flex flex-wrap gap-3.5">
             {PROFILE_STEPS.map((step) => (
-              <ProfileStepCard key={step.key} complete={progress[step.key]} label={step.label} />
+              <li key={step.key}>
+                <ProfileStepCard complete={progress[step.key]} label={step.label} />
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
 
         <div className="flex w-full shrink-0 flex-col gap-4 sm:w-[123px]">
@@ -104,14 +111,27 @@ export function ProfileOverviewCard({
           >
             프로필 수정
           </Button>
-          <Button
-            type="button"
-            size="xs"
-            className="h-[42px] w-full rounded-[10px]"
-            disabled={!isProfileReady}
-          >
-            프로필 제출
-          </Button>
+          {submitted ? (
+            <Button
+              type="button"
+              size="xs"
+              disabled
+              aria-disabled={true}
+              className="h-[42px] w-full rounded-[10px] bg-[#e2e8f0] text-[#64748b] shadow-none"
+            >
+              제출 완료
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="xs"
+              className="h-[42px] w-full rounded-[10px]"
+              disabled={!submittable}
+              aria-disabled={!submittable}
+            >
+              프로필 제출
+            </Button>
+          )}
         </div>
       </div>
     </section>

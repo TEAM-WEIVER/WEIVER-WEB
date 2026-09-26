@@ -37,7 +37,7 @@ export async function mockApplicantAuth(page: Page) {
 export async function mockCorporateAuth(page: Page) {
   await page.addInitScript(
     ({ storageKey }) => {
-      window.sessionStorage.setItem(storageKey, 'CORPORATE');
+      window.sessionStorage.setItem(storageKey, 'COMPANY');
     },
     { storageKey: AUTH_ROLE_STORAGE_KEY },
   );

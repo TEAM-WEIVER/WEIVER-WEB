@@ -374,7 +374,7 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
             // When: 동일한 sequence=1 QUESTION_READY 중복 전송
             setTimeout(() => {
               ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
-            }, 300);
+            }, 50);
           }
         }
       });
@@ -388,8 +388,8 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
       timeout: 5000,
     });
 
-    // 300ms 대기 후에도 동일한 질문이 유지됨 (중복 메시지 무시됨)
-    await page.waitForTimeout(500);
+    // 중복 메시지 수신 후에도 동일한 질문이 유지됨
+    await page.waitForTimeout(100);
     await expect(page.getByText('1번째 기술 면접 질문입니다.', { exact: false })).toBeVisible();
   });
 
@@ -419,7 +419,7 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
             // When: 이후 오래된 sequence 1이 재도착
             setTimeout(() => {
               ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
-            }, 200);
+            }, 50);
           }
         }
       });
@@ -439,7 +439,7 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
       timeout: 5000,
     });
 
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(100);
     // 여전히 2번 질문이 표시됨 (1번 무시됨)
     await expect(page.getByText('2번째 기술 면접 질문입니다.', { exact: false })).toBeVisible();
   });
@@ -864,8 +864,6 @@ test.describe('AC8: 브라우저 탭 비활성화 복귀 시 소켓 상태 확�
       document.dispatchEvent(new Event('visibilitychange'));
     });
 
-    await page.waitForTimeout(200);
-
     await page.evaluate(() => {
       Object.defineProperty(document, 'visibilityState', {
         value: 'visible',
@@ -933,8 +931,6 @@ test.describe('AC8: 브라우저 탭 비활성화 복귀 시 소켓 상태 확�
       document.dispatchEvent(new Event('visibilitychange'));
     });
 
-    await page.waitForTimeout(100);
-
     await page.evaluate(() => {
       Object.defineProperty(document, 'visibilityState', {
         value: 'visible',
@@ -946,5 +942,129 @@ test.describe('AC8: 브라우저 탭 비활성화 복귀 시 소켓 상태 확�
 
     // Then: RECONNECTING 상태 UI(배너 또는 스피너)가 표시된다
     await expect(page.getByText(/재연결/, { exact: false })).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ──────────────────────────────────────────────
+// #101 AC3: 종료 후 분석 요청
+// ──────────────────────────────────────────────
+
+test.describe('#101 AC3: 면접 종료 후 분석 요청', () => {
+  test('완료 화면의 면접 완료 버튼을 누르면 세션별 analysis 요청을 한 번 보내고 분석 접수 상태를 알린다', async ({
+    page,
+  }) => {
+    let analysisRequestCount = 0;
+    let analysisRequestBody: string | null = null;
+
+    await page.route(`**/api/interviews/${SESSION_ID}/analysis`, async (route) => {
+      analysisRequestCount += 1;
+      analysisRequestBody = route.request().postData();
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'OK',
+          code: 200,
+          data: {
+            interview_session_id: SESSION_ID,
+            status: 'TRANSCRIPT_SAVE_REQUESTED',
+            next_available_interview_at: '2026-10-13T14:30:00',
+          },
+          message: '분석 요청이 접수되었습니다.',
+        }),
+      });
+    });
+
+    await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
+      ws.onMessage((data) => {
+        const frame = frameToString(data as string | Buffer);
+
+        if (frame.startsWith('CONNECT')) {
+          ws.send(stompConnected());
+        }
+
+        if (!frame.startsWith('SEND')) return;
+
+        const destination = frame.match(/destination:(.+)/)?.[1]?.trim() ?? '';
+        if (destination === '/app/interviews/start') {
+          ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
+          sendInterviewMessage(ws, questionReady(1));
+        }
+
+        if (destination === `/app/interviews/${SESSION_ID}/answers`) {
+          sendInterviewMessage(ws, INTERVIEW_FINISHED);
+        }
+      });
+    });
+
+    await gotoInterviewWithAuth(page);
+    await page.getByRole('button', { name: '면접 시작' }).click();
+    await expect(page.getByText('1번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
+      timeout: 5000,
+    });
+
+    await submitSpokenAnswer(page);
+
+    await page.getByRole('button', { name: '면접 완료' }).first().click();
+
+    await expect.poll(() => analysisRequestCount, { timeout: 5000 }).toBe(1);
+    expect(analysisRequestBody).toBeNull();
+    await expect(page.getByRole('status').filter({ hasText: '분석 접수 완료' })).toBeVisible({
+      timeout: 5000,
+    });
+  });
+});
+
+// ──────────────────────────────────────────────
+// #101 AC6: 오류 리포트
+// ──────────────────────────────────────────────
+
+test.describe('#101 AC6: 면접 오류 리포트', () => {
+  test('오류 내용을 입력해 보내면 현재 세션의 error-report API에 한 번 요청한다', async ({
+    page,
+  }) => {
+    let reportRequestCount = 0;
+    let reportRequestBody: string | null = null;
+
+    await page.route(`**/api/interviews/${SESSION_ID}/error-report`, async (route) => {
+      reportRequestCount += 1;
+      reportRequestBody = route.request().postData();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ status: 'OK', code: 200, data: 'received', message: 'OK' }),
+      });
+    });
+
+    await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
+      ws.onMessage((data) => {
+        const frame = frameToString(data as string | Buffer);
+        if (frame.startsWith('CONNECT')) ws.send(stompConnected());
+        if (!frame.startsWith('SEND')) return;
+
+        const destination = frame.match(/destination:(.+)/)?.[1]?.trim() ?? '';
+        if (destination === '/app/interviews/start') {
+          ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
+          sendInterviewMessage(ws, questionReady(1));
+        }
+      });
+    });
+
+    await gotoInterviewWithAuth(page);
+    await page.getByRole('button', { name: '면접 시작' }).click();
+    await expect(page.getByRole('button', { name: '오류가 있어요' })).toBeVisible({
+      timeout: 5000,
+    });
+
+    await page.getByRole('button', { name: '오류가 있어요' }).click();
+    await page.getByRole('textbox').fill('질문 음성이 재생되지 않고 화면이 멈췄습니다.');
+    await page.getByRole('button', { name: '오류 리포트 보내기' }).click();
+
+    await expect.poll(() => reportRequestCount, { timeout: 5000 }).toBe(1);
+    expect(reportRequestBody).toBe(
+      JSON.stringify({ content: '질문 음성이 재생되지 않고 화면이 멈췄습니다.' }),
+    );
+    await expect(page.getByRole('dialog')).not.toBeVisible();
   });
 });
