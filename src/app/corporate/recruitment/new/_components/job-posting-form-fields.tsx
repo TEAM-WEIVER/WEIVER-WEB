@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
@@ -28,10 +28,12 @@ export function SectionTitle({ title, description }: { title: string; descriptio
   );
 }
 
-function FieldLabel({ label, caption }: { label: string; caption?: string }) {
+function FieldLabel({ label, caption, id }: { label: string; caption?: string; id?: string }) {
   return (
     <div className="flex w-full items-end justify-between">
-      <p className="text-h4 text-text-secondary">{label}</p>
+      <p id={id} className="text-h4 text-text-secondary">
+        {label}
+      </p>
       {caption && <p className="text-caption text-text-tertiary">{caption}</p>}
     </div>
   );
@@ -112,6 +114,7 @@ export function SelectField({
 }: SelectFieldProps) {
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const labelId = useId();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -128,10 +131,11 @@ export function SelectField({
 
   return (
     <div ref={rootRef} className="relative flex min-w-0 flex-col gap-2">
-      <FieldLabel label={label} />
+      <FieldLabel id={labelId} label={label} />
       <button
         type="button"
         disabled={disabled}
+        aria-labelledby={labelId}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((next) => !next)}
