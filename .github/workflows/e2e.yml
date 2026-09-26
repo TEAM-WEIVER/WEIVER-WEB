@@ -2,7 +2,7 @@ name: E2E
 
 on:
   pull_request:
-    branches: [main]
+    branches: [develop]
 
 jobs:
   lint-typecheck-test:
