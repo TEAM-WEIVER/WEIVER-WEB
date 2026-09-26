@@ -28,7 +28,17 @@ jobs:
       - name: Approve builds
         run: pnpm approve-builds --yes || true
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            playwright-chromium-
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Build
@@ -37,7 +47,7 @@ jobs:
       - name: Run E2E tests
         run: |
           if find e2e -name "*.spec.ts" | grep -q .; then
-            pnpm test:e2e
+            pnpm test:e2e --workers=4
           else
             echo "E2E 테스트 파일 없음 — 건너뜀"
           fi
