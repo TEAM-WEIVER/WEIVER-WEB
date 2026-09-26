@@ -11,6 +11,7 @@
     "test:coverage": "vitest --project unit --coverage",
     "test:storybook": "vitest --project storybook",
     "test:e2e": "playwright test",
+    "test:e2e:affected": "node scripts/run-affected-e2e.mjs",
     "test:e2e:signup-live": "RUN_PRODUCTION_SIGNUP_E2E=true playwright test --config=playwright.live.config.ts",
     "test:e2e:ui": "playwright test --ui",
     "typecheck": "tsc --noEmit",

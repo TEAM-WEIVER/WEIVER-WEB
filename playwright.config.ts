@@ -19,7 +19,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'NEXT_PUBLIC_E2E_TEST=true pnpm dev',
+    command: process.env.CI
+      ? 'NEXT_PUBLIC_E2E_TEST=true pnpm start'
+      : 'NEXT_PUBLIC_E2E_TEST=true pnpm dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
   },
