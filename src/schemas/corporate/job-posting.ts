@@ -20,6 +20,12 @@ export const JobPostingRequestSchema = z.object({
 
 export type JobPostingRequest = z.infer<typeof JobPostingRequestSchema>;
 
+export const JobPostingUpdateSchema = JobPostingRequestSchema.extend({
+  isEmailBannerDeleted: z.boolean(),
+});
+
+export type JobPostingUpdate = z.infer<typeof JobPostingUpdateSchema>;
+
 /* ─── 채용 공고 응답 DTO ─── */
 
 export const JobPostingResponseSchema = JobPostingRequestSchema.extend({

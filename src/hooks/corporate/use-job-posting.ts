@@ -16,9 +16,21 @@ export function useJobPosting(jdId: number) {
   const [data, setData] = useState<JobPostingResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [requestVersion, setRequestVersion] = useState(0);
+  const isValidJdId = Number.isInteger(jdId) && jdId > 0;
+
+  const refetch = useCallback(() => {
+    setIsLoading(true);
+    setRequestVersion((version) => version + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!isValidJdId)
+      return () => {
+        cancelled = true;
+      };
 
     getJobPosting(jdId)
       .then((res) => {
@@ -39,9 +51,14 @@ export function useJobPosting(jdId: number) {
     return () => {
       cancelled = true;
     };
-  }, [jdId]);
+  }, [isValidJdId, jdId, requestVersion]);
 
-  return { data, isLoading, error };
+  return {
+    data: isValidJdId ? data : null,
+    isLoading: isValidJdId ? isLoading : false,
+    error: isValidJdId ? error : new Error('Invalid job posting id'),
+    refetch,
+  };
 }
 
 /* ─── useCreateJobPosting ─── */
