@@ -34,13 +34,14 @@ const applicantsAllResponse = {
     ],
     WorkExperienceDTO: [
       {
-        experienceId: 1,
+        workExperienceId: 1,
         companyName: '에이블리',
         position: '인턴',
         startDate: '2026-02-01',
         endDate: '2026-08-01',
         duties: 'B2B 서비스 백엔드 API 설계 및 개발',
         employmentType: 'INTERN',
+        isRecognized: true,
       },
     ],
     CertificateDTO: [
@@ -82,12 +83,19 @@ export const onboardingNewUserHandlers = [
     });
   }),
 
-  // 문서 완료 상태 조회 — 신규 가입 직후: 전부 미완료
-  http.get('https://api.piuda.site/api/applicants/document-status', () => {
+  // 제출 상태 조회 — 신규 가입 직후: 전부 미완료
+  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
-      data: { resumeCompleted: false, essayCompleted: false, portfolioCompleted: false },
+      data: {
+        resumeCompleted: false,
+        essayCompleted: false,
+        portfolioCompleted: false,
+        submitted: false,
+        syncStatus: 'PENDING',
+        submittable: false,
+      },
       message: 'OK',
     });
   }),
@@ -159,18 +167,30 @@ export const onboardingNewUserHandlers = [
   http.post('https://api.piuda.site/api/portfolios', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
+
+  // 프로필 제출
+  http.post('https://api.piuda.site/api/applicants/profile/submit', () => {
+    return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
+  }),
 ];
 
 // ──────────────────────────────────────────────
 // 재진입 시 (document-status true → PATCH 경로)
 // ──────────────────────────────────────────────
 export const onboardingReturningUserHandlers = [
-  // 문서 완료 상태 조회 — 재진입: 전부 완료
-  http.get('https://api.piuda.site/api/applicants/document-status', () => {
+  // 제출 상태 조회 — 재진입: 전부 완료
+  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
-      data: { resumeCompleted: true, essayCompleted: true, portfolioCompleted: true },
+      data: {
+        resumeCompleted: true,
+        essayCompleted: true,
+        portfolioCompleted: true,
+        submitted: false,
+        syncStatus: 'PENDING',
+        submittable: true,
+      },
       message: 'OK',
     });
   }),
@@ -267,6 +287,11 @@ export const onboardingReturningUserHandlers = [
   http.patch('https://api.piuda.site/api/portfolios/:portfolioId', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
+
+  // 프로필 제출
+  http.post('https://api.piuda.site/api/applicants/profile/submit', () => {
+    return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
+  }),
 ];
 
 // ──────────────────────────────────────────────
@@ -275,11 +300,18 @@ export const onboardingReturningUserHandlers = [
 
 // 이력서 세부 항목 부분 실패 (AC3): education API만 실패
 export const onboardingResumePartialErrorHandlers = [
-  http.get('https://api.piuda.site/api/applicants/document-status', () => {
+  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
-      data: { resumeCompleted: false, essayCompleted: false, portfolioCompleted: false },
+      data: {
+        resumeCompleted: false,
+        essayCompleted: false,
+        portfolioCompleted: false,
+        submitted: false,
+        syncStatus: 'PENDING',
+        submittable: false,
+      },
       message: 'OK',
     });
   }),
@@ -320,11 +352,18 @@ export const onboardingResumePartialErrorHandlers = [
 
 // 자기소개서 API 실패 (AC8)
 export const onboardingEssayErrorHandlers = [
-  http.get('https://api.piuda.site/api/applicants/document-status', () => {
+  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
-      data: { resumeCompleted: false, essayCompleted: false, portfolioCompleted: false },
+      data: {
+        resumeCompleted: false,
+        essayCompleted: false,
+        portfolioCompleted: false,
+        submitted: false,
+        syncStatus: 'PENDING',
+        submittable: false,
+      },
       message: 'OK',
     });
   }),
@@ -338,11 +377,18 @@ export const onboardingEssayErrorHandlers = [
 
 // 포트폴리오 API 실패 (AC12)
 export const onboardingPortfolioErrorHandlers = [
-  http.get('https://api.piuda.site/api/applicants/document-status', () => {
+  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
-      data: { resumeCompleted: false, essayCompleted: false, portfolioCompleted: false },
+      data: {
+        resumeCompleted: false,
+        essayCompleted: false,
+        portfolioCompleted: false,
+        submitted: false,
+        syncStatus: 'PENDING',
+        submittable: false,
+      },
       message: 'OK',
     });
   }),
@@ -373,7 +419,7 @@ export const onboardingPortfolioErrorHandlers = [
 
 // 인증 만료 → refresh 실패 (AC15)
 export const onboardingAuthExpiredHandlers = [
-  http.get('https://api.piuda.site/api/applicants/document-status', () => {
+  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
     return HttpResponse.json(
       { status: 'UNAUTHORIZED', code: 401, data: null, message: '인증이 필요합니다.' },
       { status: 401 },

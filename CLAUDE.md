@@ -98,4 +98,5 @@ pnpm storybook    # Storybook (port 6006)
 → `docs/discussion-guide.md` (토론 운영), `docs/cmux-guide.md` (pane 제어) 참고
 
 - cmux 0.64+ / codex 0.138+ / gemini 0.45+ 설치 완료
-- **매 이슈가 아닌** 인증·핵심 도메인·아키텍처 변경·마일스톤 시점에만 적용
+- **기획 단계 (us-reviewer)**: US/AC 작성·검토 시 **항상** 다자토론(Claude × Codex × Gemini)을 병행한다.
+- **구현 단계 (code-reviewer)**: **매 이슈가 아닌** 인증·핵심 도메인·아키텍처 변경·마일스톤 시점에만 적용한다.

@@ -7,10 +7,15 @@ interface ApiResponse<TData> {
   message: string | null;
 }
 
-export interface DocumentStatus {
+export type SyncStatus = 'PENDING' | 'REQUESTED' | 'COMPLETED' | 'FAILED';
+
+export interface SubmissionStatus {
   resumeCompleted: boolean;
   essayCompleted: boolean;
   portfolioCompleted: boolean;
+  submitted: boolean;
+  syncStatus: SyncStatus;
+  submittable: boolean;
 }
 
 export interface EssayAnswer {
@@ -68,14 +73,14 @@ export interface ApplicantsAllData {
     | null;
   WorkExperienceDTO?:
     | {
-        experienceId: number;
+        workExperienceId: number;
         companyName: string;
         position: string | null;
         startDate: string | null;
         endDate: string | null;
         duties: string | null;
         employmentType: string | null;
-        isRecognized?: boolean | null;
+        isRecognized: boolean;
       }[]
     | null;
   CertificateDTO?:
@@ -88,20 +93,16 @@ export interface ApplicantsAllData {
     | null;
 }
 
-let applicantsAllPromise: Promise<ApiResponse<ApplicantsAllData>> | null = null;
+export function getSubmissionStatus() {
+  return apiRequest<ApiResponse<SubmissionStatus>>('/api/applicants/submission-status');
+}
 
-export function getDocumentStatus() {
-  return apiRequest<ApiResponse<DocumentStatus>>('/api/applicants/document-status');
+export function postProfileSubmit() {
+  return apiRequest<ApiResponse<null>>('/api/applicants/profile/submit', { method: 'POST' });
 }
 
 export function getApplicantsAll() {
-  applicantsAllPromise ??= apiRequest<ApiResponse<ApplicantsAllData>>('/api/applicants').finally(
-    () => {
-      applicantsAllPromise = null;
-    },
-  );
-
-  return applicantsAllPromise;
+  return apiRequest<ApiResponse<ApplicantsAllData>>('/api/applicants');
 }
 
 export function getEssayAnswers() {
@@ -130,7 +131,7 @@ export function saveApplicantInfo(formData: FormData) {
   return apiRequest<ApiResponse<null>>('/api/applicants/info', { method: 'PUT', body: formData });
 }
 
-interface EducationDTO {
+export interface EducationDTO {
   degreeType: string;
   schoolName: string;
   major?: string;
@@ -140,95 +141,95 @@ interface EducationDTO {
   status?: string;
 }
 
-interface EducationUpdateDTO extends EducationDTO {
+export interface EducationUpdateDTO extends EducationDTO {
   educationId?: number;
 }
 
 export function postEducations(educations: EducationDTO[]) {
-  return apiRequest<ApiResponse<string>>('/api/applicants/education', {
+  return apiRequest<ApiResponse<string | null>>('/api/applicants/education', {
     method: 'POST',
     body: { EducationDTO: educations },
   });
 }
 
 export function putEducations(educations: EducationUpdateDTO[]) {
-  return apiRequest<ApiResponse<string>>('/api/applicants/education', {
+  return apiRequest<ApiResponse<string | null>>('/api/applicants/education', {
     method: 'PUT',
     body: { EducationUpdateDTO: educations },
   });
 }
 
-interface WorkExperienceDTO {
+export interface WorkExperienceDTO {
   companyName: string;
   startDate?: string;
   endDate?: string;
   employmentType?: string;
   position?: string;
   duties?: string;
-  isRecognized?: boolean;
+  isRecognized: boolean;
 }
 
-interface WorkExperienceUpdateDTO extends WorkExperienceDTO {
+export interface WorkExperienceUpdateDTO extends WorkExperienceDTO {
   workExperienceId?: number;
 }
 
 export function postExperiences(workExperiences: WorkExperienceDTO[]) {
-  return apiRequest<ApiResponse<string>>('/api/applicants/experience', {
+  return apiRequest<ApiResponse<string | null>>('/api/applicants/experience', {
     method: 'POST',
     body: { WorkExperienceDTO: workExperiences },
   });
 }
 
 export function putExperiences(workExperiences: WorkExperienceUpdateDTO[]) {
-  return apiRequest<ApiResponse<string>>('/api/applicants/experience', {
+  return apiRequest<ApiResponse<string | null>>('/api/applicants/experience', {
     method: 'PUT',
     body: { WorkExperienceUpdateDTO: workExperiences },
   });
 }
 
-interface CertificateDTO {
+export interface CertificateDTO {
   acquisitionDate?: string;
   certificateName: string;
   issuer?: string;
 }
 
-interface CertificateUpdateDTO extends CertificateDTO {
+export interface CertificateUpdateDTO extends CertificateDTO {
   certificateId?: number;
 }
 
 export function postCertificates(certificates: CertificateDTO[]) {
-  return apiRequest<ApiResponse<string>>('/api/applicants/certificate', {
+  return apiRequest<ApiResponse<string | null>>('/api/applicants/certificate', {
     method: 'POST',
     body: { CertificateDTO: certificates },
   });
 }
 
 export function putCertificates(certificates: CertificateUpdateDTO[]) {
-  return apiRequest<ApiResponse<string>>('/api/applicants/certificate', {
+  return apiRequest<ApiResponse<string | null>>('/api/applicants/certificate', {
     method: 'PUT',
     body: { CertificateUpdateDTO: certificates },
   });
 }
 
-interface AwardDTO {
+export interface AwardDTO {
   awardDate?: string;
   awardName: string;
   issuer?: string;
 }
 
-interface AwardUpdateDTO extends AwardDTO {
+export interface AwardUpdateDTO extends AwardDTO {
   awardId?: number;
 }
 
 export function postAwards(awards: AwardDTO[]) {
-  return apiRequest<ApiResponse<string>>('/api/applicants/award', {
+  return apiRequest<ApiResponse<string | null>>('/api/applicants/award', {
     method: 'POST',
     body: { AwardDTO: awards },
   });
 }
 
 export function putAwards(awards: AwardUpdateDTO[]) {
-  return apiRequest<ApiResponse<string>>('/api/applicants/award', {
+  return apiRequest<ApiResponse<string | null>>('/api/applicants/award', {
     method: 'PUT',
     body: { AwardUpdateDTO: awards },
   });

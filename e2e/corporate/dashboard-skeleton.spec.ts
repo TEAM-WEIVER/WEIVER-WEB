@@ -94,6 +94,25 @@ async function mockSupportApis(page: Page) {
   );
 }
 
+/** 응답 시점을 테스트가 직접 제어할 수 있는 채용공고 API mock을 등록한다. */
+async function mockPendingJobPostings(page: Page) {
+  let release!: () => void;
+  const pendingResponse = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  await page.route('**/api/dashboards/job-postings**', async (route) => {
+    await pendingResponse;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(apiResponse(MOCK_JOB_POSTINGS_SUMMARY)),
+    });
+  });
+
+  return release;
+}
+
 // ──────────────────────────────────────────────
 // AC9: JobPostingList 로딩 중 스켈레톤 표시
 // ──────────────────────────────────────────────
@@ -104,16 +123,8 @@ test.describe('AC9: JobPostingList 로딩 중 스켈레톤 표시', () => {
     await mockCorporateAuth(page);
     await mockSupportApis(page);
 
-    // Given: 채용공고 API는 응답을 지연시켜 로딩 상태를 유지
-    await page.route('**/api/dashboards/job-postings**', async (route) => {
-      // 충분한 지연을 주어 스켈레톤을 관찰할 수 있도록 한다
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(apiResponse(MOCK_JOB_POSTINGS_SUMMARY)),
-      });
-    });
+    // Given: 채용공고 API 응답을 테스트가 해제할 때까지 보류한다.
+    const releaseJobPostings = await mockPendingJobPostings(page);
 
     // When: 기업 대시보드에 진입
     await page.goto(DASHBOARD_URL);
@@ -121,6 +132,8 @@ test.describe('AC9: JobPostingList 로딩 중 스켈레톤 표시', () => {
     // Then: 채용공고 로딩 중 스켈레톤이 표시된다
     const skeleton = page.getByLabel('채용공고 로딩 중');
     await expect(skeleton).toBeVisible({ timeout: 5000 });
+    releaseJobPostings();
+    await expect(page.getByRole('heading', { name: '프론트엔드 개발자' })).toBeVisible();
   });
 
   test('로딩 중에는 "등록된 공고가 없습니다" 빈 상태 메시지가 표시되지 않는다', async ({
@@ -130,15 +143,8 @@ test.describe('AC9: JobPostingList 로딩 중 스켈레톤 표시', () => {
     await mockCorporateAuth(page);
     await mockSupportApis(page);
 
-    // Given: 채용공고 API 응답 지연
-    await page.route('**/api/dashboards/job-postings**', async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(apiResponse(MOCK_JOB_POSTINGS_SUMMARY)),
-      });
-    });
+    // Given: 채용공고 API 응답을 테스트가 해제할 때까지 보류한다.
+    const releaseJobPostings = await mockPendingJobPostings(page);
 
     // When: 기업 대시보드에 진입
     await page.goto(DASHBOARD_URL);
@@ -146,6 +152,8 @@ test.describe('AC9: JobPostingList 로딩 중 스켈레톤 표시', () => {
     // Then: 스켈레톤이 보이는 동안 빈 상태 메시지가 없다
     await expect(page.getByLabel('채용공고 로딩 중')).toBeVisible({ timeout: 5000 });
     await expect(page.getByText('등록된 공고가 없습니다.')).not.toBeVisible();
+    releaseJobPostings();
+    await expect(page.getByRole('heading', { name: '프론트엔드 개발자' })).toBeVisible();
   });
 
   test('스켈레톤 섹션에 aria-label="채용공고 로딩 중" 속성이 포함된다', async ({ page }) => {
@@ -153,15 +161,8 @@ test.describe('AC9: JobPostingList 로딩 중 스켈레톤 표시', () => {
     await mockCorporateAuth(page);
     await mockSupportApis(page);
 
-    // Given: 채용공고 API 응답 지연
-    await page.route('**/api/dashboards/job-postings**', async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(apiResponse(MOCK_JOB_POSTINGS_SUMMARY)),
-      });
-    });
+    // Given: 채용공고 API 응답을 테스트가 해제할 때까지 보류한다.
+    const releaseJobPostings = await mockPendingJobPostings(page);
 
     // When: 기업 대시보드에 진입
     await page.goto(DASHBOARD_URL);
@@ -169,6 +170,8 @@ test.describe('AC9: JobPostingList 로딩 중 스켈레톤 표시', () => {
     // Then: aria-label 속성을 가진 스켈레톤 요소가 DOM에 존재한다
     const skeleton = page.locator('[aria-label="채용공고 로딩 중"]');
     await expect(skeleton).toBeVisible({ timeout: 5000 });
+    releaseJobPostings();
+    await expect(page.getByRole('heading', { name: '프론트엔드 개발자' })).toBeVisible();
   });
 });
 
@@ -182,15 +185,14 @@ test.describe('AC10: API 완료 후 실제 JobPostingList 렌더링', () => {
     await mockCorporateAuth(page);
     await mockSupportApis(page);
 
-    // Given: 채용공고 API 응답이 짧은 지연 후 도착
-    await page.route('**/api/dashboards/job-postings**', async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      await route.fulfill({
+    // Given: 채용공고 API 즉시 응답
+    await page.route('**/api/dashboards/job-postings**', (route) =>
+      route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(apiResponse(MOCK_JOB_POSTINGS_SUMMARY)),
-      });
-    });
+      }),
+    );
 
     // When: 기업 대시보드에 진입 후 API 응답 대기
     await page.goto(DASHBOARD_URL);

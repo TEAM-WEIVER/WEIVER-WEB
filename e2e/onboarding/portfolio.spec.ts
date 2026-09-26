@@ -4,6 +4,7 @@ import { test, expect } from '../fixtures/auth';
 
 const PORTFOLIOS_API = '**/api/portfolios';
 const PORTFOLIO_DETAIL_API = '**/api/portfolios/*';
+const PROFILE_SUBMIT_API = '**/api/applicants/profile/submit';
 
 const EMPTY_PORTFOLIO = {
   status: 'OK',
@@ -44,11 +45,22 @@ const SAVE_SUCCESS = {
   message: 'OK',
 };
 
+const SUBMIT_SUCCESS = {
+  success: true,
+  data: null,
+};
+
 async function fulfillJson(route: Route, status: number, body: object) {
   await route.fulfill({
     status,
     contentType: 'application/json',
     body: JSON.stringify(body),
+  });
+}
+
+async function mockProfileSubmit(page: Page) {
+  await page.route(PROFILE_SUBMIT_API, async (route) => {
+    await fulfillJson(route, 200, SUBMIT_SUCCESS);
   });
 }
 
@@ -93,6 +105,7 @@ test('신규 포트폴리오 저장 성공 시 지원자 대시보드로 이동�
     postCalled = true;
     await fulfillJson(route, 200, SAVE_SUCCESS);
   });
+  await mockProfileSubmit(page);
 
   await gotoPortfolio(page);
   await attachPortfolio(page);
@@ -113,6 +126,7 @@ test('기존 포트폴리오를 불러오고 PATCH로 수정한다', async ({ pa
     patchedPortfolioId = new URL(route.request().url()).pathname.split('/').at(-1);
     await fulfillJson(route, 200, SAVE_SUCCESS);
   });
+  await mockProfileSubmit(page);
 
   await gotoPortfolio(page);
 
@@ -197,6 +211,7 @@ test('저장 중에는 제출 버튼이 비활성화되어 중복 제출을 방�
     });
     await fulfillJson(route, 200, SAVE_SUCCESS);
   });
+  await mockProfileSubmit(page);
 
   await gotoPortfolio(page);
   await attachPortfolio(page);
