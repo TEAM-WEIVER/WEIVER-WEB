@@ -6,33 +6,11 @@ import { ArrowRight, MessageCircle, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface InterviewFinishedScreenProps {
-  isSubmitting: boolean;
-  isSubmitted: boolean;
-  nextAvailableAt: string | null;
-  errorMessage: string | null;
-  onSubmitAnalysis: () => void;
-  onRetryAnalysis: () => void;
   onReportError: () => void;
   onReturnToDashboard: () => void;
 }
 
-function formatAvailableAt(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return new Intl.DateTimeFormat('ko-KR', {
-    dateStyle: 'long',
-    timeStyle: 'short',
-  }).format(date);
-}
-
 export function InterviewFinishedScreen({
-  isSubmitting,
-  isSubmitted,
-  nextAvailableAt,
-  errorMessage,
-  onSubmitAnalysis,
-  onRetryAnalysis,
   onReportError,
   onReturnToDashboard,
 }: InterviewFinishedScreenProps) {
@@ -54,18 +32,16 @@ export function InterviewFinishedScreen({
             면접이 완료되었어요.
           </h1>
           <p className="text-sm leading-5 font-medium text-slate-500">
-            오른쪽 버튼을 클릭해 면접을 완료하세요.
+            대시보드에서 다음 면접을 진행하거나 결과를 제출할 수 있어요.
           </p>
         </div>
         <Button
           type="button"
           size="xs"
-          isLoading={isSubmitting}
-          disabled={isSubmitting || isSubmitted}
-          onClick={onSubmitAnalysis}
+          onClick={onReturnToDashboard}
           className="h-[42px] shrink-0 rounded-[10px] bg-slate-700 px-6 text-white hover:bg-slate-800"
         >
-          {isSubmitting ? '분석 요청 중' : isSubmitted ? '분석 접수 완료' : '면접 완료'}
+          대시보드로 이동
         </Button>
       </header>
 
@@ -110,49 +86,20 @@ export function InterviewFinishedScreen({
         </div>
         <p className="text-lg font-semibold text-slate-900">면접이 완료되었어요.</p>
 
-        {isSubmitting && (
-          <p role="status" aria-live="polite" className="text-sm text-slate-500">
-            면접 분석을 요청하고 있어요.
-          </p>
-        )}
-        {isSubmitted && (
-          <div role="status" aria-live="polite" className="text-sm text-slate-600">
-            <p className="font-semibold text-slate-700">분석 접수 완료</p>
-            {nextAvailableAt && (
-              <p>다음 면접은 {formatAvailableAt(nextAvailableAt)}부터 가능해요.</p>
-            )}
-          </div>
-        )}
-        {errorMessage && (
-          <div
-            role="alert"
-            className="flex items-center justify-between gap-4 text-sm text-red-600"
-          >
-            <p>{errorMessage}</p>
-            <Button type="button" variant="outline" size="xs" onClick={onRetryAnalysis}>
-              다시 시도
-            </Button>
-          </div>
-        )}
+        <p className="text-sm text-slate-500">
+          가장 잘 본 면접 결과를 제출하면 31일 동안 면접을 다시 볼 수 없습니다.
+        </p>
 
         <div className="flex justify-end gap-3">
-          {isSubmitted && (
-            <Button type="button" variant="outline" size="xs" onClick={onReturnToDashboard}>
-              대시보드로 이동
-            </Button>
-          )}
-          {!isSubmitted && (
-            <Button
-              type="button"
-              size="xs"
-              isLoading={isSubmitting}
-              onClick={onSubmitAnalysis}
-              className="h-[42px] rounded-[10px] bg-slate-700 px-6 text-white hover:bg-slate-800"
-            >
-              면접 완료
-              <ArrowRight size={14} />
-            </Button>
-          )}
+          <Button
+            type="button"
+            size="xs"
+            onClick={onReturnToDashboard}
+            className="h-[42px] rounded-[10px] bg-slate-700 px-6 text-white hover:bg-slate-800"
+          >
+            대시보드로 이동
+            <ArrowRight size={14} />
+          </Button>
         </div>
       </section>
     </main>
