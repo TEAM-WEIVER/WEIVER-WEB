@@ -2,6 +2,7 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 
 const PROFILE_API = '**/api/applicants';
 const CHANGE_PASSWORD_API = '**/api/auth/applicants/me/password';
+const WITHDRAW_API = '**/api/auth/applicants/me';
 
 const apiResponse = <TData>(data: TData, message = 'OK') => ({
   status: 'OK',
@@ -204,4 +205,63 @@ test('AC7: 변경 요청 중에는 버튼을 비활성화해 중복 제출을 �
   await expect.poll(() => releaseRequest).toBeDefined();
   releaseRequest!();
   await expect(page).toHaveURL('/login');
+});
+
+test('AC8: 회원 탈퇴를 취소하면 API를 호출하지 않고 계정 설정 화면에 머문다', async ({ page }) => {
+  await gotoAccountSettings(page);
+  let requestCount = 0;
+  await page.route(WITHDRAW_API, (route) => {
+    requestCount += 1;
+    return fulfillJson(route, 200, apiResponse(null));
+  });
+
+  await page.getByRole('button', { name: '회원 탈퇴' }).click();
+  await expect(page.getByRole('dialog', { name: '회원 탈퇴' })).toBeVisible();
+
+  await page.getByRole('button', { name: '취소' }).click();
+
+  await expect(page.getByRole('dialog', { name: '회원 탈퇴' })).toBeHidden();
+  expect(requestCount).toBe(0);
+  await expect(page).toHaveURL('/applicant/mypage/account');
+});
+
+test('AC9: 회원 탈퇴 확인 시 API 성공 후 로그인 화면으로 이동한다', async ({ page }) => {
+  await setupApplicantSession(page);
+  let deleteCalled = false;
+  await page.route(WITHDRAW_API, async (route) => {
+    deleteCalled = route.request().method() === 'DELETE';
+    await fulfillJson(route, 200, apiResponse(null));
+  });
+  await page.goto('/applicant/mypage/account');
+  await expect(page.getByRole('heading', { name: '계정 설정' })).toBeVisible();
+
+  await page.getByRole('button', { name: '회원 탈퇴' }).click();
+  await page.getByRole('button', { name: '탈퇴하기' }).click();
+
+  await expect(page).toHaveURL('/login');
+  expect(deleteCalled).toBe(true);
+});
+
+test('AC10: 회원 탈퇴 API 실패 시 토스트를 표시하고 계정 설정 화면을 유지한다', async ({
+  page,
+}) => {
+  await setupApplicantSession(page);
+  await page.route(WITHDRAW_API, (route) =>
+    fulfillJson(route, 500, {
+      status: 'INTERNAL_SERVER_ERROR',
+      code: 500,
+      data: null,
+      message: '회원 탈퇴에 실패했습니다. 다시 시도해주세요.',
+    }),
+  );
+  await page.goto('/applicant/mypage/account');
+  await expect(page.getByRole('heading', { name: '계정 설정' })).toBeVisible();
+
+  await page.getByRole('button', { name: '회원 탈퇴' }).click();
+  await page.getByRole('button', { name: '탈퇴하기' }).click();
+
+  await expect(page.getByRole('alert', { name: '계정 설정 알림' })).toContainText(
+    '회원 탈퇴에 실패했습니다. 다시 시도해주세요.',
+  );
+  await expect(page).toHaveURL('/applicant/mypage/account');
 });

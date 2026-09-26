@@ -3,9 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { changeMyPassword, type PasswordChangePayload } from '@/lib/applicant-account-api';
+import {
+  changeMyPassword,
+  type PasswordChangePayload,
+  withdrawApplicant,
+} from '@/lib/applicant-account-api';
 import { clearAccessToken } from '@/lib/auth-token';
 import { getApplicantsAll } from '@/lib/onboarding-api';
+import { Button } from '@/components/ui/button';
 
 import { AccountSettingsForm, type PasswordFormValues } from './account-settings-form';
 
@@ -43,6 +48,8 @@ export function AccountSettingsView() {
   const [email, setEmail] = useState('');
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isWithdrawalDialogOpen, setIsWithdrawalDialogOpen] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -88,6 +95,26 @@ export function AccountSettingsView() {
     }
   };
 
+  const handleWithdraw = async () => {
+    if (isWithdrawing) return;
+
+    setAlertMessage(null);
+    setIsWithdrawing(true);
+
+    try {
+      await withdrawApplicant();
+      clearAccessToken();
+      router.replace('/login');
+    } catch (error) {
+      setAlertMessage(
+        error instanceof Error && error.message !== 'API request failed'
+          ? error.message
+          : '회원 탈퇴에 실패했습니다. 다시 시도해주세요.',
+      );
+      setIsWithdrawing(false);
+    }
+  };
+
   return (
     <div className="flex w-full flex-col gap-6">
       {alertMessage ? (
@@ -107,7 +134,64 @@ export function AccountSettingsView() {
 
       <section className="border-border-light bg-bg-primary mx-auto w-full max-w-[628px] rounded-[20px] border px-6 py-11 sm:px-16">
         <AccountSettingsForm email={email} isSubmitting={isSubmitting} onSubmit={handleSubmit} />
+
+        <div className="border-border-light mt-10 border-t pt-8">
+          <h2 className="text-h3 text-text-secondary">회원 탈퇴</h2>
+          <p className="text-body2 text-text-tertiary mt-2">탈퇴하면 계정을 복구할 수 없습니다.</p>
+          <Button
+            type="button"
+            variant="destructive"
+            size="xs"
+            className="mt-5"
+            onClick={() => setIsWithdrawalDialogOpen(true)}
+          >
+            회원 탈퇴
+          </Button>
+        </div>
       </section>
+
+      {isWithdrawalDialogOpen ? (
+        <div className="bg-primary-900/30 fixed inset-0 z-50 flex items-center justify-center p-6">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="withdrawal-dialog-title"
+            className="border-border-light bg-bg-primary w-full max-w-[386px] rounded-[20px] border p-6 shadow-[0px_8px_24px_0px_rgba(149,157,165,0.2)]"
+          >
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <h2 id="withdrawal-dialog-title" className="text-h3 text-text-secondary">
+                  회원 탈퇴
+                </h2>
+                <p className="text-body2 text-text-tertiary">
+                  탈퇴 후에는 계정을 복구할 수 없습니다. 정말 탈퇴하시겠습니까?
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  disabled={isWithdrawing}
+                  onClick={() => setIsWithdrawalDialogOpen(false)}
+                >
+                  취소
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="flex-1"
+                  disabled={isWithdrawing}
+                  aria-busy={isWithdrawing}
+                  onClick={handleWithdraw}
+                >
+                  {isWithdrawing ? '탈퇴 중...' : '탈퇴하기'}
+                </Button>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

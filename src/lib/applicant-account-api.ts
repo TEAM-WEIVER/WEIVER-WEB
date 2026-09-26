@@ -19,3 +19,9 @@ export function changeMyPassword(payload: PasswordChangePayload) {
     body: payload,
   });
 }
+
+export function withdrawApplicant() {
+  return apiRequest<ApiResponse<null>>('/api/auth/applicants/me', {
+    method: 'DELETE',
+  });
+}
