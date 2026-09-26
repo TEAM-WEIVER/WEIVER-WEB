@@ -13,6 +13,7 @@ interface InterviewQuestionScreenProps {
   isFinished?: boolean;
   onSubmit: (answer: string) => void;
   onFinish?: () => void;
+  onReportError?: () => void;
 }
 
 const AI_INTERVIEWER_VIDEOS = {
@@ -90,6 +91,7 @@ export function InterviewQuestionScreen({
   isFinished = false,
   onSubmit,
   onFinish,
+  onReportError,
 }: InterviewQuestionScreenProps) {
   const questionKey = `${sequence}:${question}`;
   const [answerState, setAnswerState] = useState({ questionKey, value: '' });
@@ -323,7 +325,7 @@ export function InterviewQuestionScreen({
           type="button"
           variant="outline"
           size="sm"
-          onClick={isFinished ? onFinish : undefined}
+          onClick={isFinished ? onFinish : onReportError}
           className={
             isFinished
               ? 'h-10 shrink-0 border-slate-700 bg-slate-700 px-8 text-white hover:bg-slate-800 hover:text-white'

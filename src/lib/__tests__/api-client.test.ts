@@ -183,6 +183,7 @@ describe('apiRequest', () => {
       name: 'ApiError',
       message: '이미 사용 중인 이메일입니다.',
       status: 409,
+      apiStatus: 'EMAIL_ALREADY_EXISTS',
     });
   });
 

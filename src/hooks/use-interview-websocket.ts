@@ -61,6 +61,7 @@ export function useInterviewWebSocket() {
    * AC6 재연결 루프를 트리거하지 않도록 차단하는 플래그
    */
   const stompErrorFiredRef = useRef(false);
+  const finishedRef = useRef(false);
 
   /** AC6: 현재 재시도 횟수 */
   const retryCountRef = useRef(0);
@@ -133,12 +134,22 @@ export function useInterviewWebSocket() {
           break;
 
         case 'INTERVIEW_FINISHED':
-          setFinished();
-          clientRef.current?.deactivate();
+          if (setFinished(payload.interview_session_id)) {
+            finishedRef.current = true;
+            clearRetryTimer();
+            clientRef.current?.deactivate();
+          }
           break;
       }
     },
-    [clearStartResponseTimer, setSessionStarted, setQuestion, setAnswerAccepted, setFinished],
+    [
+      clearRetryTimer,
+      clearStartResponseTimer,
+      setSessionStarted,
+      setQuestion,
+      setAnswerAccepted,
+      setFinished,
+    ],
   );
 
   // ──────────────────────────────────────────────
@@ -151,6 +162,7 @@ export function useInterviewWebSocket() {
       if (clientRef.current?.active) return;
 
       stompErrorFiredRef.current = false;
+      finishedRef.current = false;
       retryCountRef.current = 0;
       clearSubscribeReceiptTimer();
       clearStartResponseTimer();
@@ -257,6 +269,9 @@ export function useInterviewWebSocket() {
         },
 
         onWebSocketClose: () => {
+          // 정상 종료 처리로 발생한 close에서는 재연결하지 않는다.
+          if (finishedRef.current) return;
+
           // AC5-a: STOMP ERROR로 인한 close는 재연결 제외
           if (stompErrorFiredRef.current) {
             stompErrorFiredRef.current = false;
