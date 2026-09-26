@@ -85,7 +85,7 @@ const ALREADY_SUBMITTED_ERROR = {
 async function mockPortfolioLoad(page: Page, body = EMPTY_PORTFOLIO) {
   await page.route(API.PORTFOLIOS, async (route) => {
     if (route.request().method() !== 'GET') {
-      await route.continue();
+      await route.fallback();
       return;
     }
     await fulfillJson(route, 200, body);
@@ -127,7 +127,7 @@ test('AC6: 포트폴리오 신규 저장 후 profile/submit이 자동으로 호�
 
   await page.route(API.PORTFOLIOS, async (route) => {
     if (route.request().method() !== 'POST') {
-      await route.continue();
+      await route.fallback();
       return;
     }
     postPortfolioCalled = true;
@@ -186,7 +186,7 @@ test('AC6: 포트폴리오 최초 저장 시 PATCH가 아닌 POST를 사용한�
       postCalled = true;
       await fulfillJson(route, 200, SAVE_SUCCESS);
     } else {
-      await route.continue();
+      await route.fallback();
     }
   });
   await page.route(API.PORTFOLIO_BY_ID, async (route) => {
@@ -194,7 +194,7 @@ test('AC6: 포트폴리오 최초 저장 시 PATCH가 아닌 POST를 사용한�
       patchCalled = true;
       await fulfillJson(route, 200, SAVE_SUCCESS);
     } else {
-      await route.continue();
+      await route.fallback();
     }
   });
   await page.route(API.PROFILE_SUBMIT, async (route) => {
@@ -229,7 +229,7 @@ test('AC7: 기존 포트폴리오 수정 시 PATCH /api/portfolios/7로 저장 �
 
   await page.route(API.PORTFOLIO_BY_ID, async (route) => {
     if (route.request().method() !== 'PATCH') {
-      await route.continue();
+      await route.fallback();
       return;
     }
     patchedUrl = route.request().url();
@@ -292,7 +292,7 @@ test('AC8: 포트폴리오 저장 실패 시 profile/submit을 호출하지 않�
 
   await page.route(API.PORTFOLIOS, async (route) => {
     if (route.request().method() !== 'POST') {
-      await route.continue();
+      await route.fallback();
       return;
     }
     await fulfillJson(route, 500, SERVER_ERROR);
@@ -331,7 +331,7 @@ test('AC12-b: 포트폴리오 저장 후 profile/submit 실패 시 에러 메시
 
   await page.route(API.PORTFOLIOS, async (route) => {
     if (route.request().method() !== 'POST') {
-      await route.continue();
+      await route.fallback();
       return;
     }
     await fulfillJson(route, 200, SAVE_SUCCESS);
@@ -363,7 +363,7 @@ test('AC12-b: profile/submit 서버 오류 시에도 에러 메시지를 표시�
 
   await page.route(API.PORTFOLIOS, async (route) => {
     if (route.request().method() !== 'POST') {
-      await route.continue();
+      await route.fallback();
       return;
     }
     await fulfillJson(route, 200, SAVE_SUCCESS);

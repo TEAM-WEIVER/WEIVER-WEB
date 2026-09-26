@@ -6,10 +6,15 @@ on:
   push:
     branches: [develop]
 
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e:
     if: github.head_ref != 'automation/develop-to-main'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,6 +57,25 @@ jobs:
       - name: Run affected E2E tests
         if: github.event_name == 'pull_request'
         run: |
+          export NEXT_PUBLIC_E2E_TEST=true
+          export E2E_EXTERNAL_SERVER=true
+          ./node_modules/.bin/next start --hostname 127.0.0.1 --port 3000 > "$RUNNER_TEMP/next-e2e.log" 2>&1 &
+          server_pid=$!
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT INT TERM
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/login > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          if ! curl --fail --silent http://127.0.0.1:3000/login > /dev/null; then
+            cat "$RUNNER_TEMP/next-e2e.log"
+            exit 1
+          fi
           if find e2e -name "*.spec.ts" | grep -q .; then
             E2E_BASE_REF=origin/${{ github.base_ref }} pnpm test:e2e:affected
           else
@@ -61,6 +85,25 @@ jobs:
       - name: Run full E2E tests
         if: github.event_name == 'push'
         run: |
+          export NEXT_PUBLIC_E2E_TEST=true
+          export E2E_EXTERNAL_SERVER=true
+          ./node_modules/.bin/next start --hostname 127.0.0.1 --port 3000 > "$RUNNER_TEMP/next-e2e.log" 2>&1 &
+          server_pid=$!
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT INT TERM
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/login > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          if ! curl --fail --silent http://127.0.0.1:3000/login > /dev/null; then
+            cat "$RUNNER_TEMP/next-e2e.log"
+            exit 1
+          fi
           if find e2e -name "*.spec.ts" | grep -q .; then
             pnpm test:e2e --workers=2
           else
