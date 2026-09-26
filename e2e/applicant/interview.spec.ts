@@ -946,13 +946,11 @@ test.describe('AC8: 브라우저 탭 비활성화 복귀 시 소켓 상태 확�
 });
 
 // ──────────────────────────────────────────────
-// #101 AC3: 종료 후 분석 요청
+// #114: 종료 후 대시보드에서 결과 선택 제출
 // ──────────────────────────────────────────────
 
-test.describe('#101 AC3: 면접 종료 후 분석 요청', () => {
-  test('완료 화면의 면접 완료 버튼을 누르면 세션별 analysis 요청을 한 번 보내고 분석 접수 상태를 알린다', async ({
-    page,
-  }) => {
+test.describe('#114: 종료 후 대시보드에서 결과 선택 제출', () => {
+  test('완료 화면에서는 analysis를 요청하지 않고 대시보드로 이동한다', async ({ page }) => {
     let analysisRequestCount = 0;
     let analysisRequestBody: string | null = null;
 
@@ -1006,13 +1004,11 @@ test.describe('#101 AC3: 면접 종료 후 분석 요청', () => {
 
     await submitSpokenAnswer(page);
 
-    await page.getByRole('button', { name: '면접 완료' }).first().click();
+    await page.getByRole('button', { name: '대시보드로 이동' }).first().click();
 
-    await expect.poll(() => analysisRequestCount, { timeout: 5000 }).toBe(1);
+    await expect(page).toHaveURL(/\/applicant\/dashboard/);
+    expect(analysisRequestCount).toBe(0);
     expect(analysisRequestBody).toBeNull();
-    await expect(page.getByRole('status').filter({ hasText: '분석 접수 완료' })).toBeVisible({
-      timeout: 5000,
-    });
   });
 });
 

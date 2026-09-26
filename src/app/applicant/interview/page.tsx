@@ -1,11 +1,10 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { getAccessToken } from '@/lib/auth-token';
-import { ApiError } from '@/lib/api-client';
-import { reportInterviewError, requestInterviewAnalysis } from '@/lib/interview-api';
+import { reportInterviewError } from '@/lib/interview-api';
 import { useInterviewWebSocket } from '@/hooks/use-interview-websocket';
 import { useInterviewStore, getRoundLabel } from '@/store/interview-store';
 import { toast } from '@/store/toast-store';
@@ -16,12 +15,6 @@ import { InterviewErrorBanner } from './_components/interview-error-banner';
 import { InterviewReconnectingBanner } from './_components/interview-reconnecting-banner';
 import { InterviewFinishedScreen } from './_components/interview-finished-screen';
 import { InterviewErrorReportModal } from './_components/interview-error-report-modal';
-
-type AnalysisState =
-  | { status: 'idle' }
-  | { status: 'submitting' }
-  | { status: 'success'; nextAvailableAt: string | null }
-  | { status: 'error'; message: string };
 
 export default function InterviewPage() {
   const router = useRouter();
@@ -40,11 +33,9 @@ export default function InterviewPage() {
   const hasCurrentQuestion = currentQuestion !== null && currentSequence !== null;
 
   const { connect, submitAnswer } = useInterviewWebSocket();
-  const [analysisState, setAnalysisState] = useState<AnalysisState>({ status: 'idle' });
   const [isErrorReportOpen, setIsErrorReportOpen] = useState(false);
   const [isReportingError, setIsReportingError] = useState(false);
   const [errorReportMessage, setErrorReportMessage] = useState<string | null>(null);
-  const analysisRequestedSessionIdsRef = useRef(new Set<string>());
 
   // ──────────────────────────────────────────────
   // 핸들러
@@ -73,47 +64,6 @@ export default function InterviewPage() {
     reset();
     router.push('/applicant/dashboard');
   }, [reset, router]);
-
-  const handleRequestAnalysis = useCallback(async () => {
-    if (
-      !interviewSessionId ||
-      analysisState.status === 'submitting' ||
-      analysisState.status === 'success'
-    ) {
-      return;
-    }
-    if (analysisRequestedSessionIdsRef.current.has(interviewSessionId)) return;
-
-    analysisRequestedSessionIdsRef.current.add(interviewSessionId);
-    setAnalysisState({ status: 'submitting' });
-
-    try {
-      const response = await requestInterviewAnalysis(interviewSessionId);
-      setAnalysisState({
-        status: 'success',
-        nextAvailableAt: response.data.next_available_interview_at ?? null,
-      });
-    } catch (error) {
-      if (error instanceof ApiError && error.apiStatus === 'INTERVIEW_ANALYSIS_ALREADY_REQUESTED') {
-        setAnalysisState({ status: 'success', nextAvailableAt: null });
-        return;
-      }
-
-      analysisRequestedSessionIdsRef.current.delete(interviewSessionId);
-      setAnalysisState({
-        status: 'error',
-        message:
-          error instanceof ApiError && error.apiStatus === 'INTERVIEW_NOT_FINISHED'
-            ? '면접 종료 상태를 확인할 수 없어요. 대시보드로 돌아가 다시 확인해 주세요.'
-            : '분석 요청에 실패했어요. 잠시 후 다시 시도해 주세요.',
-      });
-    }
-  }, [analysisState.status, interviewSessionId]);
-
-  const handleRetryAnalysis = useCallback(() => {
-    setAnalysisState({ status: 'idle' });
-    void handleRequestAnalysis();
-  }, [handleRequestAnalysis]);
 
   const handleReportError = useCallback(
     async (content: string) => {
@@ -227,14 +177,6 @@ export default function InterviewPage() {
         {/* FINISHED — 완료 화면 */}
         {status === 'FINISHED' && (
           <InterviewFinishedScreen
-            isSubmitting={analysisState.status === 'submitting'}
-            isSubmitted={analysisState.status === 'success'}
-            nextAvailableAt={
-              analysisState.status === 'success' ? analysisState.nextAvailableAt : null
-            }
-            errorMessage={analysisState.status === 'error' ? analysisState.message : null}
-            onSubmitAnalysis={() => void handleRequestAnalysis()}
-            onRetryAnalysis={handleRetryAnalysis}
             onReportError={() => {
               setErrorReportMessage(null);
               setIsErrorReportOpen(true);
