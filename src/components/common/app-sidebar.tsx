@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CircleHelp, Settings, UserRound, type LucideIcon } from 'lucide-react';
+import { CircleHelp, MessageCircle, Settings, UserRound, type LucideIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
@@ -16,6 +16,7 @@ type AppSidebarProps = {
   homeHref: string;
   items: readonly AppSidebarItem[];
   profileHref: string;
+  inquiryHref?: string;
   profileLabel?: string;
   profileIcon?: LucideIcon;
 };
@@ -24,6 +25,7 @@ export function AppSidebar({
   homeHref,
   items,
   profileHref,
+  inquiryHref,
   profileLabel = '마이페이지',
   profileIcon: ProfileIcon = UserRound,
 }: AppSidebarProps) {
@@ -80,14 +82,26 @@ export function AppSidebar({
             <Settings size={24} />
           </button>
         </div>
-        <Link
-          href={profileHref}
-          aria-label={profileLabel}
-          title={profileLabel}
-          className="bg-bg-primary text-primary-500 flex size-11 items-center justify-center rounded-md"
-        >
-          <ProfileIcon size={24} />
-        </Link>
+        <div className="flex flex-col gap-1">
+          {inquiryHref ? (
+            <Link
+              href={inquiryHref}
+              aria-label="문의"
+              title="문의"
+              className="text-primary-300 hover:bg-primary-600 flex size-11 items-center justify-center rounded-md"
+            >
+              <MessageCircle size={24} />
+            </Link>
+          ) : null}
+          <Link
+            href={profileHref}
+            aria-label={profileLabel}
+            title={profileLabel}
+            className="bg-bg-primary text-primary-500 flex size-11 items-center justify-center rounded-md"
+          >
+            <ProfileIcon size={24} />
+          </Link>
+        </div>
       </div>
     </aside>
   );
