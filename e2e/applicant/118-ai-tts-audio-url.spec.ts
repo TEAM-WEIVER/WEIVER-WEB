@@ -145,6 +145,7 @@ async function setupAudioMock(page: Page, mode: AudioMockMode) {
       oncanplay: (() => void) | null;
       onended: (() => void) | null;
       onerror: ((e: Event) => void) | null;
+      private _eventListeners: Map<string, Array<() => void>>;
 
       constructor(src: string) {
         this.src = src;
@@ -152,15 +153,36 @@ async function setupAudioMock(page: Page, mode: AudioMockMode) {
         this.oncanplay = null;
         this.onended = null;
         this.onerror = null;
+        this._eventListeners = new Map();
         audioInstance = this as unknown as typeof audioInstance;
 
         if (audioMode === 'error') {
           setTimeout(() => this.onerror?.(new Event('error')), 100);
         } else if (audioMode === 'success') {
-          setTimeout(() => this.oncanplay?.(), 50);
+          setTimeout(() => {
+            this.oncanplay?.();
+            const listeners = this._eventListeners.get('canplay') ?? [];
+            listeners.forEach((fn) => fn());
+            this._eventListeners.delete('canplay');
+          }, 50);
         }
         // 'timeout': canplay 이벤트를 보내지 않음
         // 'blocked': play() 호출 시 reject
+      }
+
+      addEventListener(event: string, fn: () => void, _opts?: unknown) {
+        if (!this._eventListeners.has(event)) {
+          this._eventListeners.set(event, []);
+        }
+        this._eventListeners.get(event)!.push(fn);
+      }
+
+      removeEventListener(event: string, fn: () => void) {
+        const listeners = this._eventListeners.get(event) ?? [];
+        this._eventListeners.set(
+          event,
+          listeners.filter((l) => l !== fn),
+        );
       }
 
       play(): Promise<void> {
@@ -179,6 +201,9 @@ async function setupAudioMock(page: Page, mode: AudioMockMode) {
 
       _triggerCanplay() {
         this.oncanplay?.();
+        const listeners = this._eventListeners.get('canplay') ?? [];
+        listeners.forEach((fn) => fn());
+        this._eventListeners.delete('canplay');
       }
 
       _triggerEnded() {
@@ -277,13 +302,6 @@ async function gotoInterviewWithAuth(page: Page, speechTranscript = '테스트 �
     await checkboxes.nth(i).check();
   }
   await expect(page.getByRole('button', { name: '면접 시작' })).toBeEnabled();
-}
-
-async function submitSpokenAnswer(page: Page) {
-  await expect(page.getByRole('button', { name: '답변하기' })).toBeEnabled({ timeout: 5000 });
-  await page.getByRole('button', { name: '답변하기' }).click();
-  await expect(page.getByRole('button', { name: '제출하기' })).toBeEnabled({ timeout: 5000 });
-  await page.getByRole('button', { name: '제출하기' }).click();
 }
 
 // ──────────────────────────────────────────────
@@ -424,16 +442,26 @@ test.describe('AC2: UNAVAILABLE/null 상태 — 브라우저 TTS 폴백', () => 
       timeout: 5000,
     });
 
-    // Then: speechSynthesis.speak가 lang:'ko-KR', rate:0.9로 호출된다
+    // Then: speechSynthesis.speak가 lang:'ko-KR', rate≈0.9로 호출된다
+    // SpeechSynthesisUtterance.rate는 float32로 처리될 수 있으므로 근사값으로 비교한다
+    type SpeechStats = {
+      speakCallCount: number;
+      lastUtterance: { lang: string; rate: number } | null;
+    };
     await expect
-      .poll(
+      .poll<SpeechStats>(
         async () =>
           (await page.evaluate(() =>
             (window as unknown as Record<string, unknown>)['_getSpeechStats']?.(),
-          )) as { speakCallCount: number; lastUtterance: { lang: string; rate: number } | null },
+          )) as SpeechStats,
         { timeout: 3000 },
       )
-      .toMatchObject({ speakCallCount: 1, lastUtterance: { lang: 'ko-KR', rate: 0.9 } });
+      .toMatchObject({ speakCallCount: 1, lastUtterance: { lang: 'ko-KR' } });
+    // rate 정밀도 별도 검사 (float32 반올림 허용)
+    const finalStats = (await page.evaluate(() =>
+      (window as unknown as Record<string, unknown>)['_getSpeechStats']?.(),
+    )) as SpeechStats;
+    expect(Math.round((finalStats.lastUtterance?.rate ?? 0) * 10) / 10).toBe(0.9);
   });
 
   test('audio_status=null 수신 시 speechSynthesis.speak가 호출된다', async ({ page }) => {
@@ -577,8 +605,9 @@ test.describe('AC3: 오디오 로드 실패 시 브라우저 TTS 폴백', () => 
     // 폴백 후 잠시 대기
     await page.waitForTimeout(500);
 
-    // Then: role="alert"로 표시되는 별도 오류 메시지가 없다
-    await expect(page.getByRole('alert')).not.toBeVisible();
+    // Then: 텍스트가 있는 role="alert" 오류 메시지가 표시되지 않는다
+    // (Next.js 내부 __next-route-announcer__ 같은 빈 alert 요소는 제외)
+    await expect(page.locator('[role="alert"]').filter({ hasText: /.+/ })).not.toBeVisible();
   });
 
   test('오디오 로드 실패 후 폴백 TTS 완료 시 답변하기 버튼이 활성화된다', async ({ page }) => {
@@ -787,6 +816,7 @@ test.describe('AC5: Safari 자동재생 차단 대응', () => {
         oncanplay: (() => void) | null;
         onended: (() => void) | null;
         onerror: ((e: Event) => void) | null;
+        private _listeners: Map<string, Array<() => void>>;
 
         constructor(src: string) {
           this.src = src;
@@ -794,7 +824,26 @@ test.describe('AC5: Safari 자동재생 차단 대응', () => {
           this.oncanplay = null;
           this.onended = null;
           this.onerror = null;
-          setTimeout(() => this.oncanplay?.(), 50);
+          this._listeners = new Map();
+          setTimeout(() => {
+            this.oncanplay?.();
+            const ls = this._listeners.get('canplay') ?? [];
+            ls.forEach((fn) => fn());
+            this._listeners.delete('canplay');
+          }, 50);
+        }
+
+        addEventListener(event: string, fn: () => void, _opts?: unknown) {
+          if (!this._listeners.has(event)) this._listeners.set(event, []);
+          this._listeners.get(event)!.push(fn);
+        }
+
+        removeEventListener(event: string, fn: () => void) {
+          const ls = this._listeners.get(event) ?? [];
+          this._listeners.set(
+            event,
+            ls.filter((l) => l !== fn),
+          );
         }
 
         play(): Promise<void> {
@@ -866,8 +915,65 @@ test.describe('AC5: Safari 자동재생 차단 대응', () => {
     page,
   }) => {
     // Given: 첫 번째 질문 시 Audio blocked → 수동 재생 버튼 표시
+    // 두 번째 질문 시에는 Audio success → 수동 재생 버튼이 사라짐
     await setupSpeechSynthesisMock(page, { callOnend: false });
-    await setupAudioMock(page, 'blocked');
+    // 첫 번째 Audio는 blocked, 이후는 success로 작동
+    await page.addInitScript(() => {
+      let instanceCount = 0;
+
+      class MockAudio {
+        src: string;
+        currentTime = 0;
+        oncanplay: (() => void) | null = null;
+        onended: (() => void) | null = null;
+        onerror: ((e: Event) => void) | null = null;
+        private _isFirst: boolean;
+        private _listeners: Map<string, Array<() => void>>;
+
+        constructor(src: string) {
+          this.src = src;
+          instanceCount++;
+          this._isFirst = instanceCount === 1;
+          this._listeners = new Map();
+          // 첫 번째가 아닌 경우 canplay 발화
+          if (!this._isFirst) {
+            setTimeout(() => {
+              this.oncanplay?.();
+              const ls = this._listeners.get('canplay') ?? [];
+              ls.forEach((fn) => fn());
+              this._listeners.delete('canplay');
+            }, 50);
+          }
+        }
+
+        addEventListener(event: string, fn: () => void, _opts?: unknown) {
+          if (!this._listeners.has(event)) this._listeners.set(event, []);
+          this._listeners.get(event)!.push(fn);
+        }
+
+        removeEventListener(event: string, fn: () => void) {
+          const ls = this._listeners.get(event) ?? [];
+          this._listeners.set(
+            event,
+            ls.filter((l) => l !== fn),
+          );
+        }
+
+        play(): Promise<void> {
+          if (this._isFirst) {
+            return Promise.reject(
+              Object.assign(new Error('NotAllowedError'), { name: 'NotAllowedError' }),
+            );
+          }
+          // 두 번째 이후: 재생 성공 (ended는 안 보내서 재생 중 상태 유지)
+          return Promise.resolve();
+        }
+
+        pause() {}
+      }
+
+      (window as unknown as Record<string, unknown>)['Audio'] = MockAudio;
+    });
 
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
       ws.onMessage((data) => {
@@ -1049,6 +1155,7 @@ test.describe('TTS 정리: 컴포넌트 unmount 시 오디오 중단', () => {
         oncanplay: (() => void) | null;
         onended: (() => void) | null;
         onerror: ((e: Event) => void) | null;
+        private _listeners: Map<string, Array<() => void>>;
 
         constructor(src: string) {
           this.src = src;
@@ -1056,11 +1163,32 @@ test.describe('TTS 정리: 컴포넌트 unmount 시 오디오 중단', () => {
           this.oncanplay = null;
           this.onended = null;
           this.onerror = null;
-          // canplay는 전송하되 ended는 보내지 않음 (재생 중 상태 유지)
-          setTimeout(() => this.oncanplay?.(), 50);
+          this._listeners = new Map();
+          // canplay 발화 — ended는 발화하지 않아 재생 중 상태 유지
+          setTimeout(() => {
+            this.oncanplay?.();
+            const ls = this._listeners.get('canplay') ?? [];
+            ls.forEach((fn) => fn());
+            this._listeners.delete('canplay');
+          }, 50);
+        }
+
+        addEventListener(event: string, fn: () => void, _opts?: unknown) {
+          if (!this._listeners.has(event)) this._listeners.set(event, []);
+          this._listeners.get(event)!.push(fn);
+        }
+
+        removeEventListener(event: string, fn: () => void) {
+          const ls = this._listeners.get(event) ?? [];
+          this._listeners.set(
+            event,
+            ls.filter((l) => l !== fn),
+          );
         }
 
         play(): Promise<void> {
+          // ended를 발화하지 않아 재생 중 상태 유지 → 답변하기 버튼 활성화를 위해 2초 뒤 ended 발화
+          setTimeout(() => this.onended?.(), 2000);
           return Promise.resolve();
         }
 
@@ -1102,7 +1230,11 @@ test.describe('TTS 정리: 컴포넌트 unmount 시 오디오 중단', () => {
       timeout: 5000,
     });
 
-    await submitSpokenAnswer(page);
+    // 2초 후 ended가 발화되어 TTS 완료 → 답변하기 버튼 활성화
+    await expect(page.getByRole('button', { name: '답변하기' })).toBeEnabled({ timeout: 5000 });
+    await page.getByRole('button', { name: '답변하기' }).click();
+    await expect(page.getByRole('button', { name: '제출하기' })).toBeEnabled({ timeout: 5000 });
+    await page.getByRole('button', { name: '제출하기' }).click();
 
     // Then: 면접 완료 화면으로 전환된다
     await expect(page.getByText('면접이 완료되었어요.', { exact: true }).first()).toBeVisible({
