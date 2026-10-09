@@ -25,6 +25,8 @@ export default function InterviewPage() {
     currentQuestion,
     currentQuestionCode,
     currentSequence,
+    currentAudioUrl,
+    currentAudioStatus,
     errorMessage,
     reset,
   } = useInterviewStore();
@@ -166,6 +168,8 @@ export default function InterviewPage() {
               sequence={currentSequence}
               roundLabel={roundLabel}
               isSubmitting={status === 'SUBMITTING' || status === 'RECONNECTING'}
+              audioUrl={currentAudioUrl}
+              audioStatus={currentAudioStatus}
               onSubmit={handleSubmitAnswer}
               onReportError={() => {
                 setErrorReportMessage(null);

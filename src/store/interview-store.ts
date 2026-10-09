@@ -36,6 +36,8 @@ export interface QuestionReadyPayload extends BasePayload {
   question_code: string;
   sequence: number;
   question: string;
+  audio_url: string | null;
+  audio_status: 'READY' | 'UNAVAILABLE' | null;
 }
 
 export interface AnswerAcceptedPayload extends BasePayload {
@@ -73,6 +75,8 @@ interface InterviewState {
   currentQuestion: string | null;
   currentQuestionCode: string | null;
   currentSequence: number | null;
+  currentAudioUrl: string | null;
+  currentAudioStatus: 'READY' | 'UNAVAILABLE' | null;
   errorMessage: string | null;
   /** AC2-a: 중복 메시지 방어용 — 마지막 수신한 sessionId+sequence 조합 */
   lastReceivedKey: string | null;
@@ -92,6 +96,8 @@ const initialState = {
   currentQuestion: null,
   currentQuestionCode: null,
   currentSequence: null,
+  currentAudioUrl: null,
+  currentAudioStatus: null as 'READY' | 'UNAVAILABLE' | null,
   errorMessage: null,
   lastReceivedKey: null,
 };
@@ -120,6 +126,8 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
       currentQuestion: payload.question,
       currentQuestionCode: payload.question_code,
       currentSequence: payload.sequence,
+      currentAudioUrl: payload.audio_url ?? null,
+      currentAudioStatus: payload.audio_status ?? null,
       lastReceivedKey: key,
       status: 'QUESTION',
     });
