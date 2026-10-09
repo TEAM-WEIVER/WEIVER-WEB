@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, Mic, UserRound } from 'lucide-react';
+import { AlertCircle, ArrowRight, Mic, UserRound, Volume2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
@@ -11,6 +11,8 @@ interface InterviewQuestionScreenProps {
   roundLabel: string;
   isSubmitting: boolean;
   isFinished?: boolean;
+  audioUrl?: string | null;
+  audioStatus?: 'READY' | 'UNAVAILABLE' | null;
   onSubmit: (answer: string) => void;
   onFinish?: () => void;
   onReportError?: () => void;
@@ -89,6 +91,8 @@ export function InterviewQuestionScreen({
   roundLabel,
   isSubmitting,
   isFinished = false,
+  audioUrl,
+  audioStatus,
   onSubmit,
   onFinish,
   onReportError,
@@ -111,6 +115,10 @@ export function InterviewQuestionScreen({
     isListening: false,
     hasStarted: false,
   });
+  const [playBlockedState, setPlayBlockedState] = useState<{
+    questionKey: string;
+    blocked: boolean;
+  }>({ questionKey, blocked: false });
 
   const finalAnswer = answerState.questionKey === questionKey ? answerState.value : '';
   const interimAnswer =
@@ -126,6 +134,8 @@ export function InterviewQuestionScreen({
     listeningState.questionKey === questionKey ? listeningState.isListening : false;
   const hasStartedAnswering =
     listeningState.questionKey === questionKey ? listeningState.hasStarted : false;
+  const isPlayBlocked =
+    playBlockedState.questionKey === questionKey ? playBlockedState.blocked : false;
   const isActionButtonDisabled =
     isSubmitting || (!isFinished && !hasStartedAnswering && !isTtsDone);
 
@@ -135,6 +145,14 @@ export function InterviewQuestionScreen({
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const recognitionQuestionKeyRef = useRef(questionKey);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playedViaRef = useRef<'server' | 'fallback' | null>(null);
+  const currentQuestionRef = useRef<string>(question);
+
+  // 최신 question 값 추적 (fallback TTS 재사용 시 필요)
+  useEffect(() => {
+    currentQuestionRef.current = question;
+  }, [question]);
 
   // STT 초기화
   useEffect(() => {
@@ -159,24 +177,24 @@ export function InterviewQuestionScreen({
           interimText += transcript;
         }
       }
-      const currentQuestionKey = recognitionQuestionKeyRef.current;
+      const currentQKey = recognitionQuestionKeyRef.current;
       if (finalText) {
         setAnswerState((prev) => ({
-          questionKey: currentQuestionKey,
-          value: prev.questionKey === currentQuestionKey ? prev.value + finalText : finalText,
+          questionKey: currentQKey,
+          value: prev.questionKey === currentQKey ? prev.value + finalText : finalText,
         }));
       }
-      setInterimAnswerState({ questionKey: currentQuestionKey, value: interimText });
+      setInterimAnswerState({ questionKey: currentQKey, value: interimText });
     };
 
     recognition.onend = () => {
-      const currentQuestionKey = recognitionQuestionKeyRef.current;
-      setListeningState({ questionKey: currentQuestionKey, isListening: false, hasStarted: true });
+      const currentQKey = recognitionQuestionKeyRef.current;
+      setListeningState({ questionKey: currentQKey, isListening: false, hasStarted: true });
     };
 
     recognition.onerror = () => {
-      const currentQuestionKey = recognitionQuestionKeyRef.current;
-      setListeningState({ questionKey: currentQuestionKey, isListening: false, hasStarted: true });
+      const currentQKey = recognitionQuestionKeyRef.current;
+      setListeningState({ questionKey: currentQKey, isListening: false, hasStarted: true });
     };
 
     recognitionRef.current = recognition;
@@ -186,12 +204,25 @@ export function InterviewQuestionScreen({
     };
   }, []);
 
-  // 질문이 교체될 때 답변 영역만 초기화하고, 카메라/레이아웃은 유지한다.
+  // Audio 객체 unmount 정리
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+      if (audioRef.current) audioRef.current.src = '';
+    };
+  }, []);
+
+  // 질문이 교체될 때 TTS 로직 실행 (서버 TTS 또는 speechSynthesis 폴백)
   useEffect(() => {
     let isCurrentQuestion = true;
-    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
     recognitionRef.current?.abort();
+
+    // 이전 오디오 중단
+    audioRef.current?.pause();
+    if (audioRef.current) audioRef.current.src = '';
+    audioRef.current = null;
+    playedViaRef.current = null;
 
     window.speechSynthesis.cancel();
 
@@ -202,35 +233,109 @@ export function InterviewQuestionScreen({
       };
     }
 
-    const utterance = new SpeechSynthesisUtterance(question);
-    utterance.lang = 'ko-KR';
-    utterance.rate = 0.9;
-
-    const finishTts = () => {
+    const fallbackToSpeechSynthesis = () => {
       if (!isCurrentQuestion) return;
-      if (fallbackTimer) {
-        clearTimeout(fallbackTimer);
-        fallbackTimer = null;
+
+      audioRef.current?.pause();
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(currentQuestionRef.current);
+      utterance.lang = 'ko-KR';
+      utterance.rate = 0.9;
+
+      let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+      const finishTts = () => {
+        if (!isCurrentQuestion) return;
+        if (fallbackTimer) {
+          clearTimeout(fallbackTimer);
+          fallbackTimer = null;
+        }
+        setTtsState({ questionKey, isPlaying: false, isDone: true });
+      };
+
+      utterance.onend = finishTts;
+      utterance.onerror = finishTts;
+
+      try {
+        window.speechSynthesis.speak(utterance);
+        fallbackTimer = setTimeout(
+          finishTts,
+          Math.min(Math.max(currentQuestionRef.current.length * 160, 4000), 30000),
+        );
+      } catch {
+        finishTts();
       }
-      setTtsState({ questionKey, isPlaying: false, isDone: true });
+
+      playedViaRef.current = 'fallback';
     };
 
-    utterance.onend = finishTts;
-    utterance.onerror = finishTts;
+    // 서버 TTS 재생 (READY 상태이고 audio_url이 있을 때)
+    if (audioStatus === 'READY' && audioUrl) {
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      playedViaRef.current = 'server';
 
-    try {
-      window.speechSynthesis.speak(utterance);
-      fallbackTimer = setTimeout(finishTts, Math.min(Math.max(question.length * 160, 4000), 30000));
-    } catch {
-      finishTts();
+      let canplayTimer: ReturnType<typeof setTimeout> | null = null;
+      let fallbackCalled = false;
+
+      const triggerFallback = () => {
+        if (fallbackCalled || !isCurrentQuestion) return;
+        fallbackCalled = true;
+        if (canplayTimer) {
+          clearTimeout(canplayTimer);
+          canplayTimer = null;
+        }
+        audio.pause();
+        fallbackToSpeechSynthesis();
+      };
+
+      audio.onerror = () => {
+        triggerFallback();
+      };
+
+      audio.onended = () => {
+        if (!isCurrentQuestion) return;
+        setTtsState({ questionKey, isPlaying: false, isDone: true });
+      };
+
+      // 5초 canplay 타임아웃
+      canplayTimer = setTimeout(() => {
+        triggerFallback();
+      }, 5000);
+
+      audio.addEventListener(
+        'canplay',
+        () => {
+          if (canplayTimer) {
+            clearTimeout(canplayTimer);
+            canplayTimer = null;
+          }
+        },
+        { once: true },
+      );
+
+      audio.play().catch((e: Error) => {
+        if (e.name === 'NotAllowedError') {
+          // Safari 자동재생 차단
+          setTtsState((prev) =>
+            prev.questionKey === questionKey ? { ...prev, isPlaying: false } : prev,
+          );
+          setPlayBlockedState({ questionKey, blocked: true });
+        } else {
+          triggerFallback();
+        }
+      });
+    } else {
+      // UNAVAILABLE / null → 브라우저 TTS 폴백
+      fallbackToSpeechSynthesis();
     }
 
     return () => {
       isCurrentQuestion = false;
-      if (fallbackTimer) clearTimeout(fallbackTimer);
       window.speechSynthesis.cancel();
     };
-  }, [isFinished, question, questionKey]);
+  }, [isFinished, question, questionKey, audioUrl, audioStatus]);
 
   useEffect(() => {
     if (isFinished) return;
@@ -288,6 +393,75 @@ export function InterviewQuestionScreen({
     setListeningState({ questionKey, isListening: false, hasStarted: true });
   }
 
+  function handleReplay() {
+    if (playedViaRef.current === 'server' && audioRef.current) {
+      // 재생 중이면 먼저 중단 후 처음부터 재시작
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+
+      setTtsState({ questionKey, isPlaying: true, isDone: false });
+
+      audioRef.current.play().catch((e: Error) => {
+        if (e.name === 'NotAllowedError') {
+          setTtsState({ questionKey, isPlaying: false, isDone: false });
+          setPlayBlockedState({ questionKey, blocked: true });
+        } else {
+          // 만료된 URL 등 오류 시 폴백
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(currentQuestionRef.current);
+          utterance.lang = 'ko-KR';
+          utterance.rate = 0.9;
+          utterance.onend = () => setTtsState({ questionKey, isPlaying: false, isDone: true });
+          utterance.onerror = () => setTtsState({ questionKey, isPlaying: false, isDone: true });
+          window.speechSynthesis.speak(utterance);
+          playedViaRef.current = 'fallback';
+        }
+      });
+
+      audioRef.current.onended = () => {
+        setTtsState({ questionKey, isPlaying: false, isDone: true });
+      };
+    } else {
+      // 폴백 경로: speechSynthesis 재실행
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentQuestionRef.current);
+      utterance.lang = 'ko-KR';
+      utterance.rate = 0.9;
+      utterance.onend = () => setTtsState({ questionKey, isPlaying: false, isDone: true });
+      utterance.onerror = () => setTtsState({ questionKey, isPlaying: false, isDone: true });
+
+      setTtsState({ questionKey, isPlaying: true, isDone: false });
+
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+
+  function handleManualPlay() {
+    if (!audioRef.current) return;
+
+    audioRef.current.play().catch(() => {
+      // 수동 재생도 실패 시 speechSynthesis 폴백
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentQuestionRef.current);
+      utterance.lang = 'ko-KR';
+      utterance.rate = 0.9;
+      utterance.onend = () => setTtsState({ questionKey, isPlaying: false, isDone: true });
+      utterance.onerror = () => setTtsState({ questionKey, isPlaying: false, isDone: true });
+      setTtsState({ questionKey, isPlaying: true, isDone: false });
+      window.speechSynthesis.speak(utterance);
+      playedViaRef.current = 'fallback';
+    });
+
+    setPlayBlockedState({ questionKey, blocked: false });
+    setTtsState({ questionKey, isPlaying: true, isDone: false });
+
+    if (audioRef.current) {
+      audioRef.current.onended = () => {
+        setTtsState({ questionKey, isPlaying: false, isDone: true });
+      };
+    }
+  }
+
   function handleActionButton() {
     if (isFinished) {
       onFinish?.();
@@ -301,6 +475,7 @@ export function InterviewQuestionScreen({
       return;
     }
     if (isTtsPlaying || isTtsDone) {
+      audioRef.current?.pause();
       window.speechSynthesis.cancel();
       setTtsState({ questionKey, isPlaying: false, isDone: true });
       startListening();
@@ -404,7 +579,38 @@ export function InterviewQuestionScreen({
           </p>
         )}
 
-        <div className="flex justify-end">
+        {/* Safari 자동재생 차단 시 수동 재생 버튼 */}
+        {isPlayBlocked && !isFinished && (
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label="질문 음성 재생"
+              onClick={handleManualPlay}
+              className="flex items-center gap-1 border-slate-300 text-slate-600 hover:bg-slate-50"
+            >
+              <Volume2 size={14} />
+              질문 음성 재생
+            </Button>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2">
+          {/* 다시 듣기 버튼 */}
+          {isTtsDone && !isFinished && !hasStartedAnswering && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label="질문 다시 듣기"
+              onClick={handleReplay}
+              className="flex items-center gap-1 border-slate-300 text-slate-600 hover:bg-slate-50"
+            >
+              <Volume2 size={14} />
+              다시 듣기
+            </Button>
+          )}
           <Button
             type="button"
             onClick={handleActionButton}

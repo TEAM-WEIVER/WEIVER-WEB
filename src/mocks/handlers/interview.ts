@@ -1,5 +1,5 @@
 /**
- * AI 면접 WebSocket(STOMP) 목 핸들러 (#44)
+ * AI 면접 WebSocket(STOMP) 목 핸들러 (#44, #118)
  *
  * WebSocket/STOMP 프로토콜은 MSW HTTP 핸들러로 직접 목킹할 수 없으므로,
  * 이 파일은 면접 세션에 필요한 보조 REST API 핸들러만 제공한다.
@@ -26,7 +26,7 @@ export const SESSION_STARTED_PAYLOAD = {
 };
 
 /**
- * QUESTION_READY 메시지 페이로드
+ * QUESTION_READY 메시지 페이로드 (#44 기존 필드)
  * - sequence: 현재 질문 순서 (1부터 시작)
  * - question_code: 질문 식별 코드
  * - question: 질문 텍스트
@@ -37,6 +37,60 @@ export const QUESTION_READY_PAYLOAD = (sequence: number) => ({
   sequence,
   question_code: `Q${String(sequence).padStart(3, '0')}`,
   question: `${sequence}번째 기술 면접 질문입니다. 본인의 경험을 바탕으로 답변해 주세요.`,
+});
+
+/**
+ * QUESTION_READY 메시지 페이로드 — audio_status: READY (#118 신규)
+ *
+ * 서버가 TTS 오디오를 준비한 경우. audio_url에 유효한 URL이 포함된다.
+ * - audio_url: 서버 TTS 오디오 URL (30분 유효)
+ * - audio_status: "READY"
+ */
+export const QUESTION_READY_WITH_AUDIO_PAYLOAD = (
+  sequence: number,
+  audioUrl = 'https://cdn.piuda.site/tts/mock-question.mp3',
+) => ({
+  type: 'QUESTION_READY',
+  interview_session_id: 'session-abc-123',
+  sequence,
+  question_code: `Q${String(sequence).padStart(3, '0')}`,
+  question: `${sequence}번째 기술 면접 질문입니다. 본인의 경험을 바탕으로 답변해 주세요.`,
+  audio_url: audioUrl,
+  audio_status: 'READY' as const,
+});
+
+/**
+ * QUESTION_READY 메시지 페이로드 — audio_status: UNAVAILABLE (#118 신규)
+ *
+ * 서버가 TTS 오디오를 준비하지 못한 경우. 클라이언트는 speechSynthesis 폴백을 실행한다.
+ * - audio_url: null
+ * - audio_status: "UNAVAILABLE"
+ */
+export const QUESTION_READY_UNAVAILABLE_PAYLOAD = (sequence: number) => ({
+  type: 'QUESTION_READY',
+  interview_session_id: 'session-abc-123',
+  sequence,
+  question_code: `Q${String(sequence).padStart(3, '0')}`,
+  question: `${sequence}번째 기술 면접 질문입니다. 본인의 경험을 바탕으로 답변해 주세요.`,
+  audio_url: null,
+  audio_status: 'UNAVAILABLE' as const,
+});
+
+/**
+ * QUESTION_READY 메시지 페이로드 — audio_status: null (#118 신규)
+ *
+ * audio_status 필드가 null인 경우. UNAVAILABLE과 동일하게 speechSynthesis 폴백 처리.
+ * - audio_url: null
+ * - audio_status: null
+ */
+export const QUESTION_READY_NULL_STATUS_PAYLOAD = (sequence: number) => ({
+  type: 'QUESTION_READY',
+  interview_session_id: 'session-abc-123',
+  sequence,
+  question_code: `Q${String(sequence).padStart(3, '0')}`,
+  question: `${sequence}번째 기술 면접 질문입니다. 본인의 경험을 바탕으로 답변해 주세요.`,
+  audio_url: null,
+  audio_status: null,
 });
 
 /**
