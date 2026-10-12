@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+import { installInterviewMediaMocks } from './fixtures/interview-audio';
+
 const AUTH_ROLE_STORAGE_KEY = 'weiver.auth.role';
 
 async function setAuthRole(page: import('@playwright/test').Page, role: 'APPLICANT' | 'COMPANY') {
@@ -141,16 +143,8 @@ test.describe('AC2: Spinner 컴포넌트 접근성 속성', () => {
   test('AC2-a: isLoading 상태의 Button 내부 Spinner는 role="status" 속성을 가진다', async ({
     page,
   }) => {
-    // Given: 카메라·마이크 권한을 모두 모킹하여 면접 시작 화면을 빠르게 진입
-    await page.addInitScript(() => {
-      // getUserMedia 모킹 — 권한 거부 없이 빈 스트림 반환
-      Object.defineProperty(navigator, 'mediaDevices', {
-        configurable: true,
-        value: {
-          getUserMedia: () => Promise.reject(new Error('권한 거부')),
-        },
-      });
-    });
+    // Given: 카메라·마이크 권한 허용 + MediaRecorder 목으로 면접 시작 화면을 빠르게 진입
+    await installInterviewMediaMocks(page);
 
     await page.route('**/api/auth/csrf', (route) =>
       route.fulfill({
@@ -200,14 +194,7 @@ test.describe('AC2: Spinner 컴포넌트 접근성 속성', () => {
 
   test('AC2-b: Spinner는 aria-label이 "로딩 중"이거나 커스텀 값을 가진다', async ({ page }) => {
     // Given: 면접 시작 화면에서 연결 중 상태 시뮬레이션
-    await page.addInitScript(() => {
-      Object.defineProperty(navigator, 'mediaDevices', {
-        configurable: true,
-        value: {
-          getUserMedia: () => Promise.reject(new Error('권한 거부')),
-        },
-      });
-    });
+    await installInterviewMediaMocks(page);
 
     await page.route('**/api/auth/csrf', (route) =>
       route.fulfill({
@@ -264,14 +251,7 @@ test.describe('AC3: Button isLoading prop', () => {
     page,
   }) => {
     // Given: 면접 시작 화면 진입, 연결 중 상태
-    await page.addInitScript(() => {
-      Object.defineProperty(navigator, 'mediaDevices', {
-        configurable: true,
-        value: {
-          getUserMedia: () => Promise.reject(new Error('권한 거부')),
-        },
-      });
-    });
+    await installInterviewMediaMocks(page);
 
     await page.route('**/api/auth/csrf', (route) =>
       route.fulfill({

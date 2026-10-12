@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { Video, Mic, Bookmark, Info, UserRound, AlertCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { isAudioRecordingSupported } from '@/lib/audio-recording';
 
 interface InterviewStartScreenProps {
   onStart: () => void;
@@ -20,12 +21,38 @@ const CHECKLIST_ITEMS = [
 
 type ChecklistId = (typeof CHECKLIST_ITEMS)[number]['id'];
 type PermissionStatus = 'checking' | 'granted' | 'denied';
+/** 마이크는 녹음 미지원(`unsupported`) 상태가 추가된다 (#119 AC13 (A)) */
+type MicStatus = PermissionStatus | 'unsupported';
 
-const STATUS_TAG: Record<PermissionStatus, { label: string; className: string }> = {
+const STATUS_TAG: Record<MicStatus, { label: string; className: string }> = {
   checking: { label: '확인 중...', className: 'bg-slate-200 text-slate-500' },
   granted: { label: '정상 작동 중이예요', className: 'bg-teal-300 text-slate-900' },
   denied: { label: '권한이 거부되었어요', className: 'bg-red-200 text-red-700' },
+  unsupported: { label: '지원되지 않음', className: 'bg-slate-200 text-slate-600' },
 };
+
+const MIC_MESSAGES = {
+  checking: '마이크 권한 확인 중...',
+  deniedCard: '브라우저 설정에서 마이크 권한을 허용해주세요.',
+  unsupportedCard:
+    '이 브라우저에서는 음성 답변을 녹음할 수 없어요. 최신 Chrome, Edge, Safari 또는 Firefox에서 접속해 주세요.',
+} as const;
+
+/** "면접 시작하기"가 마이크 조건으로 비활성일 때의 사유 문구 (granted면 없음) */
+const START_DISABLED_REASON: Record<MicStatus, string | null> = {
+  checking: MIC_MESSAGES.checking,
+  granted: null,
+  denied: '마이크 권한을 허용해야 면접을 시작할 수 있어요.',
+  unsupported: '지원되는 브라우저에서 면접을 시작해 주세요.',
+};
+
+function subscribeNothing() {
+  return () => {};
+}
+
+function hasMediaDevices() {
+  return typeof navigator.mediaDevices?.getUserMedia === 'function';
+}
 
 export function InterviewStartScreen({ onStart, isConnecting }: InterviewStartScreenProps) {
   const [checked, setChecked] = useState<Record<ChecklistId, boolean>>({
@@ -34,30 +61,60 @@ export function InterviewStartScreen({ onStart, isConnecting }: InterviewStartSc
     earphone: false,
   });
   const [cameraStatus, setCameraStatus] = useState<PermissionStatus>('checking');
-  const [micStatus, setMicStatus] = useState<PermissionStatus>('checking');
+  const [micPermissionStatus, setMicPermissionStatus] = useState<PermissionStatus>('checking');
   const [micBars, setMicBars] = useState<number[]>([8, 16, 24, 32, 24, 16, 8]);
+
+  // 녹음 지원 여부·mediaDevices 존재 여부는 브라우저 환경 값이다. 서버 렌더에서는 지원으로 가정한다.
+  const isRecordingSupported = useSyncExternalStore(
+    subscribeNothing,
+    isAudioRecordingSupported,
+    () => true,
+  );
+  const isCameraSupported = useSyncExternalStore(subscribeNothing, hasMediaDevices, () => true);
+  const micStatus: MicStatus = isRecordingSupported ? micPermissionStatus : 'unsupported';
+  const effectiveCameraStatus: PermissionStatus = isCameraSupported ? cameraStatus : 'denied';
+
+  const startDisabledReasonId = useId();
+  const startDisabledReason = START_DISABLED_REASON[micStatus];
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  /** 마이크 확인 요청 순번. "다시 확인"·언마운트 이후 도착한 이전 결과를 무시한다. */
+  const micRequestIdRef = useRef(0);
 
   // 카메라 권한 요청
   useEffect(() => {
+    // navigator.mediaDevices가 없으면 호출하지 않는다(표시는 effectiveCameraStatus = denied)
+    if (!hasMediaDevices()) return;
+
+    // 언마운트 이후 늦게 resolve된 스트림은 즉시 정지한다 (AC12 reset → /login 이동 중 카메라 누수 방지)
+    let cancelled = false;
+
     navigator.mediaDevices
       .getUserMedia({ video: true })
       .then((stream) => {
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
         cameraStreamRef.current = stream;
         setCameraStatus('granted');
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
       })
-      .catch(() => setCameraStatus('denied'));
+      .catch(() => {
+        if (!cancelled) setCameraStatus('denied');
+      });
 
     return () => {
+      cancelled = true;
       cameraStreamRef.current?.getTracks().forEach((t) => t.stop());
+      cameraStreamRef.current = null;
     };
   }, []);
 
@@ -68,45 +125,82 @@ export function InterviewStartScreen({ onStart, isConnecting }: InterviewStartSc
     }
   }, [cameraStatus]);
 
+  /** 이전 마이크 스트림·AudioContext·애니메이션 프레임 정리 */
+  const releaseMic = useCallback(() => {
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    animFrameRef.current = null;
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    micStreamRef.current = null;
+    analyserRef.current = null;
+    const audioCtx = audioContextRef.current;
+    audioContextRef.current = null;
+    void audioCtx?.close().catch(() => undefined);
+  }, []);
+
   // 마이크 권한 요청 + 음파 시각화
-  useEffect(() => {
-    let audioCtx: AudioContext | null = null;
+  const requestMic = useCallback(() => {
+    releaseMic();
+    const requestId = ++micRequestIdRef.current;
 
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then((stream) => {
-        micStreamRef.current = stream;
-        setMicStatus('granted');
-
-        audioCtx = new AudioContext();
-        const source = audioCtx.createMediaStreamSource(stream);
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 32;
-        source.connect(analyser);
-        analyserRef.current = analyser;
-
-        const data = new Uint8Array(analyser.frequencyBinCount);
-        const BASE = [8, 16, 24, 32, 24, 16, 8];
-
-        function tick() {
-          analyser.getByteFrequencyData(data);
-          const avg = data.reduce((s, v) => s + v, 0) / data.length;
-          const scale = 1 + (avg / 128) * 1.5;
-          setMicBars(BASE.map((h) => Math.min(Math.round(h * scale), 48)));
-          animFrameRef.current = requestAnimationFrame(tick);
+        if (requestId !== micRequestIdRef.current) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
         }
-        animFrameRef.current = requestAnimationFrame(tick);
+        micStreamRef.current = stream;
+        setMicPermissionStatus('granted');
+
+        try {
+          const audioCtx = new AudioContext();
+          audioContextRef.current = audioCtx;
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 32;
+          source.connect(analyser);
+          analyserRef.current = analyser;
+
+          const data = new Uint8Array(analyser.frequencyBinCount);
+          const BASE = [8, 16, 24, 32, 24, 16, 8];
+
+          const tick = () => {
+            analyser.getByteFrequencyData(data);
+            const avg = data.reduce((s, v) => s + v, 0) / data.length;
+            const scale = 1 + (avg / 128) * 1.5;
+            setMicBars(BASE.map((h) => Math.min(Math.round(h * scale), 48)));
+            animFrameRef.current = requestAnimationFrame(tick);
+          };
+          animFrameRef.current = requestAnimationFrame(tick);
+        } catch {
+          // 음파 시각화 실패는 마이크 권한과 무관하다
+        }
       })
-      .catch(() => setMicStatus('denied'));
+      .catch(() => {
+        if (requestId !== micRequestIdRef.current) return;
+        setMicPermissionStatus('denied');
+      });
+  }, [releaseMic]);
+
+  useEffect(() => {
+    // 녹음을 지원하지 않으면 getUserMedia를 호출하지 않는다 (AC13 (A) unsupported)
+    if (!isAudioRecordingSupported()) return;
+    requestMic();
 
     return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      micStreamRef.current?.getTracks().forEach((t) => t.stop());
-      audioCtx?.close();
+      micRequestIdRef.current += 1;
+      releaseMic();
     };
-  }, []);
+  }, [requestMic, releaseMic]);
+
+  /** "다시 확인" — 설정에서 허용한 뒤 새로고침 없이 재확인 */
+  function handleRecheckMic() {
+    setMicPermissionStatus('checking');
+    requestMic();
+  }
 
   const allChecked = Object.values(checked).every(Boolean);
+  const isStartDisabled = !allChecked || micStatus !== 'granted';
 
   function handleCheck(id: ChecklistId, value: boolean) {
     setChecked((prev) => ({ ...prev, [id]: value }));
@@ -134,9 +228,9 @@ export function InterviewStartScreen({ onStart, isConnecting }: InterviewStartSc
               <span className="text-lg font-semibold text-slate-700">카메라 확인</span>
             </div>
             <span
-              className={`rounded-full px-3 py-1 text-sm ${STATUS_TAG[cameraStatus].className}`}
+              className={`rounded-full px-3 py-1 text-sm ${STATUS_TAG[effectiveCameraStatus].className}`}
             >
-              {STATUS_TAG[cameraStatus].label}
+              {STATUS_TAG[effectiveCameraStatus].label}
             </span>
           </div>
 
@@ -145,7 +239,7 @@ export function InterviewStartScreen({ onStart, isConnecting }: InterviewStartSc
             className="relative w-full overflow-hidden rounded-lg bg-slate-200"
             style={{ aspectRatio: '16/9' }}
           >
-            {cameraStatus === 'granted' ? (
+            {effectiveCameraStatus === 'granted' ? (
               <video
                 ref={videoRef}
                 autoPlay
@@ -153,7 +247,7 @@ export function InterviewStartScreen({ onStart, isConnecting }: InterviewStartSc
                 playsInline
                 className="absolute inset-0 h-full w-full object-cover"
               />
-            ) : cameraStatus === 'denied' ? (
+            ) : effectiveCameraStatus === 'denied' ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                 <AlertCircle size={40} className="text-red-400" />
                 <p className="text-sm text-slate-500">
@@ -186,11 +280,22 @@ export function InterviewStartScreen({ onStart, isConnecting }: InterviewStartSc
           {/* 마이크 테스트 영역 */}
           <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-lg bg-slate-200 px-6 py-5">
             {micStatus === 'denied' ? (
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-2 text-center">
                 <AlertCircle size={40} className="text-red-400" />
-                <p className="text-sm text-slate-500">
-                  브라우저 설정에서 마이크 권한을 허용해주세요.
-                </p>
+                <p className="text-sm text-slate-500">{MIC_MESSAGES.deniedCard}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleRecheckMic}
+                  className="h-9 border-slate-300 px-4 text-sm text-slate-600 hover:bg-slate-50"
+                >
+                  다시 확인
+                </Button>
+              </div>
+            ) : micStatus === 'unsupported' ? (
+              <div className="flex flex-col items-center gap-2 text-center">
+                <AlertCircle size={40} className="text-slate-400" />
+                <p className="text-sm text-slate-500">{MIC_MESSAGES.unsupportedCard}</p>
               </div>
             ) : (
               <>
@@ -218,7 +323,7 @@ export function InterviewStartScreen({ onStart, isConnecting }: InterviewStartSc
                   </div>
                 </div>
                 <p className="text-center text-base font-medium text-slate-700">
-                  {micStatus === 'checking' ? '마이크 권한 확인 중...' : '마이크에 대고 말해보세요'}
+                  {micStatus === 'checking' ? MIC_MESSAGES.checking : '마이크에 대고 말해보세요'}
                 </p>
                 <p className="text-center text-xs font-normal text-slate-500">
                   시스템 설정 : Default - Macbook Mic
@@ -289,16 +394,24 @@ export function InterviewStartScreen({ onStart, isConnecting }: InterviewStartSc
         </div>
       </div>
 
-      {/* 하단: 면접 시작 버튼 */}
-      <Button
-        type="button"
-        onClick={onStart}
-        disabled={!allChecked}
-        isLoading={isConnecting}
-        className={`w-full ${!allChecked ? 'bg-slate-200 text-slate-500 hover:bg-slate-200' : ''}`}
-      >
-        {isConnecting ? '연결 중...' : '면접 시작하기'}
-      </Button>
+      {/* 하단: 면접 시작 버튼 — 체크리스트 + 마이크 허용이 모두 필요하다 (#119 AC13 (A)) */}
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          onClick={onStart}
+          disabled={isStartDisabled}
+          isLoading={isConnecting}
+          aria-describedby={startDisabledReason ? startDisabledReasonId : undefined}
+          className={`w-full ${isStartDisabled ? 'bg-slate-200 text-slate-500 hover:bg-slate-200' : ''}`}
+        >
+          {isConnecting ? '연결 중...' : '면접 시작하기'}
+        </Button>
+        {startDisabledReason && (
+          <p id={startDisabledReasonId} className="text-center text-sm text-slate-500">
+            {startDisabledReason}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
