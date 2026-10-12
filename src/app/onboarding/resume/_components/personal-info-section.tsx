@@ -32,9 +32,10 @@ export function PersonalInfoSection({
   showErrors,
 }: PersonalInfoSectionProps) {
   const profileImage = useWatch({ control, name: 'profileImage' });
+  const profileImageError = errors.profileImage?.message;
   const objectPreviewUrl = useMemo(
-    () => (profileImage ? URL.createObjectURL(profileImage) : null),
-    [profileImage],
+    () => (profileImage && !profileImageError ? URL.createObjectURL(profileImage) : null),
+    [profileImage, profileImageError],
   );
   const previewUrl = objectPreviewUrl ?? photoUrl ?? null;
 
@@ -49,29 +50,32 @@ export function PersonalInfoSection({
       <SectionTitle title="개인 정보" required />
 
       <div className="flex items-center gap-[34px]">
-        <label className="border-border-light bg-bg-tertiary hover:bg-primary-200 relative flex h-[186px] w-[140px] shrink-0 cursor-pointer overflow-hidden rounded-[10px] border transition-colors">
-          {previewUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={previewUrl} alt="증명사진 미리보기" className="size-full object-cover" />
-          ) : (
-            <div className="flex size-full flex-col items-center justify-center gap-3.5">
-              <ImageIcon size={24} className="text-text-tertiary" />
-              <div className="flex flex-col items-center gap-1 text-center">
-                <span className="text-body2 text-text-tertiary">증명사진 업로드</span>
-                <span className="text-caption text-text-disabled">JPG, PNG 1MB 이하</span>
+        <div className="flex shrink-0 flex-col gap-2">
+          <label className="border-border-light bg-bg-tertiary hover:bg-primary-200 relative flex h-[186px] w-[140px] shrink-0 cursor-pointer overflow-hidden rounded-[10px] border transition-colors">
+            {previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previewUrl} alt="증명사진 미리보기" className="size-full object-cover" />
+            ) : (
+              <div className="flex size-full flex-col items-center justify-center gap-3.5">
+                <ImageIcon size={24} className="text-text-tertiary" />
+                <div className="flex flex-col items-center gap-1 text-center">
+                  <span className="text-body2 text-text-tertiary">증명사진 업로드</span>
+                  <span className="text-caption text-text-disabled">JPG, PNG 1MB 이하</span>
+                </div>
               </div>
-            </div>
-          )}
-          <input
-            type="file"
-            accept="image/jpeg,image/png"
-            className="hidden"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              setValue('profileImage', file, { shouldDirty: true });
-            }}
-          />
-        </label>
+            )}
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                setValue('profileImage', file, { shouldDirty: true, shouldValidate: true });
+              }}
+            />
+          </label>
+          <FieldError>{profileImageError}</FieldError>
+        </div>
 
         <div className="grid flex-1 grid-cols-3 gap-x-6 gap-y-2.5">
           <div className="flex min-w-0 flex-col gap-2">

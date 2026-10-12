@@ -28,6 +28,12 @@ async function getRequestDTO(formData: FormData) {
   return JSON.parse(await requestDTO.text());
 }
 
+function createSizedFile(name: string, type: string, size: number) {
+  const file = new File(['portfolio'], name, { type });
+  Object.defineProperty(file, 'size', { value: size });
+  return file;
+}
+
 describe('포트폴리오 온보딩 페이지', () => {
   beforeEach(() => {
     navigationMock.push.mockClear();
@@ -116,6 +122,46 @@ describe('포트폴리오 온보딩 페이지', () => {
     });
     expect(formData.get('portfolio')).toBe(file);
     expect(patchPortfolio).not.toHaveBeenCalled();
+  });
+
+  it('10MB를 초과한 파일은 거부하고 크기 오류를 표시한다', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<PortfolioPage />);
+
+    await waitFor(() => {
+      expect(getPortfolio).toHaveBeenCalled();
+    });
+
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = createSizedFile('large.pdf', 'application/pdf', 10 * 1024 * 1024 + 1);
+    await user.upload(fileInput, file);
+    await user.click(screen.getByRole('checkbox'));
+
+    expect(await screen.findByText('파일 크기는 10MB 이하여야 합니다.')).toBeInTheDocument();
+    expect(screen.queryByText('large.pdf')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '제출' })).toBeDisabled();
+  });
+
+  it('10MB 이하 파일은 허용하고 POST FormData에 담는다', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<PortfolioPage />);
+
+    await waitFor(() => {
+      expect(getPortfolio).toHaveBeenCalled();
+    });
+
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = createSizedFile('limit.pdf', 'application/pdf', 10 * 1024 * 1024);
+    await user.upload(fileInput, file);
+    await user.click(screen.getByRole('checkbox'));
+
+    expect(screen.queryByText('파일 크기는 10MB 이하여야 합니다.')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '제출' }));
+
+    await waitFor(() => {
+      expect(postPortfolio).toHaveBeenCalled();
+    });
+    expect(vi.mocked(postPortfolio).mock.calls[0][0].get('portfolio')).toBe(file);
   });
 
   it('제출 클릭 후 포트폴리오 파일 또는 링크 누락 오류를 업로드 영역에 표시한다', async () => {
