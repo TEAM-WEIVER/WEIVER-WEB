@@ -149,14 +149,25 @@ test('허용되지 않는 파일을 선택하면 오류를 표시하고 제출�
   await expect(page.getByRole('button', { name: '제출' })).toBeDisabled();
 });
 
-test('20MB를 초과한 파일을 선택하면 오류를 표시하고 제출을 막는다', async ({ page }) => {
+test('10MB를 초과한 파일을 선택하면 오류를 표시하고 제출을 막는다', async ({ page }) => {
   await mockPortfolioLoad(page);
   await gotoPortfolio(page);
 
-  await attachPortfolio(page, 'large.pdf', 21 * 1024 * 1024);
+  await attachPortfolio(page, 'large.pdf', 10 * 1024 * 1024 + 1);
 
-  await expect(page.getByText('파일 크기는 20MB 이하여야 합니다.')).toBeVisible();
+  await expect(page.getByText('파일 크기는 10MB 이하여야 합니다.')).toBeVisible();
   await expect(page.getByRole('button', { name: '제출' })).toBeDisabled();
+});
+
+test('정확히 10MB인 파일은 오류 없이 선택된다', async ({ page }) => {
+  await mockPortfolioLoad(page);
+  await gotoPortfolio(page);
+
+  await attachPortfolio(page, 'limit.pdf', 10 * 1024 * 1024);
+  await page.getByRole('checkbox').check();
+
+  await expect(page.getByText('파일 크기는 10MB 이하여야 합니다.')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '제출' })).toBeEnabled();
 });
 
 test('콘텐츠 없이 동의만 하면 제출할 수 없다', async ({ page }) => {

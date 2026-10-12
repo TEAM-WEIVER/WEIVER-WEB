@@ -280,6 +280,26 @@ describe('이력서 온보딩 페이지', () => {
     expect(formData.get('profileImage')).toBe(imageFile);
   });
 
+  it('1MB를 초과한 증명사진은 거부하고 오류를 표시하며 저장하지 않는다', async () => {
+    const user = userEvent.setup();
+    render(<ResumePage />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('본명을 입력해주세요.')).toHaveValue('김민채');
+    });
+
+    const imageFile = new File(['profile'], 'large.png', { type: 'image/png' });
+    Object.defineProperty(imageFile, 'size', { value: 1024 * 1024 + 1 });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(fileInput, imageFile);
+
+    expect(await screen.findByText('증명사진은 1MB 이하로 업로드해주세요.')).toBeInTheDocument();
+    expect(screen.queryByAltText('증명사진 미리보기')).not.toBeInTheDocument();
+
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+    expect(saveApplicantInfo).not.toHaveBeenCalled();
+  });
+
   it('기존 경력이 없으면 다음 클릭 시 경력 최초 저장 POST를 보낸다', async () => {
     const user = userEvent.setup();
     render(<ResumePage />);

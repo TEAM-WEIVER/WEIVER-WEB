@@ -1,7 +1,7 @@
 import type { ChangeEvent, DragEvent } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 function isAllowedFile(file: File) {
   const name = file.name.toLowerCase();
@@ -19,7 +19,7 @@ function validatePortfolioFile(file: File) {
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    return '파일 크기는 20MB 이하여야 합니다.';
+    return '파일 크기는 10MB 이하여야 합니다.';
   }
 
   return '';

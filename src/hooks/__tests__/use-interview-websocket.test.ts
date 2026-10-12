@@ -365,6 +365,20 @@ describe('useInterviewWebSocket — 메시지 (#119)', () => {
     expect(status()).toBe('FINISHED');
     expect(client.deactivate).toHaveBeenCalled();
   });
+
+  it.each([
+    ['audio_url 필드가 없어도', {}],
+    ['audio_url이 null이어도', { audio_url: null }],
+  ])('INTERVIEW_FINISHED 페이로드에 %s 오류 없이 FINISHED로 전환한다', (_, extra) => {
+    const { client } = connectAndAskQuestion();
+
+    send(client, { type: 'INTERVIEW_FINISHED', interview_session_id: 'session-1', ...extra });
+
+    const state = useInterviewStore.getState();
+    expect(state.status).toBe('FINISHED');
+    expect(state.errorMessage).toBeNull();
+    expect(client.deactivate).toHaveBeenCalled();
+  });
 });
 
 // ──────────────────────────────────────────────
