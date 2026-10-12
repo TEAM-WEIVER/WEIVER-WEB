@@ -1,21 +1,65 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, Mic, UserRound, Volume2 } from 'lucide-react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { AlertCircle, ArrowRight, Loader2, Mic, UserRound, Volume2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useAudioRecorder, type AudioRecordingResult } from '@/hooks/use-audio-recorder';
+import type { AnswerUploadPhase, UploadResult } from '@/hooks/use-answer-audio-upload';
 
 interface InterviewQuestionScreenProps {
   question: string;
   sequence: number;
   roundLabel: string;
-  isSubmitting: boolean;
+  /** 화면 표시 우선순위 2: (store SUBSCRIBED && answerAcceptedKey === 현재 질문 키) || uploadPhase === 'waiting' */
+  isWaitingNextQuestion: boolean;
+  uploadPhase: AnswerUploadPhase;
+  /** 업로드 관련 안내 (AC6~AC11, role="alert") */
+  uploadMessage: string | null;
   isFinished?: boolean;
   audioUrl?: string | null;
   audioStatus?: 'READY' | 'UNAVAILABLE' | null;
-  onSubmit: (answer: string) => void;
+  /** 녹음 업로드. 'rerecord-required'(AC6)이면 화면이 recorder.cancel() — 수동 제출·120초 자동 종료 공통 */
+  onSubmitAudio: (blob: Blob, mimeType: string) => Promise<UploadResult>;
+  /** "다시 제출" — 같은 Blob 재업로드. 결과 처리는 onSubmitAudio와 동일 */
+  onResubmit: () => Promise<UploadResult>;
+  /** "다시 녹음" — 업로드 훅 discardAndRerecord(). 이후 화면이 녹음을 시작한다(cancel() 호출 안 함) */
+  onRerecord: () => void;
+  /** "답변하기"/"다시 시도" 클릭 시 업로드 안내 지우기 */
+  onClearMessage: () => void;
   onFinish?: () => void;
   onReportError?: () => void;
+}
+
+/** 녹음 최소 길이 (AC5 (a)) */
+const MIN_ANSWER_RECORDING_MS = 1000;
+
+const ANSWER_SCREEN_MESSAGES = {
+  recording: '지원자님이 답변을 하고 있어요.',
+  processing: '답변을 처리하고 있어요...',
+  waiting: '다음 질문을 준비하고 있어요.',
+  autoSubmitted: '답변 시간(2분)이 끝나 자동으로 제출했어요.',
+  tooShort: '답변이 너무 짧아요. 다시 녹음해 주세요.',
+  micUnavailable:
+    '마이크를 사용할 수 없어요. 마이크 연결과 브라우저 권한을 확인한 뒤 다시 시도해 주세요.',
+} as const;
+
+/** 화면 표시 우선순위 (계획서 공통 규칙). 위에 있을수록 우선한다. */
+type AnswerView = 'finished' | 'waiting' | 'uploading' | 'retryable' | 'recording' | 'idle';
+
+function formatDuration(totalSeconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function subscribeNothing() {
+  return () => {};
+}
+
+function hasMediaDevices() {
+  return typeof navigator.mediaDevices?.getUserMedia === 'function';
 }
 
 const AI_INTERVIEWER_VIDEOS = {
@@ -24,42 +68,6 @@ const AI_INTERVIEWER_VIDEOS = {
 } as const;
 
 type AiVideoMode = keyof typeof AI_INTERVIEWER_VIDEOS;
-
-interface SpeechRecognitionResultLike {
-  readonly isFinal: boolean;
-  readonly 0: {
-    readonly transcript: string;
-  };
-}
-
-interface SpeechRecognitionEventLike {
-  readonly resultIndex: number;
-  readonly results: {
-    readonly length: number;
-    readonly [index: number]: SpeechRecognitionResultLike;
-  };
-}
-
-interface SpeechRecognitionLike {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onend: (() => void) | null;
-  onerror: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-}
-
-interface SpeechRecognitionConstructor {
-  new (): SpeechRecognitionLike;
-}
-
-interface WindowWithSpeechRecognition extends Window {
-  SpeechRecognition?: SpeechRecognitionConstructor;
-  webkitSpeechRecognition?: SpeechRecognitionConstructor;
-}
 
 function AiInterviewerVideo({ mode }: { mode: AiVideoMode }) {
   return (
@@ -89,120 +97,129 @@ export function InterviewQuestionScreen({
   question,
   sequence,
   roundLabel,
-  isSubmitting,
+  isWaitingNextQuestion,
+  uploadPhase,
+  uploadMessage,
   isFinished = false,
   audioUrl,
   audioStatus,
-  onSubmit,
+  onSubmitAudio,
+  onResubmit,
+  onRerecord,
+  onClearMessage,
   onFinish,
   onReportError,
 }: InterviewQuestionScreenProps) {
   const questionKey = `${sequence}:${question}`;
-  const [answerState, setAnswerState] = useState({ questionKey, value: '' });
-  const [interimAnswerState, setInterimAnswerState] = useState({ questionKey, value: '' });
-  const [validationErrorState, setValidationErrorState] = useState<{
-    questionKey: string;
-    message: string | null;
-  }>({ questionKey, message: null });
   const [cameraStatus, setCameraStatus] = useState<'checking' | 'granted' | 'denied'>('checking');
   const [ttsState, setTtsState] = useState(() => ({
     questionKey,
     isPlaying: !isFinished && !!question,
     isDone: isFinished || !question,
   }));
-  const [listeningState, setListeningState] = useState({
-    questionKey,
-    isListening: false,
-    hasStarted: false,
-  });
   const [playBlockedState, setPlayBlockedState] = useState<{
     questionKey: string;
     blocked: boolean;
   }>({ questionKey, blocked: false });
+  /** AC5 너무 짧은 녹음 안내 (화면 로컬, role="alert") */
+  const [localMessageState, setLocalMessageState] = useState<{
+    questionKey: string;
+    message: string | null;
+  }>({ questionKey, message: null });
+  /** AC13 (B) 녹음 시작 실패 여부 */
+  const [startErrorState, setStartErrorState] = useState({ questionKey, value: false });
+  /** AC3 자동 제출 안내 여부 */
+  const [autoSubmittedState, setAutoSubmittedState] = useState({ questionKey, value: false });
 
-  const finalAnswer = answerState.questionKey === questionKey ? answerState.value : '';
-  const interimAnswer =
-    interimAnswerState.questionKey === questionKey ? interimAnswerState.value : '';
-  const answer = `${finalAnswer}${interimAnswer ? ` ${interimAnswer}` : ''}`.trim();
-  const validationError =
-    validationErrorState.questionKey === questionKey ? validationErrorState.message : null;
   const isTtsPlaying =
     ttsState.questionKey === questionKey ? ttsState.isPlaying : !isFinished && !!question;
   const isTtsDone =
     ttsState.questionKey === questionKey ? ttsState.isDone : isFinished || !question;
-  const isListening =
-    listeningState.questionKey === questionKey ? listeningState.isListening : false;
-  const hasStartedAnswering =
-    listeningState.questionKey === questionKey ? listeningState.hasStarted : false;
   const isPlayBlocked =
     playBlockedState.questionKey === questionKey ? playBlockedState.blocked : false;
-  const isActionButtonDisabled =
-    isSubmitting || (!isFinished && !hasStartedAnswering && !isTtsDone);
+  const localMessage =
+    localMessageState.questionKey === questionKey ? localMessageState.message : null;
+  const hasRecorderStartError =
+    startErrorState.questionKey === questionKey ? startErrorState.value : false;
+  const isAutoSubmitted =
+    autoSubmittedState.questionKey === questionKey ? autoSubmittedState.value : false;
+
+  const isCameraSupported = useSyncExternalStore(subscribeNothing, hasMediaDevices, () => true);
+  const effectiveCameraStatus = isCameraSupported ? cameraStatus : 'denied';
 
   const effectiveVideoMode: AiVideoMode = isTtsPlaying ? 'questioning' : 'listening';
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
-  const recognitionQuestionKeyRef = useRef(questionKey);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playedViaRef = useRef<'server' | 'fallback' | null>(null);
   const currentQuestionRef = useRef<string>(question);
+  const resubmitButtonRef = useRef<HTMLButtonElement>(null);
+  const retryMicButtonRef = useRef<HTMLButtonElement>(null);
+  const previousQuestionKeyRef = useRef(questionKey);
+
+  const recorder = useAudioRecorder({
+    onAutoStop: handleAutoStop,
+    onInterrupted: handleRecorderInterrupted,
+  });
+  const { cancel: cancelRecorder, status: recorderStatus } = recorder;
+  const isRecorderActive = recorderStatus === 'recording' || recorderStatus === 'stopping';
+
+  const answerView: AnswerView = isFinished
+    ? 'finished'
+    : isWaitingNextQuestion
+      ? 'waiting'
+      : uploadPhase === 'uploading'
+        ? 'uploading'
+        : uploadPhase === 'retryable'
+          ? 'retryable'
+          : isRecorderActive
+            ? 'recording'
+            : 'idle';
+
+  /** 질문 TTS 재생 중(#118)에는 녹음 시작 계열 버튼을 막는다. RECONNECTING과는 무관하다. */
+  const isTtsBlockingAnswer = !isFinished && !isTtsDone;
+  const isReplayVisible = isTtsDone && (answerView === 'idle' || answerView === 'retryable');
+  const showAutoSubmitted = isAutoSubmitted && answerView === 'uploading';
+  const alertMessages =
+    answerView === 'waiting' || answerView === 'finished'
+      ? []
+      : [
+          uploadMessage,
+          localMessage,
+          hasRecorderStartError && answerView === 'idle'
+            ? ANSWER_SCREEN_MESSAGES.micUnavailable
+            : null,
+        ].filter((message): message is string => !!message);
 
   // 최신 question 값 추적 (fallback TTS 재사용 시 필요)
   useEffect(() => {
     currentQuestionRef.current = question;
   }, [question]);
 
-  // STT 초기화
+  // "녹음기 cancel() 호출 시점" 3: 답변 수락 동기화로 대기 화면이 되었을 때 녹음 중이면 업로드 없이 취소한다.
+  // (phase 감시 effect 금지 규칙의 명시적 예외 — 녹음기가 recording일 때만 동작)
   useEffect(() => {
-    const speechWindow = window as WindowWithSpeechRecognition;
-    const SpeechRecognitionAPI =
-      speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
-    if (!SpeechRecognitionAPI) return;
+    if (isWaitingNextQuestion && recorderStatus === 'recording') {
+      cancelRecorder();
+    }
+  }, [isWaitingNextQuestion, recorderStatus, cancelRecorder]);
 
-    const recognition = new SpeechRecognitionAPI();
-    recognition.lang = 'ko-KR';
-    recognition.continuous = true;
-    recognition.interimResults = true;
+  // 질문 키가 바뀌면 이전 질문의 녹음을 버린다 (AC4 QUESTION_READY — 경과 시간 초기화)
+  useEffect(() => {
+    if (previousQuestionKeyRef.current === questionKey) return;
+    previousQuestionKeyRef.current = questionKey;
+    if (recorderStatus !== 'idle') cancelRecorder();
+  }, [questionKey, recorderStatus, cancelRecorder]);
 
-    recognition.onresult = (event) => {
-      let finalText = '';
-      let interimText = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalText += transcript;
-        } else {
-          interimText += transcript;
-        }
-      }
-      const currentQKey = recognitionQuestionKeyRef.current;
-      if (finalText) {
-        setAnswerState((prev) => ({
-          questionKey: currentQKey,
-          value: prev.questionKey === currentQKey ? prev.value + finalText : finalText,
-        }));
-      }
-      setInterimAnswerState({ questionKey: currentQKey, value: interimText });
-    };
+  // 접근성: retryable 진입 시 "다시 제출", AC13 (B) 안내 시 "다시 시도"로 포커스 이동
+  useEffect(() => {
+    if (answerView === 'retryable') resubmitButtonRef.current?.focus();
+  }, [answerView]);
 
-    recognition.onend = () => {
-      const currentQKey = recognitionQuestionKeyRef.current;
-      setListeningState({ questionKey: currentQKey, isListening: false, hasStarted: true });
-    };
-
-    recognition.onerror = () => {
-      const currentQKey = recognitionQuestionKeyRef.current;
-      setListeningState({ questionKey: currentQKey, isListening: false, hasStarted: true });
-    };
-
-    recognitionRef.current = recognition;
-
-    return () => {
-      recognition.abort();
-    };
-  }, []);
+  useEffect(() => {
+    if (answerView === 'idle' && hasRecorderStartError) retryMicButtonRef.current?.focus();
+  }, [answerView, hasRecorderStartError]);
 
   // Audio 객체 unmount 정리
   useEffect(() => {
@@ -215,8 +232,6 @@ export function InterviewQuestionScreen({
   // 질문이 교체될 때 TTS 로직 실행 (서버 TTS 또는 speechSynthesis 폴백)
   useEffect(() => {
     let isCurrentQuestion = true;
-
-    recognitionRef.current?.abort();
 
     // 이전 오디오 중단
     audioRef.current?.pause();
@@ -339,19 +354,31 @@ export function InterviewQuestionScreen({
 
   useEffect(() => {
     if (isFinished) return;
+    // navigator.mediaDevices가 없으면 호출하지 않는다(표시는 effectiveCameraStatus = denied)
+    if (!hasMediaDevices()) return;
+
+    // 언마운트·종료 이후 늦게 resolve된 스트림은 즉시 정지한다 (카메라 표시등 누수 방지)
+    let cancelled = false;
 
     navigator.mediaDevices
       .getUserMedia({ video: true })
       .then((stream) => {
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
         cameraStreamRef.current = stream;
         setCameraStatus('granted');
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
       })
-      .catch(() => setCameraStatus('denied'));
+      .catch(() => {
+        if (!cancelled) setCameraStatus('denied');
+      });
 
     return () => {
+      cancelled = true;
       cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
       cameraStreamRef.current = null;
     };
@@ -362,36 +389,6 @@ export function InterviewQuestionScreen({
       videoRef.current.srcObject = cameraStreamRef.current;
     }
   }, [cameraStatus]);
-
-  function startListening() {
-    if (isListening) return;
-
-    if (!recognitionRef.current) {
-      setValidationErrorState({
-        questionKey,
-        message: '이 브라우저에서는 음성 인식을 지원하지 않아요.',
-      });
-      return;
-    }
-
-    try {
-      recognitionQuestionKeyRef.current = questionKey;
-      recognitionRef.current.start();
-      setValidationErrorState({ questionKey, message: null });
-      setListeningState({ questionKey, isListening: true, hasStarted: true });
-    } catch {
-      setValidationErrorState({
-        questionKey,
-        message: '음성 인식을 시작할 수 없어요. 잠시 후 다시 시도해 주세요.',
-      });
-    }
-  }
-
-  function stopListening() {
-    if (!recognitionRef.current || !isListening) return;
-    recognitionRef.current.stop();
-    setListeningState({ questionKey, isListening: false, hasStarted: true });
-  }
 
   function handleReplay() {
     if (playedViaRef.current === 'server' && audioRef.current) {
@@ -462,25 +459,109 @@ export function InterviewQuestionScreen({
     }
   }
 
-  function handleActionButton() {
-    if (isFinished) {
-      onFinish?.();
+  /** AC5: 너무 짧은 녹음 — 녹음기 취소(cancel() 호출 시점 1) + 안내. 업로드 훅은 호출하지 않는다. */
+  function rejectTooShortRecording(targetQuestionKey: string) {
+    cancelRecorder();
+    setLocalMessageState({
+      questionKey: targetQuestionKey,
+      message: ANSWER_SCREEN_MESSAGES.tooShort,
+    });
+  }
+
+  /** 업로드 결과가 AC6(재녹음 필요)이면 녹음기를 취소해 경과 시간을 0:00으로 되돌린다 (cancel() 호출 시점 2) */
+  function applyUploadResult(result: UploadResult) {
+    if (result === 'rerecord-required') cancelRecorder();
+  }
+
+  async function uploadRecording(
+    recording: AudioRecordingResult,
+    targetQuestionKey: string,
+    isAutoStop: boolean,
+  ) {
+    if (recording.blob.size === 0) {
+      rejectTooShortRecording(targetQuestionKey);
       return;
     }
-    if (hasStartedAnswering) {
-      if (isListening) {
-        stopListening();
-      }
-      onSubmit(answer);
-      return;
-    }
-    if (isTtsPlaying || isTtsDone) {
-      audioRef.current?.pause();
-      window.speechSynthesis.cancel();
-      setTtsState({ questionKey, isPlaying: false, isDone: true });
-      startListening();
+    setAutoSubmittedState({ questionKey: targetQuestionKey, value: isAutoStop });
+    const result = await onSubmitAudio(recording.blob, recording.mimeType);
+    applyUploadResult(result);
+  }
+
+  /** AC3: 120초 자동 종료 → 사용자 조작 없이 업로드 */
+  function handleAutoStop(recording: AudioRecordingResult) {
+    void uploadRecording(recording, questionKey, true);
+  }
+
+  /**
+   * AC13 (B): 녹음 중 마이크 분리·권한 철회 등으로 녹음이 끊김.
+   * 녹음기는 이미 idle이다. 안내와 "다시 시도"를 보여준다.
+   */
+  function handleRecorderInterrupted() {
+    setStartErrorState({ questionKey, value: true });
+  }
+
+  /** AC1 녹음 시작 흐름 ("답변하기", "다시 시도", "다시 녹음" 공통) */
+  async function startRecording() {
+    const targetQuestionKey = questionKey;
+
+    onClearMessage();
+    setLocalMessageState({ questionKey: targetQuestionKey, message: null });
+    setStartErrorState({ questionKey: targetQuestionKey, value: false });
+    setAutoSubmittedState({ questionKey: targetQuestionKey, value: false });
+
+    // 방어적 정리: 질문 오디오 정지
+    audioRef.current?.pause();
+    window.speechSynthesis.cancel();
+    setTtsState({ questionKey: targetQuestionKey, isPlaying: false, isDone: true });
+
+    const result = await recorder.start();
+    if (result === 'failed') {
+      setStartErrorState({ questionKey: targetQuestionKey, value: true });
     }
   }
+
+  /** AC2 "제출하기" */
+  async function handleSubmitRecording() {
+    if (recorderStatus !== 'recording') return;
+    const targetQuestionKey = questionKey;
+
+    // AC5 (a): 클릭 시점에 1초 미만이면 업로드하지 않는다
+    if (recorder.getElapsedMs() < MIN_ANSWER_RECORDING_MS) {
+      rejectTooShortRecording(targetQuestionKey);
+      return;
+    }
+
+    const recording = await recorder.stop();
+    if (!recording) {
+      // 녹음이 이미 끊긴 경우(stop()이 null): 녹음기를 정리하고 AC13 (B) 안내를 띄운다
+      cancelRecorder();
+      setStartErrorState({ questionKey: targetQuestionKey, value: true });
+      return;
+    }
+    await uploadRecording(recording, targetQuestionKey, false);
+  }
+
+  /** "다시 제출" — 같은 Blob 재업로드 */
+  async function handleResubmit() {
+    // "안내 메시지 지우는 시점": "다시 제출"을 누르면 안내를 지운다
+    onClearMessage();
+    setLocalMessageState({ questionKey, message: null });
+    setStartErrorState({ questionKey, value: false });
+    setAutoSubmittedState({ questionKey, value: false });
+    const result = await onResubmit();
+    applyUploadResult(result);
+  }
+
+  /** "다시 녹음" — Blob 폐기 후 같은 질문에서 새로 녹음 (cancel() 호출 안 함) */
+  function handleRerecord() {
+    onRerecord();
+    void startRecording();
+  }
+
+  const primaryButtonClassName =
+    'bg-primary-700 text-text-inverse hover:bg-primary-800 disabled:bg-primary-200 disabled:text-text-disabled disabled:hover:bg-primary-200 flex shrink-0 items-center gap-1';
+  const secondaryButtonClassName =
+    'flex items-center gap-1 border-slate-300 text-slate-600 hover:bg-slate-50';
 
   return (
     <div className="flex min-h-screen flex-col gap-6 bg-slate-50 p-6">
@@ -519,7 +600,7 @@ export function InterviewQuestionScreen({
 
         {/* 사용자 카메라 영역 */}
         <section className="relative aspect-video overflow-hidden rounded-2xl border border-slate-200 bg-slate-200">
-          {isListening && !isFinished && (
+          {answerView === 'recording' && (
             <div
               role="status"
               aria-live="polite"
@@ -529,10 +610,10 @@ export function InterviewQuestionScreen({
                 <span className="bg-error size-2 rounded-full" />
                 <Mic size={12} strokeWidth={2.2} />
               </span>
-              <span className="truncate">지원자님이 답변을 하고 있어요.</span>
+              <span className="truncate">{ANSWER_SCREEN_MESSAGES.recording}</span>
             </div>
           )}
-          {cameraStatus === 'granted' && !isFinished ? (
+          {effectiveCameraStatus === 'granted' && !isFinished ? (
             <video
               ref={videoRef}
               autoPlay
@@ -546,7 +627,7 @@ export function InterviewQuestionScreen({
               <p className="text-sm font-medium">
                 {isFinished
                   ? '면접이 종료되어 카메라가 꺼졌어요.'
-                  : cameraStatus === 'denied'
+                  : effectiveCameraStatus === 'denied'
                     ? '브라우저 설정에서 카메라 권한을 허용해주세요.'
                     : '카메라를 준비 중입니다.'}
               </p>
@@ -573,10 +654,29 @@ export function InterviewQuestionScreen({
           {question}
         </p>
 
-        {validationError && (
-          <p className="text-sm text-red-500" role="alert">
-            {validationError}
+        {alertMessages.map((message) => (
+          <p key={message} className="text-sm text-red-500" role="alert">
+            {message}
           </p>
+        ))}
+
+        {/* 처리 중 / 다음 질문 준비 중 / 자동 제출 안내 */}
+        {showAutoSubmitted && (
+          <p role="status" className="text-sm text-slate-600">
+            {ANSWER_SCREEN_MESSAGES.autoSubmitted}
+          </p>
+        )}
+        {answerView === 'uploading' && (
+          <div role="status" className="flex items-center gap-2 text-sm text-slate-600">
+            <Loader2 size={16} className="animate-spin text-slate-500" aria-hidden="true" />
+            <span>{ANSWER_SCREEN_MESSAGES.processing}</span>
+          </div>
+        )}
+        {answerView === 'waiting' && (
+          <div role="status" className="flex items-center gap-2 text-sm text-slate-600">
+            <Loader2 size={16} className="animate-spin text-slate-500" aria-hidden="true" />
+            <span>{ANSWER_SCREEN_MESSAGES.waiting}</span>
+          </div>
         )}
 
         {/* Safari 자동재생 차단 시 수동 재생 버튼 */}
@@ -588,7 +688,7 @@ export function InterviewQuestionScreen({
               size="sm"
               aria-label="질문 음성 재생"
               onClick={handleManualPlay}
-              className="flex items-center gap-1 border-slate-300 text-slate-600 hover:bg-slate-50"
+              className={secondaryButtonClassName}
             >
               <Volume2 size={14} />
               질문 음성 재생
@@ -596,38 +696,115 @@ export function InterviewQuestionScreen({
           </div>
         )}
 
-        <div className="flex justify-end gap-2">
-          {/* 다시 듣기 버튼 */}
-          {isTtsDone && !isFinished && !hasStartedAnswering && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              aria-label="질문 다시 듣기"
-              onClick={handleReplay}
-              className="flex items-center gap-1 border-slate-300 text-slate-600 hover:bg-slate-50"
-            >
-              <Volume2 size={14} />
-              다시 듣기
-            </Button>
-          )}
-          <Button
-            type="button"
-            onClick={handleActionButton}
-            disabled={isActionButtonDisabled}
-            size="sm"
-            className="bg-primary-700 text-text-inverse hover:bg-primary-800 disabled:bg-primary-200 disabled:text-text-disabled disabled:hover:bg-primary-200 flex shrink-0 items-center gap-1"
-          >
-            {isFinished
-              ? '면접 완료'
-              : isSubmitting
-                ? '제출 중...'
-                : hasStartedAnswering
-                  ? '제출하기'
-                  : '답변하기'}
-            <ArrowRight size={14} />
-          </Button>
-        </div>
+        {answerView !== 'waiting' && (
+          <div className="flex items-center justify-end gap-2">
+            {/* 녹음 경과 시간 — 매초 읽히지 않도록 aria-live 영역 밖에 둔다 */}
+            {answerView === 'recording' && (
+              <span className="mr-auto text-sm font-medium text-slate-600 tabular-nums">
+                {`${formatDuration(recorder.elapsedSeconds)} / ${formatDuration(recorder.maxDurationMs / 1000)}`}
+              </span>
+            )}
+
+            {/* 다시 듣기 버튼 — idle / retryable에서만 (#118 조건) */}
+            {isReplayVisible && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-label="질문 다시 듣기"
+                onClick={handleReplay}
+                className={secondaryButtonClassName}
+              >
+                <Volume2 size={14} />
+                다시 듣기
+              </Button>
+            )}
+
+            {answerView === 'finished' && (
+              <Button type="button" onClick={onFinish} size="sm" className={primaryButtonClassName}>
+                면접 완료
+                <ArrowRight size={14} />
+              </Button>
+            )}
+
+            {answerView === 'idle' &&
+              (hasRecorderStartError ? (
+                <Button
+                  ref={retryMicButtonRef}
+                  type="button"
+                  onClick={() => void startRecording()}
+                  disabled={isTtsBlockingAnswer || recorderStatus === 'starting'}
+                  size="sm"
+                  className={primaryButtonClassName}
+                >
+                  다시 시도
+                  <ArrowRight size={14} />
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => void startRecording()}
+                  disabled={isTtsBlockingAnswer || recorderStatus === 'starting'}
+                  size="sm"
+                  className={primaryButtonClassName}
+                >
+                  답변하기
+                  <ArrowRight size={14} />
+                </Button>
+              ))}
+
+            {answerView === 'recording' && (
+              <Button
+                type="button"
+                onClick={() => void handleSubmitRecording()}
+                disabled={recorderStatus !== 'recording'}
+                size="sm"
+                className={primaryButtonClassName}
+              >
+                제출하기
+                <ArrowRight size={14} />
+              </Button>
+            )}
+
+            {answerView === 'uploading' && (
+              <Button
+                type="button"
+                disabled
+                aria-busy="true"
+                size="sm"
+                className={primaryButtonClassName}
+              >
+                제출 중...
+                <ArrowRight size={14} />
+              </Button>
+            )}
+
+            {answerView === 'retryable' && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRerecord}
+                  disabled={isTtsBlockingAnswer}
+                  className={secondaryButtonClassName}
+                >
+                  다시 녹음
+                </Button>
+                <Button
+                  ref={resubmitButtonRef}
+                  type="button"
+                  onClick={() => void handleResubmit()}
+                  size="sm"
+                  className={primaryButtonClassName}
+                >
+                  다시 제출
+                  <ArrowRight size={14} />
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );

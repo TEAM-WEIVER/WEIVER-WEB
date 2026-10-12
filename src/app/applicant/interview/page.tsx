@@ -5,8 +5,13 @@ import { useRouter } from 'next/navigation';
 
 import { getAccessToken } from '@/lib/auth-token';
 import { reportInterviewError } from '@/lib/interview-api';
+import { useAnswerAudioUpload } from '@/hooks/use-answer-audio-upload';
 import { useInterviewWebSocket } from '@/hooks/use-interview-websocket';
-import { useInterviewStore, getRoundLabel } from '@/store/interview-store';
+import {
+  useInterviewStore,
+  getRoundLabel,
+  selectCurrentQuestionKey,
+} from '@/store/interview-store';
 import { toast } from '@/store/toast-store';
 
 import { InterviewStartScreen } from './_components/interview-start-screen';
@@ -28,13 +33,23 @@ export default function InterviewPage() {
     currentAudioUrl,
     currentAudioStatus,
     errorMessage,
+    answerAcceptedKey,
     reset,
   } = useInterviewStore();
+  const currentQuestionKey = useInterviewStore(selectCurrentQuestionKey);
 
   const roundLabel = getRoundLabel(currentQuestionCode);
   const hasCurrentQuestion = currentQuestion !== null && currentSequence !== null;
 
-  const { connect, submitAnswer } = useInterviewWebSocket();
+  const { connect, disconnect, finishInterview } = useInterviewWebSocket();
+  const answerUpload = useAnswerAudioUpload({ finishInterview, disconnect });
+
+  // 화면 표시 우선순위 2 (#119): 현재 질문의 답변이 수락되었거나 업로드 phase가 waiting
+  const isWaitingNextQuestion =
+    (status === 'SUBSCRIBED' &&
+      currentQuestionKey !== null &&
+      answerAcceptedKey === currentQuestionKey) ||
+    answerUpload.phase === 'waiting';
   const [isErrorReportOpen, setIsErrorReportOpen] = useState(false);
   const [isReportingError, setIsReportingError] = useState(false);
   const [errorReportMessage, setErrorReportMessage] = useState<string | null>(null);
@@ -54,13 +69,6 @@ export default function InterviewPage() {
 
     connect(token ?? '');
   }, [connect]);
-
-  const handleSubmitAnswer = useCallback(
-    (answer: string) => {
-      submitAnswer(answer);
-    },
-    [submitAnswer],
-  );
 
   const handleReturnToDashboard = useCallback(() => {
     reset();
@@ -167,10 +175,15 @@ export default function InterviewPage() {
               question={currentQuestion}
               sequence={currentSequence}
               roundLabel={roundLabel}
-              isSubmitting={status === 'SUBMITTING' || status === 'RECONNECTING'}
+              isWaitingNextQuestion={isWaitingNextQuestion}
+              uploadPhase={answerUpload.phase}
+              uploadMessage={answerUpload.message}
               audioUrl={currentAudioUrl}
               audioStatus={currentAudioStatus}
-              onSubmit={handleSubmitAnswer}
+              onSubmitAudio={answerUpload.submit}
+              onResubmit={answerUpload.resubmit}
+              onRerecord={answerUpload.discardAndRerecord}
+              onClearMessage={answerUpload.clearMessage}
               onReportError={() => {
                 setErrorReportMessage(null);
                 setIsErrorReportOpen(true);
