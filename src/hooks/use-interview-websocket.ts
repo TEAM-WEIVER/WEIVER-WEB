@@ -11,7 +11,7 @@ import type { InterviewMessage, QuestionReadyPayload } from '@/store/interview-s
 // 상수
 // ──────────────────────────────────────────────
 
-function normalizeBrokerUrl(url: string | undefined): string {
+export function normalizeBrokerUrl(url: string | undefined): string {
   const fallbackUrl = 'wss://api.piuda.site/ws';
   const value = url?.trim() || fallbackUrl;
 
@@ -99,6 +99,54 @@ export function useInterviewWebSocket() {
     }
   }, []);
 
+  /**
+   * 재연결 시도. reconnectDelay가 0이면 소켓이 닫혀도 stompjs 상태가 ACTIVE로 남아
+   * `activate()`가 "Already ACTIVE"로 무시된다. 먼저 INACTIVE로 되돌린 뒤 다시 활성화한다.
+   */
+  const reactivateClient = useCallback((client: Client) => {
+    void client.deactivate().then(() => {
+      if (finishedRef.current || clientRef.current !== client) return;
+      client.activate();
+    });
+  }, []);
+
+  /**
+   * AC6: 재시도 횟수를 모두 쓰면 ERROR로 바꾸고 클라이언트도 비활성화한다.
+   * reconnectDelay 0이라 stompjs가 ACTIVE로 남아 있으므로 명시적으로 deactivate한다.
+   */
+  const giveUpReconnect = useCallback(
+    (client: Client) => {
+      clearRetryTimer();
+      prevStatusRef.current = null;
+      setError('연결이 끊겼습니다. 면접이 중단되었습니다.');
+      void client.deactivate();
+    },
+    [clearRetryTimer, setError],
+  );
+
+  /**
+   * #119: 정상 종료·인증 만료 등으로 연결을 끝낸다.
+   * 종료 플래그를 먼저 세워 이후 onWebSocketClose가 재연결 타이머를 걸지 않게 한다.
+   */
+  const disconnect = useCallback(() => {
+    finishedRef.current = true;
+    clearRetryTimer();
+    clearSubscribeReceiptTimer();
+    clearStartResponseTimer();
+    prevStatusRef.current = null;
+    void clientRef.current?.deactivate();
+  }, [clearRetryTimer, clearStartResponseTimer, clearSubscribeReceiptTimer]);
+
+  /** #119: 현재 세션이면 완료 화면(FINISHED)으로 바꾸고 연결을 끝낸다. */
+  const finishInterview = useCallback(
+    (sessionId: string) => {
+      if (!setFinished(sessionId)) return false;
+      disconnect();
+      return true;
+    },
+    [disconnect, setFinished],
+  );
+
   const isActiveStatus = useCallback(() => {
     const s = useInterviewStore.getState().status;
     return s === 'SUBSCRIBED' || s === 'QUESTION' || s === 'SUBMITTING' || s === 'RECONNECTING';
@@ -129,27 +177,20 @@ export function useInterviewWebSocket() {
           break;
 
         case 'ANSWER_ACCEPTED':
-          // 다음 QUESTION_READY 대기 — 로딩 화면(SUBSCRIBED)으로 전환
-          setAnswerAccepted();
+          // 현재 질문의 수락일 때만 다음 QUESTION_READY 대기(SUBSCRIBED)로 전환 (#119 AC4)
+          setAnswerAccepted({
+            sessionId: payload.interview_session_id,
+            questionCode: payload.question_code,
+            sequence: payload.sequence,
+          });
           break;
 
         case 'INTERVIEW_FINISHED':
-          if (setFinished(payload.interview_session_id)) {
-            finishedRef.current = true;
-            clearRetryTimer();
-            clientRef.current?.deactivate();
-          }
+          finishInterview(payload.interview_session_id);
           break;
       }
     },
-    [
-      clearRetryTimer,
-      clearStartResponseTimer,
-      setSessionStarted,
-      setQuestion,
-      setAnswerAccepted,
-      setFinished,
-    ],
+    [clearStartResponseTimer, finishInterview, setSessionStarted, setQuestion, setAnswerAccepted],
   );
 
   // ──────────────────────────────────────────────
@@ -180,7 +221,7 @@ export function useInterviewWebSocket() {
         startResponseTimerRef.current = setTimeout(() => {
           if (!useInterviewStore.getState().interviewSessionId) {
             setError('면접 세션 시작 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.');
-            client.deactivate();
+            void client.deactivate();
           }
         }, START_RESPONSE_TIMEOUT_MS);
       };
@@ -215,14 +256,14 @@ export function useInterviewWebSocket() {
 
           client.watchForReceipt(receiptId, publishStartOnce);
           client.subscribe(SUBSCRIBE_DEST, handleMessage, { receipt: receiptId });
-          setStatus('SUBSCRIBED');
 
           if (isReconnect) {
-            // 재연결: 이전 상태 복구, start publish 스킵
+            // 재연결: SUBSCRIBED를 거치지 않고 이전 상태로 한 번에 복구, start publish 스킵 (#119)
             const prev = prevStatusRef.current;
             prevStatusRef.current = null;
-            if (prev) setStatus(prev);
+            setStatus(prev ?? 'SUBSCRIBED');
           } else {
+            setStatus('SUBSCRIBED');
             // receipt 미지원 서버에서도 멈추지 않도록 짧은 fallback 이후 시작 요청
             subscribeReceiptTimerRef.current = setTimeout(
               publishStartOnce,
@@ -261,7 +302,7 @@ export function useInterviewWebSocket() {
           setError(String(errorMsg));
 
           // deactivate 후 소켓 close 이벤트가 AC6를 트리거하지 않도록 차단
-          client.deactivate();
+          void client.deactivate();
 
           if (isAuthError) {
             router.replace('/login');
@@ -272,10 +313,10 @@ export function useInterviewWebSocket() {
           // 정상 종료 처리로 발생한 close에서는 재연결하지 않는다.
           if (finishedRef.current) return;
 
-          // AC5-a: STOMP ERROR로 인한 close는 재연결 제외
+          // AC5-a: STOMP ERROR로 인한 close는 재연결 제외.
+          // onStompError가 이미 ERROR로 바꿨으므로 상태를 덮어쓰지 않는다(오류 배너 유지).
           if (stompErrorFiredRef.current) {
             stompErrorFiredRef.current = false;
-            setStatus('IDLE');
             return;
           }
 
@@ -284,7 +325,7 @@ export function useInterviewWebSocket() {
 
           // AC6: 재연결 흐름
           if (retryCountRef.current >= MAX_RETRIES) {
-            setError('연결이 끊겼습니다. 면접이 중단되었습니다.');
+            giveUpReconnect(client);
             return;
           }
 
@@ -299,13 +340,15 @@ export function useInterviewWebSocket() {
           const delay = RETRY_DELAYS[retryCountRef.current] ?? 4000;
           retryCountRef.current += 1;
 
+          clearRetryTimer();
           retryTimerRef.current = setTimeout(() => {
+            retryTimerRef.current = null;
             if (retryCountRef.current > MAX_RETRIES) {
-              setError('연결이 끊겼습니다. 면접이 중단되었습니다.');
+              giveUpReconnect(client);
               return;
             }
             // stompjs activate로 재연결 시도
-            client.activate();
+            reactivateClient(client);
           }, delay);
         },
 
@@ -317,7 +360,7 @@ export function useInterviewWebSocket() {
           const current = useInterviewStore.getState().status;
           if (current === 'CONNECTING') {
             setError('면접을 시작할 수 없습니다. 다시 시도해 주세요.');
-            client.deactivate();
+            void client.deactivate();
           }
         },
       });
@@ -330,43 +373,14 @@ export function useInterviewWebSocket() {
       clearRetryTimer,
       clearStartResponseTimer,
       clearSubscribeReceiptTimer,
+      giveUpReconnect,
       handleMessage,
       isActiveStatus,
+      reactivateClient,
       router,
       setError,
       setStatus,
     ],
-  );
-
-  // ──────────────────────────────────────────────
-  // 답변 제출
-  // ──────────────────────────────────────────────
-
-  const submitAnswer = useCallback(
-    (answer: string) => {
-      const {
-        interviewSessionId: sessionId,
-        currentQuestionCode,
-        currentSequence,
-      } = useInterviewStore.getState();
-
-      if (!clientRef.current?.connected || !sessionId || currentSequence === null) return;
-
-      clientRef.current.publish({
-        destination: `/app/interviews/${sessionId}/answers`,
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          question_code: currentQuestionCode,
-          sequence: currentSequence,
-          answer,
-        }),
-      });
-
-      setStatus('SUBMITTING');
-    },
-    [setStatus],
   );
 
   // ──────────────────────────────────────────────
@@ -388,19 +402,22 @@ export function useInterviewWebSocket() {
 
       // 소켓이 끊긴 경우 재연결 흐름 시작
       if (current === 'SUBSCRIBED' || current === 'QUESTION' || current === 'SUBMITTING') {
-        prevStatusRef.current = current;
-        setStatus('RECONNECTING');
-
         if (retryCountRef.current >= MAX_RETRIES) {
-          setError('연결이 끊겼습니다. 면접이 중단되었습니다.');
+          giveUpReconnect(client);
           return;
         }
 
+        prevStatusRef.current = current;
+        setStatus('RECONNECTING');
+
+        // 겹치는 재시도 타이머가 재시도 예산을 중복으로 쓰지 않도록 기존 타이머를 먼저 정리한다
+        clearRetryTimer();
         const delay = RETRY_DELAYS[retryCountRef.current] ?? 4000;
         retryCountRef.current += 1;
 
         retryTimerRef.current = setTimeout(() => {
-          client.activate();
+          retryTimerRef.current = null;
+          reactivateClient(client);
         }, delay);
       }
     }
@@ -409,20 +426,16 @@ export function useInterviewWebSocket() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [setError, setStatus]);
+  }, [clearRetryTimer, giveUpReconnect, reactivateClient, setStatus]);
 
   // ──────────────────────────────────────────────
   // 언마운트 시 정리
   // ──────────────────────────────────────────────
 
   useEffect(() => {
-    return () => {
-      clearRetryTimer();
-      clearSubscribeReceiptTimer();
-      clearStartResponseTimer();
-      clientRef.current?.deactivate();
-    };
-  }, [clearRetryTimer, clearStartResponseTimer, clearSubscribeReceiptTimer]);
+    // 종료 플래그를 먼저 세워 deactivate 대기 중 close·reactivate가 재연결하지 않게 한다
+    return disconnect;
+  }, [disconnect]);
 
   // ──────────────────────────────────────────────
   // 연결 여부 확인 (외부 노출)
@@ -434,7 +447,8 @@ export function useInterviewWebSocket() {
 
   return {
     connect,
-    submitAnswer,
+    disconnect,
+    finishInterview,
     isConnected,
     status,
     interviewSessionId,

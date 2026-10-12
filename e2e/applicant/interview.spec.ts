@@ -1,6 +1,11 @@
 import { type Page, type WebSocketRoute } from '@playwright/test';
 
 import { test, expect } from '../fixtures/auth';
+import {
+  installInterviewMediaMocks,
+  mockInterviewAudioUpload,
+  recordAndSubmitAnswer,
+} from '../fixtures/interview-audio';
 
 /**
  * AI 면접 WebSocket(STOMP) 인수 테스트 (#44)
@@ -16,6 +21,10 @@ import { test, expect } from '../fixtures/auth';
  * - Playwright page.routeWebSocket()으로 STOMP 프레임을 직접 시뮬레이션한다.
  * - STOMP 프레임 형식: "COMMAND\nheader:value\n\n{body}\0"
  * - 클라이언트가 보내는 SEND 프레임의 destination 헤더로 publish 경로를 검증한다.
+ *
+ * 답변 제출(#119): 답변은 녹음 업로드(REST)로만 보낸다. 브라우저 녹음 API는
+ * e2e/fixtures/interview-audio.ts의 getUserMedia/MediaRecorder 목을 쓰고,
+ * 업로드 응답 이후의 STOMP 메시지는 업로드 목 콜백에서 보낸다.
  */
 
 // ──────────────────────────────────────────────
@@ -74,15 +83,6 @@ function frameToString(data: string | Buffer): string {
   return data.toString('utf-8');
 }
 
-function parseStompBody<T>(frame: string): T | null {
-  const bodyMatch = frame.match(/\n\n([\s\S]+?)\0/);
-  try {
-    return JSON.parse(bodyMatch?.[1] ?? '{}') as T;
-  } catch {
-    return null;
-  }
-}
-
 // ──────────────────────────────────────────────
 // 메시지 페이로드
 // ──────────────────────────────────────────────
@@ -119,41 +119,10 @@ const INTERVIEW_FINISHED = {
 /**
  * 인증된 사용자 상태로 면접 페이지 진입
  */
-async function gotoInterviewWithAuth(page: Page, speechTranscript = '테스트 답변입니다.') {
-  await page.addInitScript((transcript) => {
-    class MockSpeechRecognition {
-      lang = 'ko-KR';
-      continuous = true;
-      interimResults = true;
-      onresult: ((event: object) => void) | null = null;
-      onend: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-
-      start() {
-        this.onresult?.({
-          resultIndex: 0,
-          results: [
-            {
-              0: { transcript },
-              isFinal: true,
-            },
-          ],
-        });
-      }
-
-      stop() {
-        this.onend?.();
-      }
-
-      abort() {}
-    }
-
-    for (const property of ['SpeechRecognition', 'webkitSpeechRecognition']) {
-      Object.defineProperty(window, property, {
-        configurable: true,
-        value: MockSpeechRecognition,
-      });
-    }
+async function gotoInterviewWithAuth(page: Page) {
+  // 시작 화면 마이크 게이트(#119 AC13 (A))를 통과하도록 마이크 허용 + MediaRecorder 목
+  await installInterviewMediaMocks(page);
+  await page.addInitScript(() => {
     Object.defineProperty(window, 'speechSynthesis', {
       configurable: true,
       value: {
@@ -163,7 +132,7 @@ async function gotoInterviewWithAuth(page: Page, speechTranscript = '테스트 �
         },
       },
     });
-  }, speechTranscript);
+  });
 
   await page.goto(INTERVIEW_URL);
 
@@ -178,10 +147,7 @@ async function gotoInterviewWithAuth(page: Page, speechTranscript = '테스트 �
 }
 
 async function submitSpokenAnswer(page: Page) {
-  await expect(page.getByRole('button', { name: '답변하기' })).toBeEnabled();
-  await page.getByRole('button', { name: '답변하기' }).click();
-  await expect(page.getByRole('button', { name: '제출하기' })).toBeEnabled();
-  await page.getByRole('button', { name: '제출하기' }).click();
+  await recordAndSubmitAnswer(page);
 }
 
 // ──────────────────────────────────────────────
@@ -395,7 +361,20 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
 
   test('현재 sequence보다 작은 sequence의 QUESTION_READY는 무시된다', async ({ page }) => {
     // Given: sequence 2 질문을 표시 중인 상태에서 sequence 1이 재수신됨
+    let socket: WebSocketRoute | null = null;
+    await mockInterviewAudioUpload(page, () => {
+      if (!socket) return;
+      socket.send(stompMessage('/user/queue/interviews', answerAccepted(1)));
+      sendInterviewMessage(socket, questionReady(2));
+
+      // When: 이후 오래된 sequence 1이 재도착
+      const ws = socket;
+      setTimeout(() => {
+        ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
+      }, 100);
+    });
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
+      socket = ws;
       ws.onMessage((data) => {
         const frame = frameToString(data as string | Buffer);
 
@@ -410,16 +389,6 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
             sendInterviewMessage(ws, questionReady(1));
-          }
-
-          if (destination.includes('/answers')) {
-            ws.send(stompMessage('/user/queue/interviews', answerAccepted(1)));
-            sendInterviewMessage(ws, questionReady(2));
-
-            // When: 이후 오래된 sequence 1이 재도착
-            setTimeout(() => {
-              ws.send(stompMessage('/user/queue/interviews', questionReady(1)));
-            }, 50);
           }
         }
       });
@@ -450,15 +419,21 @@ test.describe('AC2-a: 중복 질문 메시지 방어', () => {
 // ──────────────────────────────────────────────
 
 test.describe('AC3: 답변 제출 및 다음 질문 루프', () => {
-  test('음성 답변 제출 시 answers 경로로 올바른 payload가 publish된다', async ({ page }) => {
+  test('녹음 답변 제출 시 현재 질문 키로 오디오를 업로드하고 STOMP 텍스트 답변은 publish하지 않는다', async ({
+    page,
+  }) => {
     // Given
-    let capturedAnswerPayload: {
-      question_code?: string;
-      sequence?: number;
-      answer?: string;
-    } | null = null;
+    const sentDestinations: string[] = [];
+    let socket: WebSocketRoute | null = null;
+    const upload = await mockInterviewAudioUpload(page, () => {
+      if (!socket) return;
+      // ANSWER_ACCEPTED 후 다음 질문
+      socket.send(stompMessage('/user/queue/interviews', answerAccepted(1)));
+      socket.send(stompMessage('/user/queue/interviews', questionReady(2)));
+    });
 
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
+      socket = ws;
       ws.onMessage((data) => {
         const frame = frameToString(data as string | Buffer);
 
@@ -469,44 +444,39 @@ test.describe('AC3: 답변 제출 및 다음 질문 루프', () => {
         if (frame.startsWith('SEND')) {
           const destinationMatch = frame.match(/destination:(.+)/);
           const destination = destinationMatch?.[1]?.trim() ?? '';
+          sentDestinations.push(destination);
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
             sendInterviewMessage(ws, questionReady(1));
           }
-
-          if (destination === `/app/interviews/${SESSION_ID}/answers`) {
-            capturedAnswerPayload = parseStompBody<typeof capturedAnswerPayload>(frame);
-            // ANSWER_ACCEPTED 후 다음 질문
-            ws.send(stompMessage('/user/queue/interviews', answerAccepted(1)));
-            ws.send(stompMessage('/user/queue/interviews', questionReady(2)));
-          }
         }
       });
     });
 
-    await gotoInterviewWithAuth(page, '안녕하세요. 답변 내용입니다.');
+    await gotoInterviewWithAuth(page);
     await page.getByRole('button', { name: '면접 시작' }).click();
 
     await expect(page.getByText('1번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
       timeout: 5000,
     });
 
-    // When: 음성 답변 시작 후 인식 결과 제출
+    // When: 녹음 답변 시작 후 제출
     await submitSpokenAnswer(page);
 
-    // Then: answers 경로로 올바른 payload가 전송됨
-    await expect(async () => {
-      expect(capturedAnswerPayload).not.toBeNull();
-      expect(capturedAnswerPayload?.answer).toBe('안녕하세요. 답변 내용입니다.');
-      expect(capturedAnswerPayload?.sequence).toBe(1);
-      expect(capturedAnswerPayload?.question_code).toBe('Q001');
-    }).toPass({ timeout: 5000 });
+    // Then: 현재 질문의 question_code·sequence로 오디오 업로드가 전송됨
+    await expect.poll(() => upload.uploads.length, { timeout: 5000 }).toBe(1);
+    expect(upload.uploads[0].url.pathname).toBe(`/api/interviews/${SESSION_ID}/answers/audio`);
+    expect(upload.uploads[0].questionCode).toBe('Q001');
+    expect(upload.uploads[0].sequence).toBe('1');
 
     // Then: ANSWER_ACCEPTED 후 다음 질문(sequence 2)이 표시됨
     await expect(page.getByText('2번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
       timeout: 5000,
     });
+
+    // Then: STOMP 텍스트 답변 경로는 쓰지 않는다
+    expect(sentDestinations).not.toContain(`/app/interviews/${SESSION_ID}/answers`);
   });
 });
 
@@ -519,7 +489,13 @@ test.describe('AC3-a: 마지막 답변 후 INTERVIEW_FINISHED 직접 수신', ()
     page,
   }) => {
     // Given: 마지막 질문 답변 제출 → ANSWER_ACCEPTED 없이 INTERVIEW_FINISHED 수신
+    let socket: WebSocketRoute | null = null;
+    // When: 마지막 답변 업로드 후 ANSWER_ACCEPTED 없이 INTERVIEW_FINISHED
+    await mockInterviewAudioUpload(page, () => {
+      socket?.send(stompMessage('/user/queue/interviews', INTERVIEW_FINISHED));
+    });
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
+      socket = ws;
       ws.onMessage((data) => {
         const frame = frameToString(data as string | Buffer);
 
@@ -534,11 +510,6 @@ test.describe('AC3-a: 마지막 답변 후 INTERVIEW_FINISHED 직접 수신', ()
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
             sendInterviewMessage(ws, questionReady(1));
-          }
-
-          // When: 마지막 답변 제출 후 ANSWER_ACCEPTED 없이 INTERVIEW_FINISHED
-          if (destination.includes('/answers')) {
-            ws.send(stompMessage('/user/queue/interviews', INTERVIEW_FINISHED));
           }
         }
       });
@@ -569,7 +540,14 @@ test.describe('AC4: 면접 종료 처리', () => {
     page,
   }) => {
     // Given: 모든 질문-답변 루프 완료 후 INTERVIEW_FINISHED 수신
+    let socket: WebSocketRoute | null = null;
+    await mockInterviewAudioUpload(page, () => {
+      if (!socket) return;
+      socket.send(stompMessage('/user/queue/interviews', answerAccepted(1)));
+      sendInterviewMessage(socket, INTERVIEW_FINISHED);
+    });
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
+      socket = ws;
       ws.onMessage((data) => {
         const frame = frameToString(data as string | Buffer);
 
@@ -584,11 +562,6 @@ test.describe('AC4: 면접 종료 처리', () => {
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
             sendInterviewMessage(ws, questionReady(1));
-          }
-
-          if (destination.includes('/answers')) {
-            ws.send(stompMessage('/user/queue/interviews', answerAccepted(1)));
-            sendInterviewMessage(ws, INTERVIEW_FINISHED);
           }
         }
       });
@@ -713,19 +686,18 @@ test.describe('AC5-a: 면접 진행 중 STOMP ERROR 프레임 처리', () => {
 });
 
 // ──────────────────────────────────────────────
-// AC7: 빈 답변 제출 허용
+// AC7: 빈 답변 제출 — #119 AC5로 대체
+// 텍스트(STOMP) 답변이 없어져 "빈 문자열 answer 전송"은 더 이상 존재하지 않는다.
+// 녹음이 1초 미만이면 업로드하지 않고 다시 녹음을 안내한다.
 // ──────────────────────────────────────────────
 
-test.describe('AC7: 빈 답변 제출 허용', () => {
-  test('답변 입력 없이 제출 버튼 클릭 시 빈 문자열 answer가 WebSocket으로 전송된다', async ({
+test.describe('AC7: 빈 답변 제출 (#119 AC5로 대체)', () => {
+  test('녹음 직후(1초 미만) 제출하면 업로드·STOMP 답변 전송 없이 다시 녹음을 안내한다', async ({
     page,
   }) => {
     // Given: 질문이 표시된 상태
-    let capturedAnswerPayload: {
-      question_code?: string;
-      sequence?: number;
-      answer?: string;
-    } | null = null;
+    const sentDestinations: string[] = [];
+    const upload = await mockInterviewAudioUpload(page);
 
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
       ws.onMessage((data) => {
@@ -738,85 +710,35 @@ test.describe('AC7: 빈 답변 제출 허용', () => {
         if (frame.startsWith('SEND')) {
           const destinationMatch = frame.match(/destination:(.+)/);
           const destination = destinationMatch?.[1]?.trim() ?? '';
+          sentDestinations.push(destination);
 
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
             sendInterviewMessage(ws, questionReady(1));
           }
-
-          if (destination === `/app/interviews/${SESSION_ID}/answers`) {
-            capturedAnswerPayload = parseStompBody<typeof capturedAnswerPayload>(frame);
-          }
         }
       });
     });
 
-    await gotoInterviewWithAuth(page, '');
+    await gotoInterviewWithAuth(page);
     await page.getByRole('button', { name: '면접 시작' }).click();
 
     await expect(page.getByText('1번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
       timeout: 5000,
     });
 
-    // When: 음성 답변을 시작했지만 인식된 내용 없이 제출
+    // When: 녹음을 시작하자마자 제출
     await page.getByRole('button', { name: '답변하기' }).click();
     await page.getByRole('button', { name: '제출하기' }).click();
 
-    // Then: 빈 문자열 answer payload가 전송된다
-    await expect.poll(() => capturedAnswerPayload, { timeout: 3000 }).not.toBeNull();
-    expect(capturedAnswerPayload?.answer).toBe('');
-    expect(capturedAnswerPayload?.sequence).toBe(1);
-    expect(capturedAnswerPayload?.question_code).toBe('Q001');
-  });
-
-  test('공백만 입력 후 제출 시에도 빈 문자열 answer가 WebSocket으로 전송된다', async ({ page }) => {
-    // Given
-    let capturedAnswerPayload: {
-      question_code?: string;
-      sequence?: number;
-      answer?: string;
-    } | null = null;
-
-    await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
-      ws.onMessage((data) => {
-        const frame = frameToString(data as string | Buffer);
-
-        if (frame.startsWith('CONNECT')) {
-          ws.send(stompConnected());
-        }
-
-        if (frame.startsWith('SEND')) {
-          const destinationMatch = frame.match(/destination:(.+)/);
-          const destination = destinationMatch?.[1]?.trim() ?? '';
-
-          if (destination === '/app/interviews/start') {
-            ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
-            sendInterviewMessage(ws, questionReady(1));
-          }
-
-          if (destination === `/app/interviews/${SESSION_ID}/answers`) {
-            capturedAnswerPayload = parseStompBody<typeof capturedAnswerPayload>(frame);
-          }
-        }
-      });
-    });
-
-    await gotoInterviewWithAuth(page, '   ');
-    await page.getByRole('button', { name: '면접 시작' }).click();
-
-    await expect(page.getByText('1번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
-      timeout: 5000,
-    });
-
-    // When: 공백만 음성 인식된 상태로 제출
-    await page.getByRole('button', { name: '답변하기' }).click();
-    await page.getByRole('button', { name: '제출하기' }).click();
-
-    // Then: 공백은 trim되어 빈 문자열 answer payload로 전송된다
-    await expect.poll(() => capturedAnswerPayload, { timeout: 3000 }).not.toBeNull();
-    expect(capturedAnswerPayload?.answer).toBe('');
-    expect(capturedAnswerPayload?.sequence).toBe(1);
-    expect(capturedAnswerPayload?.question_code).toBe('Q001');
+    // Then: 너무 짧은 답변 안내 + 같은 질문에서 다시 녹음 가능
+    await expect(
+      page.getByRole('alert').filter({ hasText: '답변이 너무 짧아요. 다시 녹음해 주세요.' }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: '답변하기' })).toBeEnabled();
+    await page.waitForTimeout(300);
+    expect(upload.uploads).toHaveLength(0);
+    expect(sentDestinations).not.toContain(`/app/interviews/${SESSION_ID}/answers`);
   });
 });
 
@@ -974,7 +896,13 @@ test.describe('#114: 종료 후 대시보드에서 결과 선택 제출', () => 
       });
     });
 
+    let socket: WebSocketRoute | null = null;
+    await mockInterviewAudioUpload(page, () => {
+      if (socket) sendInterviewMessage(socket, INTERVIEW_FINISHED);
+    });
+
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
+      socket = ws;
       ws.onMessage((data) => {
         const frame = frameToString(data as string | Buffer);
 
@@ -988,10 +916,6 @@ test.describe('#114: 종료 후 대시보드에서 결과 선택 제출', () => 
         if (destination === '/app/interviews/start') {
           ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
           sendInterviewMessage(ws, questionReady(1));
-        }
-
-        if (destination === `/app/interviews/${SESSION_ID}/answers`) {
-          sendInterviewMessage(ws, INTERVIEW_FINISHED);
         }
       });
     });
