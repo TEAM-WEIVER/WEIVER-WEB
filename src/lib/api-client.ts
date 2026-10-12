@@ -43,15 +43,27 @@ interface ReissueAccessTokenData {
   accessToken: string;
 }
 
+export const REISSUE_FAILED_MESSAGE = 'Access token reissue failed';
+
+interface ApiErrorOptions {
+  /** 토큰 재발급(`/api/auth/reissue`) 실패로 생긴 오류인지 여부 */
+  isReissueFailure?: boolean;
+}
+
 export class ApiError extends Error {
+  /** 토큰 재발급 실패 경로에서 던진 오류이면 true. HTTP 상태와 무관하게 인증 실패로 판정한다. */
+  public readonly isReissueFailure: boolean;
+
   constructor(
     message: string,
     public readonly status: number,
     public readonly apiStatus?: string,
     public readonly code?: number,
+    options: ApiErrorOptions = {},
   ) {
     super(message);
     this.name = 'ApiError';
+    this.isReissueFailure = options.isReissueFailure ?? false;
   }
 }
 
@@ -132,7 +144,9 @@ async function fetchReissuedAccessToken() {
 
   if (!response.ok) {
     clearAccessToken();
-    throw new ApiError('Access token reissue failed', response.status);
+    throw new ApiError(REISSUE_FAILED_MESSAGE, response.status, undefined, undefined, {
+      isReissueFailure: true,
+    });
   }
 
   const result = (await response.json()) as ApiResponse<ReissueAccessTokenData>;

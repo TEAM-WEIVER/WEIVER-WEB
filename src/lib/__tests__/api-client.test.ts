@@ -356,4 +356,102 @@ describe('apiRequest', () => {
     expect((fetchMock.mock.calls[1][1].headers as Headers).get('X-XSRF-TOKEN')).toBe('csrf-token');
     expect(getAccessToken()).toBe('deduped-access-token');
   });
+
+  it('토큰 재발급이 실패하면 isReissueFailure가 true인 ApiError를 던진다 (#119 AC12)', async () => {
+    vi.resetModules();
+
+    const csrfResponse = () =>
+      new Response(
+        JSON.stringify({
+          status: 'OK',
+          code: 200,
+          data: { csrfToken: 'csrf-token' },
+          message: 'OK',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(csrfResponse())
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(csrfResponse())
+      .mockResolvedValueOnce(new Response(null, { status: 403 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { setAccessToken } = await import('../auth-token');
+    const { apiRequest, ApiError, REISSUE_FAILED_MESSAGE } = await import('../api-client');
+
+    setAccessToken('expired-access-token');
+
+    const error = await apiRequest('/api/example', { method: 'POST' }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as InstanceType<typeof ApiError>).isReissueFailure).toBe(true);
+    expect((error as InstanceType<typeof ApiError>).message).toBe(REISSUE_FAILED_MESSAGE);
+    expect((error as InstanceType<typeof ApiError>).message).toBe('Access token reissue failed');
+    expect((error as InstanceType<typeof ApiError>).status).toBe(403);
+  });
+
+  it('일반 오류 응답의 ApiError는 isReissueFailure가 false이다', async () => {
+    vi.resetModules();
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 500 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { apiRequest, ApiError } = await import('../api-client');
+
+    const error = await apiRequest('/api/example').catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as InstanceType<typeof ApiError>).isReissueFailure).toBe(false);
+  });
+
+  it('FormData 본문과 signal을 첫 요청과 401 후 재시도 요청에 그대로 전달한다', async () => {
+    vi.resetModules();
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ status: 'OK', code: 200, data: { csrfToken: 'csrf' }, message: 'OK' }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ status: 'OK', code: 200, data: { accessToken: 'new' }, message: 'OK' }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { apiRequest } = await import('../api-client');
+
+    const controller = new AbortController();
+    const formData = new FormData();
+    formData.append('file', new Blob(['a'], { type: 'audio/webm' }), 'answer.webm');
+
+    await expect(
+      apiRequest('/api/example', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+        headers: { 'X-XSRF-TOKEN': 'csrf-token' },
+      }),
+    ).resolves.toEqual({ ok: true });
+
+    const [firstCall, , , retryCall] = fetchMock.mock.calls;
+    expect(firstCall[1].body).toBe(formData);
+    expect(firstCall[1].signal).toBe(controller.signal);
+    expect((firstCall[1].headers as Headers).get('Content-Type')).toBeNull();
+    expect(retryCall[1].body).toBe(formData);
+    expect(retryCall[1].signal).toBe(controller.signal);
+  });
 });
