@@ -1,6 +1,11 @@
 import { type Page, type WebSocketRoute } from '@playwright/test';
 
 import { test, expect } from '../fixtures/auth';
+import {
+  installInterviewMediaMocks,
+  mockInterviewAudioUpload,
+  recordAndSubmitAnswer,
+} from '../fixtures/interview-audio';
 
 /**
  * AI TTS 연동 인수 테스트 (#118)
@@ -15,6 +20,7 @@ import { test, expect } from '../fixtures/auth';
  * - Playwright page.routeWebSocket()으로 STOMP 프레임을 직접 시뮬레이션한다.
  * - QUESTION_READY 페이로드에 audio_url / audio_status 신규 필드가 포함된다.
  * - Audio API는 page.addInitScript()로 모킹한다 (실제 미디어 파일 불필요).
+ * - 답변 녹음(#119)은 e2e/fixtures/interview-audio.ts의 getUserMedia/MediaRecorder·업로드 목을 쓴다.
  */
 
 // ──────────────────────────────────────────────
@@ -265,34 +271,9 @@ async function setupSpeechSynthesisMock(
 // 공통 헬퍼: 면접 페이지 진입 + 초기 설정
 // ──────────────────────────────────────────────
 
-async function gotoInterviewWithAuth(page: Page, speechTranscript = '테스트 답변입니다.') {
-  await page.addInitScript((transcript: string) => {
-    class MockSpeechRecognition {
-      lang = 'ko-KR';
-      continuous = true;
-      interimResults = true;
-      onresult: ((event: object) => void) | null = null;
-      onend: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-
-      start() {
-        this.onresult?.({
-          resultIndex: 0,
-          results: [{ 0: { transcript }, isFinal: true }],
-        });
-      }
-
-      stop() {
-        this.onend?.();
-      }
-
-      abort() {}
-    }
-
-    for (const property of ['SpeechRecognition', 'webkitSpeechRecognition']) {
-      Object.defineProperty(window, property, { configurable: true, value: MockSpeechRecognition });
-    }
-  }, speechTranscript);
+async function gotoInterviewWithAuth(page: Page) {
+  // 시작 화면 마이크 게이트(#119 AC13 (A))를 통과하도록 마이크 허용 + MediaRecorder 목
+  await installInterviewMediaMocks(page);
 
   await page.goto(INTERVIEW_URL);
 
@@ -975,7 +956,16 @@ test.describe('AC5: Safari 자동재생 차단 대응', () => {
       (window as unknown as Record<string, unknown>)['Audio'] = MockAudio;
     });
 
+    let socket: WebSocketRoute | null = null;
+    await mockInterviewAudioUpload(page, () => {
+      if (!socket) return;
+      socket.send(stompMessage('/user/queue/interviews', answerAccepted(1)));
+      // When: 다음 QUESTION_READY 수신
+      sendInterviewMessage(socket, questionReadyWithAudio(2), 100);
+    });
+
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
+      socket = ws;
       ws.onMessage((data) => {
         const frame = frameToString(data as string | Buffer);
         if (frame.startsWith('CONNECT')) ws.send(stompConnected());
@@ -984,11 +974,6 @@ test.describe('AC5: Safari 자동재생 차단 대응', () => {
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
             sendInterviewMessage(ws, questionReadyWithAudio(1));
-          }
-          if (destination.includes('/answers')) {
-            ws.send(stompMessage('/user/queue/interviews', answerAccepted(1)));
-            // When: 다음 QUESTION_READY 수신
-            sendInterviewMessage(ws, questionReadyWithAudio(2), 100);
           }
         }
       });
@@ -1006,9 +991,8 @@ test.describe('AC5: Safari 자동재생 차단 대응', () => {
       timeout: 3000,
     });
 
-    // 답변 제출 (수동 재생 버튼이 있어도 답변 가능)
-    await page.getByRole('button', { name: '답변하기' }).click();
-    await page.getByRole('button', { name: '제출하기' }).click();
+    // 답변 녹음 제출 (수동 재생 버튼이 있어도 답변 가능)
+    await recordAndSubmitAnswer(page);
 
     // Then: 다음 질문 수신 후 수동 재생 버튼이 사라진다
     await expect(page.getByText('2번째 기술 면접 질문입니다.', { exact: false })).toBeVisible({
@@ -1205,7 +1189,14 @@ test.describe('TTS 정리: 컴포넌트 unmount 시 오디오 중단', () => {
       (window as unknown as Record<string, unknown>)['_getPauseCallCount'] = () => pauseCallCount;
     });
 
+    let socket: WebSocketRoute | null = null;
+    // When: 답변 업로드 즉시 INTERVIEW_FINISHED
+    await mockInterviewAudioUpload(page, () => {
+      socket?.send(stompMessage('/user/queue/interviews', INTERVIEW_FINISHED));
+    });
+
     await page.routeWebSocket(WS_URL_PATTERN, (ws) => {
+      socket = ws;
       ws.onMessage((data) => {
         const frame = frameToString(data as string | Buffer);
         if (frame.startsWith('CONNECT')) ws.send(stompConnected());
@@ -1214,10 +1205,6 @@ test.describe('TTS 정리: 컴포넌트 unmount 시 오디오 중단', () => {
           if (destination === '/app/interviews/start') {
             ws.send(stompMessage('/user/queue/interviews', SESSION_STARTED));
             sendInterviewMessage(ws, questionReadyWithAudio(1));
-          }
-          if (destination.includes('/answers')) {
-            // When: 답변 제출 즉시 INTERVIEW_FINISHED
-            ws.send(stompMessage('/user/queue/interviews', INTERVIEW_FINISHED));
           }
         }
       });
@@ -1232,9 +1219,7 @@ test.describe('TTS 정리: 컴포넌트 unmount 시 오디오 중단', () => {
 
     // 2초 후 ended가 발화되어 TTS 완료 → 답변하기 버튼 활성화
     await expect(page.getByRole('button', { name: '답변하기' })).toBeEnabled({ timeout: 5000 });
-    await page.getByRole('button', { name: '답변하기' }).click();
-    await expect(page.getByRole('button', { name: '제출하기' })).toBeEnabled({ timeout: 5000 });
-    await page.getByRole('button', { name: '제출하기' }).click();
+    await recordAndSubmitAnswer(page);
 
     // Then: 면접 완료 화면으로 전환된다
     await expect(page.getByText('면접이 완료되었어요.', { exact: true }).first()).toBeVisible({
