@@ -95,6 +95,8 @@ export type CareerData = z.infer<typeof careerSchema>;
 
 /* ─── 이력서 전체 (1단계) ─── */
 
+const PROFILE_IMAGE_MAX_SIZE = 1 * 1024 * 1024; // 1MB
+
 export const resumeSchema = z.object({
   name: z.string().min(1, '이름을 입력해주세요.'),
   email: z.string().min(1, '이메일을 입력해주세요.').email('올바른 이메일 형식을 입력해주세요.'),
@@ -104,7 +106,10 @@ export const resumeSchema = z.object({
     .regex(/^01[0-9]-\d{3,4}-\d{4}$/, '010-1234-5678 형식으로 입력해주세요.'),
   address: z.string().min(1, '주소를 입력해주세요.'),
   birthday: z.string().min(1, '생년월일을 선택해주세요.'),
-  profileImage: z.instanceof(File).optional(),
+  profileImage: z
+    .instanceof(File)
+    .refine((file) => file.size <= PROFILE_IMAGE_MAX_SIZE, '증명사진은 1MB 이하로 업로드해주세요.')
+    .optional(),
   education: z.array(z.union([educationSchema, emptyEducationSchema])),
   certifications: z.array(z.union([certificationSchema, emptyCertificationSchema])),
   awards: z.array(z.union([awardSchema, emptyAwardSchema])),

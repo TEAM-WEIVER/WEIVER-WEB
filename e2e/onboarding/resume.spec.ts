@@ -113,6 +113,31 @@ test('일부 필수 항목만 입력하면 다음 버튼이 비활성화된다',
   await expect(page.getByRole('button', { name: '다음' })).toBeDisabled();
 });
 
+test('1MB를 초과한 증명사진을 선택하면 오류를 표시하고 다음 버튼이 비활성화된다', async ({
+  page,
+}) => {
+  let saveCalled = false;
+
+  await page.route(APPLICANT_INFO_API, async (route) => {
+    saveCalled = true;
+    await fulfillJson(route, 200, SAVE_SUCCESS);
+  });
+
+  await gotoResume(page);
+  await fillRequiredFields(page);
+  await expect(page.getByRole('button', { name: '다음' })).toBeEnabled();
+
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'large.png',
+    mimeType: 'image/png',
+    buffer: Buffer.alloc(1024 * 1024 + 1),
+  });
+
+  await expect(page.getByText('증명사진은 1MB 이하로 업로드해주세요.')).toBeVisible();
+  await expect(page.getByRole('button', { name: '다음' })).toBeDisabled();
+  expect(saveCalled).toBe(false);
+});
+
 test('저장 API 실패 시 오류를 표시하고 현재 페이지를 유지한다', async ({ page }) => {
   await page.route(APPLICANT_INFO_API, (route) =>
     fulfillJson(route, 500, {
