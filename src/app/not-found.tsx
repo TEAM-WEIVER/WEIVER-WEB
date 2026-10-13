@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
@@ -15,9 +14,9 @@ export default function NotFound() {
         요청하신 페이지가 존재하지 않거나 이동되었습니다.
       </p>
       <Button asChild>
-        <Link href="/" replace>
-          홈으로 돌아가기
-        </Link>
+        {/* The landing is a separate HTML app, so this boundary needs a document navigation. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a href="/">홈으로 돌아가기</a>
       </Button>
     </main>
   );

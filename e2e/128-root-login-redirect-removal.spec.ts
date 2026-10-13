@@ -15,18 +15,6 @@ async function mockRole(page: Page, role: 'APPLICANT' | 'COMPANY') {
   await (role === 'APPLICANT' ? mockApplicantAuth(page) : mockCorporateAuth(page));
 }
 
-async function expectEmptyRoot(page: Page) {
-  // The common toast facade is installed by a client effect, after hydration.
-  await page.waitForFunction(() => window.__toast !== undefined);
-  await expect(page).toHaveURL('/');
-  await expect(page.locator('body')).toHaveText('', { useInnerText: true });
-  await expect(page.getByRole('link')).toHaveCount(0);
-  await expect(page.getByRole('heading')).toHaveCount(0);
-  await expect(page.getByRole('textbox')).toHaveCount(0);
-  await expect(page.getByRole('button')).toHaveCount(0);
-  await expect(page.getByRole('img')).toHaveCount(0);
-}
-
 test.describe('#128 루트 로그인 자동 이동 제거', () => {
   let unexpectedRequests: string[];
 
@@ -38,39 +26,7 @@ test.describe('#128 루트 로그인 자동 이동 제거', () => {
     expect(unexpectedRequests, 'API 목이 없는 요청이 발생하지 않아야 한다').toEqual([]);
   });
 
-  test('AC1: 루트 HTTP 응답은 리다이렉트 없이 200이고 Location 헤더가 없다', async ({
-    request,
-  }) => {
-    const response = await request.get('/', { maxRedirects: 0 });
-    expect(response.status()).toBe(200);
-    expect(response.headers()).not.toHaveProperty('location');
-  });
-
-  for (const role of [null, 'APPLICANT', 'COMPANY'] as const) {
-    test(`AC1·AC2·AC7: ${role ?? '비로그인'} 루트 직접 접속·새로고침은 빈 화면과 URL·토스트를 유지한다`, async ({
-      page,
-    }) => {
-      // Given: anonymous or the existing stored role and successful token reissue fixture.
-      if (role) await mockRole(page, role);
-
-      // When: enter the app origin root directly, then reload.
-      await page.goto('/');
-      await expectEmptyRoot(page);
-      await page.reload();
-      await expectEmptyRoot(page);
-
-      // Then: the common layout still displays and dismisses an actual toast on the root.
-      await page.evaluate(() => {
-        window.__toast!.add({ type: 'success', title: '루트 알림 확인', duration: 30000 });
-      });
-      const toast = page.getByRole('status').filter({ hasText: '루트 알림 확인' });
-      await expect(toast).toBeVisible();
-      await expect(page).toHaveURL('/');
-      await toast.getByRole('button', { name: '알림 닫기' }).click();
-      await expect(toast).toHaveCount(0);
-      await expectEmptyRoot(page);
-    });
-  }
+  // #136 replaces the former empty-root acceptance criteria with Oracle landing tests.
 
   test('AC3: 로그인 직접 접속·새로고침과 개인·기업 탭의 기존 폼이 유지된다', async ({ page }) => {
     await page.goto('/login');
@@ -101,6 +57,9 @@ test.describe('#128 루트 로그인 자동 이동 제거', () => {
       await page.goto(path);
       await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
       await expect(page).toHaveURL(path);
+      await page.reload();
+      await expect(page).toHaveURL(path);
+      await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
       if (path === '/onboarding/resume') {
         await expect(page.getByLabel('이름', { exact: true })).toHaveValue('홍길동');
       }
