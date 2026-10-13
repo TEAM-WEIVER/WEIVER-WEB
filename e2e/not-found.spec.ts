@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+import { mockLandingApis } from './mocks/landing-api';
+
 /**
  * 404 Not Found 페이지 인수 테스트 (#77)
  *
@@ -67,11 +69,22 @@ test.describe('AC2: 홈 복귀 버튼 동작', () => {
     await page.goto('/존재하지않는경로');
     await expect(page.getByText('페이지를 찾을 수 없습니다', { exact: false })).toBeVisible();
 
-    // When: 홈으로 이동 버튼 클릭
+    const { unexpectedRequests } = await mockLandingApis(page);
+    // A document navigation is required at the Next/Vite boundary (#136 AC9).
+    const navigation = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/' && response.request().isNavigationRequest(),
+    );
     await page.getByRole('link', { name: /홈/ }).click();
-
-    // Then: / 경로로 이동한다
+    expect((await navigation).status()).toBe(200);
     await expect(page).toHaveURL('/');
+    await expect(
+      page.getByRole('heading', {
+        name: '한 번 준비하고, 여러 기업에게 먼저 제안받으세요.',
+        exact: true,
+      }),
+    ).toBeVisible();
+    expect(unexpectedRequests).toEqual([]);
   });
 });
 
