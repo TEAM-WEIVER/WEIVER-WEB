@@ -1,6 +1,6 @@
 # #136 구현 검증
 
-> 상태: 로컬 코드·인수 검증 완료. Preview·운영 배포, 실제 예약 CORS·저장은 미완료다. 운영 예약 API preflight 403으로 #136 전체 완료·병합 가능 상태로 판정하지 않는다.
+> 상태: 로컬 코드·인수 검증 완료, Vercel Preview 배포 완료. Preview 화면 인수는 Vercel 로그인 보호로 대기 중이며 운영 배포·실제 예약 CORS·저장은 미완료다. 운영 예약 API preflight 403으로 #136 전체 완료·병합 가능 상태로 판정하지 않는다.
 
 ## 구현과 인수 대응
 
@@ -66,7 +66,9 @@
 - 랜딩 PR #18은 OPEN이고 후보 HEAD는 `cc26b1659f82b514c75def9c57add537eb360385`였다. Oracle 실제 배포 SHA·배포 시각은 아직 확인하지 못했다.
 - 원본 HTML은 `/landing-assets/` JS·CSS·favicon 및 공개 도메인의 OG 이미지 주소를 참조한다. 실제 배포 JS에 `https://landing-api.weiverai.com`이 있고 `http://localhost:8080` fallback 문자열은 없었다.
 - 2026-10-13 04:34 UTC 운영 Origin을 지정한 예약 OPTIONS 요청은 **403 `Invalid CORS request`**였다. 본품 rewrite가 아닌 랜딩 API CORS 설정/배포의 후속 확인이 필요하다. 목 성공을 실제 예약 성공으로 기록하지 않는다.
-- Preview URL·운영 변경·실예약 데이터 생성·이슈/PR 게시·병합은 이번 로컬 검증에서 수행하지 않았다.
+- 원격 브랜치 `feat/136-landing-oracle-rewrite`에 push한 구현 commit `bdda16782d4a133160a95bbdfaa124c56b464244`의 기존 Vercel 프로젝트 Preview가 성공했다. GitHub deployment `7030279506`, Vercel deployment `C1u9asf3pZVSK3w3qW2piMdqTnHX`.
+- Preview URL: https://weiver-1i11t9t5a-minchaezs-projects.vercel.app/ . `/`와 `/login`의 비인증 HTTP 요청은 Vercel SSO로 302 이동했다. Orca 브라우저에서도 Vercel 로그인 화면을 확인했으며 인증 세션이 없어 실제 Preview 페이지 인수는 완료하지 못했다. 배포 success를 페이지 동작 검증 PASS로 해석하지 않는다.
+- 운영 변경·실예약 데이터 생성·이슈/PR 게시·병합은 수행하지 않았다.
 - 배포 인수 체크리스트와 재현 요청: [수동 인수 확인](../manual-tests/136-landing-oracle-rewrite.md).
 
 ## 세션 로그

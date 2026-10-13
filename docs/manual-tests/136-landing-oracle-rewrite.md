@@ -8,7 +8,8 @@
 - 랜딩 후보 브랜치: `codex/17-landing-domain-assets`, PR #18 OPEN.
 - 확인한 후보 HEAD: `cc26b1659f82b514c75def9c57add537eb360385` (2026-10-13).
 - Oracle 실제 배포 SHA·배포 시각: 담당자 확인 필요. 후보 HEAD와 공개 파일의 일치를 아직 입증하지 않았다.
-- Preview URL·deployment ID, 운영 전 정상 deployment ID: 배포 시 기록.
+- Preview: https://weiver-1i11t9t5a-minchaezs-projects.vercel.app/ , 구현 commit `bdda167`, Vercel deployment `C1u9asf3pZVSK3w3qW2piMdqTnHX`. 배포는 성공했지만 Vercel 로그인 보호로 페이지 인수는 대기 중이다.
+- 운영 전 정상 deployment ID: 운영 배포 전 확인·기록.
 
 ## Preview
 
