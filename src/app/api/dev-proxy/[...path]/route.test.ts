@@ -11,7 +11,7 @@ function enableDevProxy() {
     ...ORIGINAL_ENV,
     NODE_ENV: 'development',
     NEXT_PUBLIC_API_BASE_URL: '/api/dev-proxy',
-    API_PROXY_TARGET: 'https://api.piuda.site',
+    API_PROXY_TARGET: 'https://api.weiverai.com',
   };
 }
 
@@ -50,11 +50,11 @@ describe('dev proxy route', () => {
     });
     upstreamHeaders.append(
       'Set-Cookie',
-      'XSRF-TOKEN=csrf-token; Path=/; Domain=.piuda.site; Secure; SameSite=None',
+      'XSRF-TOKEN=csrf-token; Path=/; Domain=.weiverai.com; Secure; SameSite=None',
     );
     upstreamHeaders.append(
       'Set-Cookie',
-      'refreshToken=refresh-token; Path=/; Domain=.piuda.site; HttpOnly; Secure; SameSite=None',
+      'refreshToken=refresh-token; Path=/; Domain=.weiverai.com; HttpOnly; Secure; SameSite=None',
     );
 
     const fetchMock = vi.fn().mockResolvedValue(
@@ -81,7 +81,7 @@ describe('dev proxy route', () => {
     );
 
     expect(fetchMock).toHaveBeenCalledWith(
-      new URL('https://api.piuda.site/api/example?tab=profile'),
+      new URL('https://api.weiverai.com/api/example?tab=profile'),
       expect.objectContaining({
         method: 'POST',
         redirect: 'manual',
@@ -105,7 +105,7 @@ describe('dev proxy route', () => {
   it('쿠키 속성 변환 시 HttpOnly는 유지한다', () => {
     expect(
       rewriteSetCookieForLocal(
-        'refreshToken=abc; Path=/; Domain=.piuda.site; HttpOnly; Secure; SameSite=None',
+        'refreshToken=abc; Path=/; Domain=.weiverai.com; HttpOnly; Secure; SameSite=None',
       ),
     ).toBe('refreshToken=abc; Path=/; HttpOnly; SameSite=Lax');
   });

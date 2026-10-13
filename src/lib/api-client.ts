@@ -1,6 +1,6 @@
 import { clearAccessToken, getAccessToken, setAccessToken } from './auth-token';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://api.piuda.site';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://api.weiverai.com';
 const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
 const CSRF_COOKIE_NAME = 'XSRF-TOKEN';
 const REISSUE_PATH = '/api/auth/reissue';

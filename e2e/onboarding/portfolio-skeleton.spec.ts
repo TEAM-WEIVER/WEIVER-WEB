@@ -6,7 +6,7 @@ import { test, expect } from '../fixtures/auth';
  * AC5: API 응답 지연 시 FileUploadSection, ExternalLinksSection, AgreementSection 스켈레톤 + 버튼 disabled
  * AC6: API 완료 후 실제 컴포넌트 렌더링 / GET 오류 시 빈 폼 표시
  *
- * Next.js rewrites: /api/* → https://api.piuda.site/api/*
+ * Next.js rewrites: /api/* → https://api.weiverai.com/api/*
  */
 
 // ---------------------------------------------------------------------------

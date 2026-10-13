@@ -15,7 +15,7 @@ tools: Read, Write, WebFetch
 AC 작성 전 반드시 아래 URL에서 최신 API 스펙을 조회하고, AC의 When/Then에 맞는 엔드포인트를 찾아 기록한다.
 
 ```
-https://api.piuda.site/v3/api-docs
+https://api.weiverai.com/v3/api-docs
 ```
 
 - 엔드포인트가 존재하면 → AC의 API 연동 섹션에 기록

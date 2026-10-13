@@ -6,7 +6,7 @@ import { test, expect } from '../fixtures/auth';
  * 자기소개서 온보딩 인수 테스트 (#42)
  *
  * page.route()로 API를 인터셉트한다.
- * Next.js rewrites: /api/* → https://api.piuda.site/api/*
+ * Next.js rewrites: /api/* → https://api.weiverai.com/api/*
  * E2E 인터셉트 경로는 `/api/*` 기준으로 작성한다.
  */
 

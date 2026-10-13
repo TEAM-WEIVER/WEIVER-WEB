@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('apiRequest', () => {
   beforeEach(() => {
-    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.piuda.site');
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.weiverai.com');
   });
 
   afterEach(() => {
@@ -26,7 +26,7 @@ describe('apiRequest', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.piuda.site/api/example',
+      'https://api.weiverai.com/api/example',
       expect.objectContaining({
         method: 'GET',
       }),
@@ -95,7 +95,7 @@ describe('apiRequest', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      'https://api.piuda.site/api/auth/csrf',
+      'https://api.weiverai.com/api/auth/csrf',
       expect.objectContaining({
         method: 'GET',
         credentials: 'include',
@@ -103,7 +103,7 @@ describe('apiRequest', () => {
     );
 
     const [, requestOptions] = fetchMock.mock.calls[1];
-    expect(fetchMock.mock.calls[1][0]).toBe('https://api.piuda.site/api/example');
+    expect(fetchMock.mock.calls[1][0]).toBe('https://api.weiverai.com/api/example');
     expect(requestOptions).toEqual(
       expect.objectContaining({
         method: 'POST',
@@ -146,7 +146,7 @@ describe('apiRequest', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const [, requestOptions] = fetchMock.mock.calls[0];
-    expect(fetchMock.mock.calls[0][0]).toBe(`https://api.piuda.site${path}`);
+    expect(fetchMock.mock.calls[0][0]).toBe(`https://api.weiverai.com${path}`);
     expect((requestOptions.headers as Headers).get('X-XSRF-TOKEN')).toBeNull();
     expect((requestOptions.headers as Headers).get('Authorization')).toBeNull();
   });
@@ -224,10 +224,10 @@ describe('apiRequest', () => {
       ).resolves.toEqual({ ok: true });
 
       expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(fetchMock.mock.calls[0][0]).toBe('https://api.piuda.site/api/auth/csrf');
+      expect(fetchMock.mock.calls[0][0]).toBe('https://api.weiverai.com/api/auth/csrf');
 
       const [, requestOptions] = fetchMock.mock.calls[1];
-      expect(fetchMock.mock.calls[1][0]).toBe(`https://api.piuda.site${path}`);
+      expect(fetchMock.mock.calls[1][0]).toBe(`https://api.weiverai.com${path}`);
       expect((requestOptions.headers as Headers).get('X-XSRF-TOKEN')).toBe('csrf-token');
     },
   );
@@ -282,10 +282,10 @@ describe('apiRequest', () => {
     await expect(apiRequest('/api/applicants/me')).resolves.toEqual({ ok: true });
 
     expect(fetchMock).toHaveBeenCalledTimes(4);
-    expect(fetchMock.mock.calls[0][0]).toBe('https://api.piuda.site/api/applicants/me');
-    expect(fetchMock.mock.calls[1][0]).toBe('https://api.piuda.site/api/auth/csrf');
-    expect(fetchMock.mock.calls[2][0]).toBe('https://api.piuda.site/api/auth/reissue');
-    expect(fetchMock.mock.calls[3][0]).toBe('https://api.piuda.site/api/applicants/me');
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.weiverai.com/api/applicants/me');
+    expect(fetchMock.mock.calls[1][0]).toBe('https://api.weiverai.com/api/auth/csrf');
+    expect(fetchMock.mock.calls[2][0]).toBe('https://api.weiverai.com/api/auth/reissue');
+    expect(fetchMock.mock.calls[3][0]).toBe('https://api.weiverai.com/api/applicants/me');
 
     expect((fetchMock.mock.calls[0][1].headers as Headers).get('Authorization')).toBe(
       'Bearer expired-access-token',
@@ -345,8 +345,8 @@ describe('apiRequest', () => {
     ).resolves.toEqual([reissueResponse, reissueResponse]);
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[0][0]).toBe('https://api.piuda.site/api/auth/csrf');
-    expect(fetchMock.mock.calls[1][0]).toBe('https://api.piuda.site/api/auth/reissue');
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.weiverai.com/api/auth/csrf');
+    expect(fetchMock.mock.calls[1][0]).toBe('https://api.weiverai.com/api/auth/reissue');
     expect(fetchMock.mock.calls[1][1]).toEqual(
       expect.objectContaining({
         method: 'POST',
