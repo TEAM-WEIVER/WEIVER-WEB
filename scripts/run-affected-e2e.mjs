@@ -36,6 +36,7 @@ for (const file of changedFiles) {
     file === 'package.json' ||
     file === 'pnpm-lock.yaml' ||
     file === 'playwright.config.ts' ||
+    file === 'next.config.ts' ||
     file.startsWith('src/app/api/') ||
     file.startsWith('src/app/layout') ||
     file.startsWith('src/app/globals') ||
