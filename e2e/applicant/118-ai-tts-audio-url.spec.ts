@@ -14,7 +14,7 @@ import {
  *
  * 전제:
  * - Next.js 앱이 http://localhost:3000 에서 실행 중이어야 한다.
- * - STOMP WebSocket 서버 주소: NEXT_PUBLIC_WS_URL 환경변수 (기본값 ws://api.piuda.site/ws)
+ * - STOMP WebSocket 서버 주소: NEXT_PUBLIC_WS_URL 환경변수 (기본값 ws://api.weiverai.com/ws)
  *
  * WebSocket 목킹 전략:
  * - Playwright page.routeWebSocket()으로 STOMP 프레임을 직접 시뮬레이션한다.
@@ -30,7 +30,7 @@ import {
 const INTERVIEW_URL = '/applicant/interview';
 const WS_URL_PATTERN = /ws(s)?:\/\/.+\/ws/;
 const SESSION_ID = 'session-tts-118';
-const AUDIO_URL = 'https://cdn.piuda.site/tts/question-1.mp3';
+const AUDIO_URL = 'https://cdn.example.test/tts/question-1.mp3';
 
 // ──────────────────────────────────────────────
 // STOMP 프레임 빌더

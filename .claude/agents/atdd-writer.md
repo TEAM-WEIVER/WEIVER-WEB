@@ -21,7 +21,7 @@ tools: Read, Write, Bash, WebFetch
 ## API 스펙 조회
 
 ```
-https://api.piuda.site/v3/api-docs
+https://api.weiverai.com/v3/api-docs
 ```
 
 테스트 환경(fixture/mock)을 구성하기 위해 실제 응답 구조를 확인한다.
@@ -56,10 +56,10 @@ test('시나리오명', async ({ page }) => {
 import { http, HttpResponse } from 'msw'
 
 export const 기능핸들러 = [
-  http.post('https://api.piuda.site/api/...', () => {
+  http.post('https://api.weiverai.com/api/...', () => {
     return HttpResponse.json({ ... }) // API 스펙 응답 구조 그대로
   }),
-  http.post('https://api.piuda.site/api/...실패', () => {
+  http.post('https://api.weiverai.com/api/...실패', () => {
     return HttpResponse.json({ message: '...' }, { status: 400 })
   }),
 ]

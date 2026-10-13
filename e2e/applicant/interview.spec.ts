@@ -15,7 +15,7 @@ import {
  * 전제:
  * - Next.js 앱이 http://localhost:3000 에서 실행 중이어야 한다.
  * - `/applicant/interview` 라우트가 존재하고 "면접 시작" 버튼이 렌더링된다.
- * - STOMP WebSocket 서버 주소: NEXT_PUBLIC_WS_URL 환경변수 (기본값 ws://api.piuda.site/ws)
+ * - STOMP WebSocket 서버 주소: NEXT_PUBLIC_WS_URL 환경변수 (기본값 ws://api.weiverai.com/ws)
  *
  * WebSocket 목킹 전략:
  * - Playwright page.routeWebSocket()으로 STOMP 프레임을 직접 시뮬레이션한다.

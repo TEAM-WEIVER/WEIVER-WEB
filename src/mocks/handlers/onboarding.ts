@@ -74,7 +74,7 @@ const emptyApplicantsAllResponse = {
 // ──────────────────────────────────────────────
 export const onboardingNewUserHandlers = [
   // 회원가입 완료 → accessToken 발급
-  http.post('https://api.piuda.site/api/auth/applicants/signup/agreements', () => {
+  http.post('https://api.weiverai.com/api/auth/applicants/signup/agreements', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -84,7 +84,7 @@ export const onboardingNewUserHandlers = [
   }),
 
   // 제출 상태 조회 — 신규 가입 직후: 전부 미완료
-  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
+  http.get('https://api.weiverai.com/api/applicants/submission-status', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -100,37 +100,37 @@ export const onboardingNewUserHandlers = [
     });
   }),
 
-  http.get('https://api.piuda.site/api/applicants', () => {
+  http.get('https://api.weiverai.com/api/applicants', () => {
     return HttpResponse.json(emptyApplicantsAllResponse);
   }),
 
   // 이력서 개인정보 저장
-  http.put('https://api.piuda.site/api/applicants/info', () => {
+  http.put('https://api.weiverai.com/api/applicants/info', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 
   // 이력서 세부 항목 — 학력
-  http.post('https://api.piuda.site/api/applicants/education', () => {
+  http.post('https://api.weiverai.com/api/applicants/education', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 
   // 이력서 세부 항목 — 경력
-  http.post('https://api.piuda.site/api/applicants/experience', () => {
+  http.post('https://api.weiverai.com/api/applicants/experience', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 
   // 이력서 세부 항목 — 자격증
-  http.post('https://api.piuda.site/api/applicants/certificate', () => {
+  http.post('https://api.weiverai.com/api/applicants/certificate', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 
   // 이력서 세부 항목 — 수상
-  http.post('https://api.piuda.site/api/applicants/award', () => {
+  http.post('https://api.weiverai.com/api/applicants/award', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 
   // 자기소개서 조회 (신규: 첫 방문 → 빈 배열)
-  http.get('https://api.piuda.site/api/essay-answers', () => {
+  http.get('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -140,12 +140,12 @@ export const onboardingNewUserHandlers = [
   }),
 
   // 자기소개서 신규 저장
-  http.post('https://api.piuda.site/api/essay-answers', () => {
+  http.post('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: {}, message: 'OK' });
   }),
 
   // 포트폴리오 조회 (신규: 호출 불필요하지만 혹시 호출될 경우 대비)
-  http.get('https://api.piuda.site/api/portfolios', () => {
+  http.get('https://api.weiverai.com/api/portfolios', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -164,12 +164,12 @@ export const onboardingNewUserHandlers = [
   }),
 
   // 포트폴리오 신규 저장
-  http.post('https://api.piuda.site/api/portfolios', () => {
+  http.post('https://api.weiverai.com/api/portfolios', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 
   // 프로필 제출
-  http.post('https://api.piuda.site/api/applicants/profile/submit', () => {
+  http.post('https://api.weiverai.com/api/applicants/profile/submit', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 ];
@@ -179,7 +179,7 @@ export const onboardingNewUserHandlers = [
 // ──────────────────────────────────────────────
 export const onboardingReturningUserHandlers = [
   // 제출 상태 조회 — 재진입: 전부 완료
-  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
+  http.get('https://api.weiverai.com/api/applicants/submission-status', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -195,33 +195,33 @@ export const onboardingReturningUserHandlers = [
     });
   }),
 
-  http.get('https://api.piuda.site/api/applicants', () => {
+  http.get('https://api.weiverai.com/api/applicants', () => {
     return HttpResponse.json(applicantsAllResponse);
   }),
 
   // 이력서 개인정보 수정
-  http.put('https://api.piuda.site/api/applicants/info', () => {
+  http.put('https://api.weiverai.com/api/applicants/info', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 
-  http.put('https://api.piuda.site/api/applicants/education', () => {
+  http.put('https://api.weiverai.com/api/applicants/education', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
   }),
 
-  http.put('https://api.piuda.site/api/applicants/experience', () => {
+  http.put('https://api.weiverai.com/api/applicants/experience', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
   }),
 
-  http.put('https://api.piuda.site/api/applicants/certificate', () => {
+  http.put('https://api.weiverai.com/api/applicants/certificate', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
   }),
 
-  http.put('https://api.piuda.site/api/applicants/award', () => {
+  http.put('https://api.weiverai.com/api/applicants/award', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
   }),
 
   // 자기소개서 기존 데이터 조회 (re-fill용) — 신규 API 스펙 배열 구조
-  http.get('https://api.piuda.site/api/essay-answers', () => {
+  http.get('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -260,12 +260,12 @@ export const onboardingReturningUserHandlers = [
   }),
 
   // 자기소개서 수정 — 신규 API 스펙: PUT 전체 덮어쓰기
-  http.put('https://api.piuda.site/api/essay-answers', () => {
+  http.put('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: {}, message: 'OK' });
   }),
 
   // 포트폴리오 기존 데이터 조회 (re-fill용)
-  http.get('https://api.piuda.site/api/portfolios', () => {
+  http.get('https://api.weiverai.com/api/portfolios', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -284,12 +284,12 @@ export const onboardingReturningUserHandlers = [
   }),
 
   // 포트폴리오 수정
-  http.patch('https://api.piuda.site/api/portfolios/:portfolioId', () => {
+  http.patch('https://api.weiverai.com/api/portfolios/:portfolioId', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 
   // 프로필 제출
-  http.post('https://api.piuda.site/api/applicants/profile/submit', () => {
+  http.post('https://api.weiverai.com/api/applicants/profile/submit', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
 ];
@@ -300,7 +300,7 @@ export const onboardingReturningUserHandlers = [
 
 // 이력서 세부 항목 부분 실패 (AC3): education API만 실패
 export const onboardingResumePartialErrorHandlers = [
-  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
+  http.get('https://api.weiverai.com/api/applicants/submission-status', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -315,44 +315,44 @@ export const onboardingResumePartialErrorHandlers = [
       message: 'OK',
     });
   }),
-  http.get('https://api.piuda.site/api/applicants', () => {
+  http.get('https://api.weiverai.com/api/applicants', () => {
     return HttpResponse.json(applicantsAllResponse);
   }),
-  http.put('https://api.piuda.site/api/applicants/info', () => {
+  http.put('https://api.weiverai.com/api/applicants/info', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
-  http.post('https://api.piuda.site/api/applicants/education', () => {
+  http.post('https://api.weiverai.com/api/applicants/education', () => {
     return HttpResponse.json(
       { status: 'INTERNAL_SERVER_ERROR', code: 500, data: null, message: '서버 오류' },
       { status: 500 },
     );
   }),
-  http.post('https://api.piuda.site/api/applicants/experience', () => {
+  http.post('https://api.weiverai.com/api/applicants/experience', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
-  http.put('https://api.piuda.site/api/applicants/experience', () => {
+  http.put('https://api.weiverai.com/api/applicants/experience', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
   }),
-  http.put('https://api.piuda.site/api/applicants/education', () => {
+  http.put('https://api.weiverai.com/api/applicants/education', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
   }),
-  http.post('https://api.piuda.site/api/applicants/certificate', () => {
+  http.post('https://api.weiverai.com/api/applicants/certificate', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
-  http.put('https://api.piuda.site/api/applicants/certificate', () => {
+  http.put('https://api.weiverai.com/api/applicants/certificate', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
   }),
-  http.post('https://api.piuda.site/api/applicants/award', () => {
+  http.post('https://api.weiverai.com/api/applicants/award', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: null, message: 'OK' });
   }),
-  http.put('https://api.piuda.site/api/applicants/award', () => {
+  http.put('https://api.weiverai.com/api/applicants/award', () => {
     return HttpResponse.json({ status: 'OK', code: 200, data: 'OK', message: 'OK' });
   }),
 ];
 
 // 자기소개서 API 실패 (AC8)
 export const onboardingEssayErrorHandlers = [
-  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
+  http.get('https://api.weiverai.com/api/applicants/submission-status', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -367,7 +367,7 @@ export const onboardingEssayErrorHandlers = [
       message: 'OK',
     });
   }),
-  http.post('https://api.piuda.site/api/essay-answers', () => {
+  http.post('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json(
       { status: 'INTERNAL_SERVER_ERROR', code: 500, data: null, message: '서버 오류' },
       { status: 500 },
@@ -377,7 +377,7 @@ export const onboardingEssayErrorHandlers = [
 
 // 포트폴리오 API 실패 (AC12)
 export const onboardingPortfolioErrorHandlers = [
-  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
+  http.get('https://api.weiverai.com/api/applicants/submission-status', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -392,7 +392,7 @@ export const onboardingPortfolioErrorHandlers = [
       message: 'OK',
     });
   }),
-  http.get('https://api.piuda.site/api/portfolios', () => {
+  http.get('https://api.weiverai.com/api/portfolios', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -409,7 +409,7 @@ export const onboardingPortfolioErrorHandlers = [
       message: 'OK',
     });
   }),
-  http.post('https://api.piuda.site/api/portfolios', () => {
+  http.post('https://api.weiverai.com/api/portfolios', () => {
     return HttpResponse.json(
       { status: 'INTERNAL_SERVER_ERROR', code: 500, data: null, message: '서버 오류' },
       { status: 500 },
@@ -419,13 +419,13 @@ export const onboardingPortfolioErrorHandlers = [
 
 // 인증 만료 → refresh 실패 (AC15)
 export const onboardingAuthExpiredHandlers = [
-  http.get('https://api.piuda.site/api/applicants/submission-status', () => {
+  http.get('https://api.weiverai.com/api/applicants/submission-status', () => {
     return HttpResponse.json(
       { status: 'UNAUTHORIZED', code: 401, data: null, message: '인증이 필요합니다.' },
       { status: 401 },
     );
   }),
-  http.post('https://api.piuda.site/api/auth/refresh', () => {
+  http.post('https://api.weiverai.com/api/auth/refresh', () => {
     return HttpResponse.json(
       { status: 'UNAUTHORIZED', code: 401, data: null, message: '토큰이 만료되었습니다.' },
       { status: 401 },
@@ -439,7 +439,7 @@ export const onboardingAuthExpiredHandlers = [
 
 // AC1: GET 성공 — 기존 답변 있음 (sequence 정렬 검증용)
 export const essayGetWithDataHandlers = [
-  http.get('https://api.piuda.site/api/essay-answers', () => {
+  http.get('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -480,7 +480,7 @@ export const essayGetWithDataHandlers = [
 
 // AC2: GET 성공 — 빈 배열 (첫 방문)
 export const essayGetEmptyHandlers = [
-  http.get('https://api.piuda.site/api/essay-answers', () => {
+  http.get('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -492,7 +492,7 @@ export const essayGetEmptyHandlers = [
 
 // AC7: GET 실패 (500)
 export const essayGetFailHandlers = [
-  http.get('https://api.piuda.site/api/essay-answers', () => {
+  http.get('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json(
       { status: 'INTERNAL_SERVER_ERROR', code: 500, data: null, message: '서버 오류' },
       { status: 500 },
@@ -502,7 +502,7 @@ export const essayGetFailHandlers = [
 
 // AC3: POST 성공
 export const essayPostSuccessHandlers = [
-  http.post('https://api.piuda.site/api/essay-answers', () => {
+  http.post('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -514,7 +514,7 @@ export const essayPostSuccessHandlers = [
 
 // AC6 (POST 실패): POST 500
 export const essayPostFailHandlers = [
-  http.post('https://api.piuda.site/api/essay-answers', () => {
+  http.post('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json(
       { status: 'INTERNAL_SERVER_ERROR', code: 500, data: null, message: '서버 오류' },
       { status: 500 },
@@ -524,7 +524,7 @@ export const essayPostFailHandlers = [
 
 // AC4: PUT 성공
 export const essayPutSuccessHandlers = [
-  http.put('https://api.piuda.site/api/essay-answers', () => {
+  http.put('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -536,7 +536,7 @@ export const essayPutSuccessHandlers = [
 
 // AC6 (PUT 실패): PUT 500
 export const essayPutFailHandlers = [
-  http.put('https://api.piuda.site/api/essay-answers', () => {
+  http.put('https://api.weiverai.com/api/essay-answers', () => {
     return HttpResponse.json(
       { status: 'INTERNAL_SERVER_ERROR', code: 500, data: null, message: '서버 오류' },
       { status: 500 },

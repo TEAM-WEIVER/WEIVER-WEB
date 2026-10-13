@@ -16,7 +16,7 @@ tools: Read, Write, Edit, Bash
 2. `docs/mockups/#이슈번호-기능명.html` 확인 — 마크업 구조 기준
 3. `atdd-writer`가 작성한 인수 테스트 확인
 4. HTML 목업 구조를 Next.js 컴포넌트로 변환 후 shadcn/ui + Tailwind 적용
-5. `docs/plans/`의 API 연동 섹션 기준으로 fetch 구현 (API 스펙: `https://api.piuda.site/v3/api-docs`)
+5. `docs/plans/`의 API 연동 섹션 기준으로 fetch 구현 (API 스펙: `https://api.weiverai.com/v3/api-docs`)
 6. `pnpm lint:check` + `pnpm typecheck` 통과 확인
 7. 기능 단위로 커밋 (`type: 설명`)
 
@@ -24,7 +24,7 @@ tools: Read, Write, Edit, Bash
 
 - 배열 데이터(학력, 경력 등)는 전체 덮어쓰기(Snapshot) 방식 — 개별 수정 아님
 - 파일 업로드는 `multipart/form-data`
-- 베이스 URL: `https://api.piuda.site`
+- 베이스 URL: `https://api.weiverai.com`
 
 ## 규칙
 
