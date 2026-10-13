@@ -48,7 +48,7 @@ async function addToast(
 test.describe('AC1: 토스트 기본 표시 — 성공 타입', () => {
   test('AC1: success 타입 토스트가 화면에 나타나고 제목 텍스트가 표시된다', async ({ page }) => {
     // Given: 사용자가 임의 페이지에 있고
-    await page.goto('/');
+    await page.goto('/login');
 
     // When: success 타입 toast.add() 가 호출된다
     await addToast(page, { type: 'success', title: '저장되었습니다' });
@@ -72,7 +72,7 @@ test.describe('AC1: 토스트 기본 표시 — 성공 타입', () => {
 test.describe('AC2: 타입별 토스트 표시 및 description 조건부 렌더링', () => {
   test('AC2-a: error 타입 + description 있음 — 제목과 부제목이 모두 표시된다', async ({ page }) => {
     // Given: 임의 페이지에 있고
-    await page.goto('/');
+    await page.goto('/login');
 
     // When: error 타입 + description 포함 toast.add() 호출
     await addToast(page, {
@@ -94,7 +94,7 @@ test.describe('AC2: 타입별 토스트 표시 및 description 조건부 렌더�
 
   test('AC2-b: warning 타입 + description 있음 — 부제목이 표시된다', async ({ page }) => {
     // Given
-    await page.goto('/');
+    await page.goto('/login');
 
     // When
     await addToast(page, {
@@ -111,7 +111,7 @@ test.describe('AC2: 타입별 토스트 표시 및 description 조건부 렌더�
 
   test('AC2-c: info 타입 + description 있음 — 부제목이 표시된다', async ({ page }) => {
     // Given
-    await page.goto('/');
+    await page.goto('/login');
 
     // When
     await addToast(page, {
@@ -128,7 +128,7 @@ test.describe('AC2: 타입별 토스트 표시 및 description 조건부 렌더�
 
   test('AC2-d: description 없음 — 부제목 영역이 렌더링되지 않는다', async ({ page }) => {
     // Given
-    await page.goto('/');
+    await page.goto('/login');
 
     // When: description 없이 toast.add() 호출
     await addToast(page, { type: 'success', title: '완료' });
@@ -150,7 +150,7 @@ test.describe('AC2: 타입별 토스트 표시 및 description 조건부 렌더�
 test.describe('AC3: 자동 소멸', () => {
   test('AC3: 토스트가 3000ms 경과 후 화면에서 제거된다', async ({ page }) => {
     // Given: 토스트가 표시된 상태
-    await page.goto('/');
+    await page.goto('/login');
     await addToast(page, { type: 'success', title: '자동소멸 테스트', duration: 1000 });
 
     const toast = page.getByRole('status').filter({ hasText: '자동소멸 테스트' });
@@ -168,7 +168,7 @@ test.describe('AC3: 자동 소멸', () => {
 test.describe('AC4: 수동 닫기', () => {
   test('AC4: X 버튼 클릭 시 해당 토스트가 즉시 제거된다', async ({ page }) => {
     // Given: 토스트가 표시된 상태 (duration 길게 설정해 자동 소멸 방지)
-    await page.goto('/');
+    await page.goto('/login');
     await addToast(page, { type: 'info', title: '수동 닫기 테스트', duration: 30000 });
 
     const toast = page.getByRole('status').filter({ hasText: '수동 닫기 테스트' });
@@ -191,7 +191,7 @@ test.describe('AC5: 다중 토스트 스택 표시', () => {
     page,
   }) => {
     // Given: 이미 토스트 1개가 표시 중이다
-    await page.goto('/');
+    await page.goto('/login');
     await addToast(page, { type: 'success', title: '첫 번째 알림', duration: 30000 });
     const first = page.getByRole('status').filter({ hasText: '첫 번째 알림' });
     await expect(first).toBeVisible();
@@ -230,21 +230,19 @@ test.describe('AC6: 글로벌 배치 — 페이지 이동 시 유지', () => {
     page,
   }) => {
     // Given: ToastContainer 가 루트 레이아웃에 있고 토스트가 표시 중이다
-    await page.goto('/');
+    await page.goto('/login');
+    await page.getByRole('button', { name: '개인 회원', exact: true }).click();
     await addToast(page, { type: 'warning', title: '라우팅 유지 테스트', duration: 30000 });
 
     const toast = page.getByRole('alert').filter({ hasText: '라우팅 유지 테스트' });
     await expect(toast).toBeVisible();
 
-    // When: Next.js 클라이언트 사이드 라우팅으로 다른 페이지로 이동
-    // (login 페이지는 항상 존재하는 경로로 가정)
-    await page.evaluate(() => {
-      // Next.js router.push 를 직접 호출하지 않고 <a> 클릭 또는 history.pushState 사용
-      window.history.pushState({}, '', '/login');
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    });
+    // When: 실제 Next 링크로 본품 회원가입 화면에 이동
+    await page.getByRole('link', { name: '회원가입하기', exact: true }).click();
 
     // Then: 이동 후에도 토스트가 소멸 시간까지 유지된다
+    await expect(page).toHaveURL('/signup/account-info');
+    await expect(page.getByLabel('이메일', { exact: true })).toBeVisible();
     await expect(toast).toBeVisible();
   });
 });
