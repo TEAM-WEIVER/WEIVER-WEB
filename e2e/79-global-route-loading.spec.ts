@@ -12,10 +12,10 @@ import { test, expect } from './fixtures/auth';
  * (컴포넌트 스펙 접근성 속성 기준)
  *
  * 느린 전환 시뮬레이션 전략:
- * - page.route()로 이동 대상 페이지의 데이터 API를 300ms 지연시켜
- *   라우트 렌더링 지연(200ms+) 조건을 만든다.
- * - Next.js App Router는 서버 컴포넌트 fetch가 완료되어야 URL을 commit하므로
- *   해당 API를 지연하면 전환 지연 조건을 충족한다.
+ * - page.route()로 이동 대상 페이지의 RSC 요청을 보류한다.
+ * - 200ms 임계값 이후 바가 표시된 것을 확인한 다음 응답을 해제한다.
+ * - 클라이언트 데이터 API 지연은 URL commit을 늦추지 않으므로 RSC 요청을 제어한다.
+ * - 고정 300ms 지연의 짧은 표시 구간에 CI의 assertion 시점이 의존하지 않는다.
  */
 
 // ---------------------------------------------------------------------------
@@ -65,18 +65,7 @@ async function mockSlowJson(
   });
 }
 
-/** App Router가 경로 전환에 사용하는 RSC 요청을 지연한다. */
-async function mockSlowRouteSegment(page: Page, pathname: string, delayMs = 300) {
-  await page.route(
-    (url) => url.pathname === pathname && url.searchParams.has('_rsc'),
-    async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-      await route.continue();
-    },
-  );
-}
-
-/** 새 내비게이션으로 중단되는 상황을 검증하기 위해 RSC 요청을 수동으로 해제한다. */
+/** 표시 상태를 관찰할 때까지 URL commit을 보류하고, 반환한 함수로 RSC 요청을 해제한다. */
 async function mockBlockedRouteSegment(page: Page, pathname: string) {
   let release!: () => void;
   const releasePromise = new Promise<void>((resolve) => {
@@ -200,7 +189,7 @@ async function fillRequiredResumeFields(page: Page) {
 // ---------------------------------------------------------------------------
 
 test.describe('AC1: 온보딩 이력서 저장 후 다음 단계 전환', () => {
-  test('저장 성공 후 300ms 소요 시 프로그레스 바가 노출된다', async ({ page }) => {
+  test('저장 성공 후 200ms 이상 전환 중 프로그레스 바가 노출된다', async ({ page }) => {
     // Given — 이력서 로드 목, 저장 즉시 성공
     await mockResumeLoad(page);
     await page.route(APPLICANT_INFO_API, async (route) => {
@@ -225,13 +214,14 @@ test.describe('AC1: 온보딩 이력서 저장 후 다음 단계 전환', () => 
 
     await fillRequiredResumeFields(page);
     await expect(page.getByRole('button', { name: '다음' })).toBeEnabled();
-    await mockSlowRouteSegment(page, '/onboarding/cover-letter');
+    const releaseNavigation = await mockBlockedRouteSegment(page, '/onboarding/cover-letter');
 
     // When — 다음 버튼 클릭 → router.push 실행, 200ms+ 소요
     await page.getByRole('button', { name: '다음' }).click();
 
     // Then — 전환 중 프로그레스 바가 나타난다
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
+    releaseNavigation();
 
     // Then — pathname 변경(URL commit) 후 프로그레스 바가 사라진다
     await expect(page).toHaveURL('/onboarding/cover-letter');
@@ -285,7 +275,7 @@ test.describe('AC2: 온보딩 자기소개서 — 버튼 클릭 시 로딩 바',
     });
   });
 
-  test('"다음" 클릭 후 300ms 소요 시 프로그레스 바가 노출된다', async ({ page }) => {
+  test('"다음" 클릭 후 200ms 이상 전환 중 프로그레스 바가 노출된다', async ({ page }) => {
     // Given — 저장 즉시 성공, portfolio 로드 300ms 지연
     await page.route(ESSAY_API, async (route) => {
       const method = route.request().method();
@@ -309,47 +299,50 @@ test.describe('AC2: 온보딩 자기소개서 — 버튼 클릭 시 로딩 바',
     });
 
     await page.goto('/onboarding/cover-letter');
-    await mockSlowRouteSegment(page, '/onboarding/portfolio');
+    const releaseNavigation = await mockBlockedRouteSegment(page, '/onboarding/portfolio');
 
     // When — 다음 버튼 클릭
     await page.getByRole('button', { name: '다음' }).click();
 
     // Then — 프로그레스 바 노출
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
+    releaseNavigation();
 
     // Then — pathname 변경 후 자동 소멸
     await expect(page).toHaveURL('/onboarding/portfolio');
     await expect(page.locator(PROGRESS_BAR)).toBeHidden();
   });
 
-  test('"나중에 작성" 클릭 후 300ms 소요 시 프로그레스 바가 노출된다', async ({ page }) => {
+  test('"나중에 작성" 클릭 후 200ms 이상 전환 중 프로그레스 바가 노출된다', async ({ page }) => {
     // Given — portfolio 로드 300ms 지연
     await mockSlowJson(page, PORTFOLIOS_API, 200, EMPTY_PORTFOLIO_DATA, 300);
 
     await page.goto('/onboarding/cover-letter');
-    await mockSlowRouteSegment(page, '/onboarding/portfolio');
+    const releaseNavigation = await mockBlockedRouteSegment(page, '/onboarding/portfolio');
 
     // When — 나중에 작성 클릭
     await page.getByRole('button', { name: '나중에 작성' }).click();
 
     // Then — 프로그레스 바 노출 후 소멸
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
+    releaseNavigation();
     await expect(page).toHaveURL('/onboarding/portfolio');
     await expect(page.locator(PROGRESS_BAR)).toBeHidden();
   });
 
-  test('"이전 단계" 클릭 후 300ms 소요 시 프로그레스 바가 노출된다', async ({ page }) => {
+  test('"이전 단계" 클릭 후 200ms 이상 전환 중 프로그레스 바가 노출된다', async ({ page }) => {
     // Given — resume 페이지 로드 300ms 지연
     await mockSlowJson(page, APPLICANTS_API, 200, EMPTY_RESUME, 300);
 
     await page.goto('/onboarding/cover-letter');
-    await mockSlowRouteSegment(page, '/onboarding/resume');
+    const releaseNavigation = await mockBlockedRouteSegment(page, '/onboarding/resume');
 
     // When — 이전 단계 클릭
     await page.getByRole('button', { name: '이전 단계' }).click();
 
     // Then — 프로그레스 바 노출 후 소멸
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
+    releaseNavigation();
     await expect(page).toHaveURL('/onboarding/resume');
     await expect(page.locator(PROGRESS_BAR)).toBeHidden();
   });
@@ -370,7 +363,7 @@ test.describe('AC2: 온보딩 포트폴리오 — 버튼 클릭 시 로딩 바',
     });
   });
 
-  test('"나중에 작성" 클릭 후 300ms 소요 시 프로그레스 바가 노출된다', async ({ page }) => {
+  test('"나중에 작성" 클릭 후 200ms 이상 전환 중 프로그레스 바가 노출된다', async ({ page }) => {
     // Given — portfolio 페이지 진입, dashboard로 이동 시 관련 API 지연
     await page.route('**/api/applicants/dashboard**', async (route) => {
       await new Promise((r) => setTimeout(r, 300));
@@ -382,18 +375,19 @@ test.describe('AC2: 온보딩 포트폴리오 — 버튼 클릭 시 로딩 바',
     );
     await page.goto('/onboarding/portfolio');
     await loadResponse;
-    await mockSlowRouteSegment(page, '/applicant/dashboard');
+    const releaseNavigation = await mockBlockedRouteSegment(page, '/applicant/dashboard');
 
     // When — 나중에 작성 클릭 → router.push('/applicant/dashboard')
     await page.getByRole('button', { name: '나중에 작성' }).click();
 
     // Then — 프로그레스 바 노출 후 소멸
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
+    releaseNavigation();
     await expect(page).toHaveURL('/applicant/dashboard');
     await expect(page.locator(PROGRESS_BAR)).toBeHidden();
   });
 
-  test('"이전 단계" 클릭 후 300ms 소요 시 프로그레스 바가 노출된다', async ({ page }) => {
+  test('"이전 단계" 클릭 후 200ms 이상 전환 중 프로그레스 바가 노출된다', async ({ page }) => {
     // Given — cover-letter 로드 300ms 지연
     await mockSlowJson(page, ESSAY_API, 200, EMPTY_ESSAY, 300);
 
@@ -402,13 +396,14 @@ test.describe('AC2: 온보딩 포트폴리오 — 버튼 클릭 시 로딩 바',
     );
     await page.goto('/onboarding/portfolio');
     await loadResponse;
-    await mockSlowRouteSegment(page, '/onboarding/cover-letter');
+    const releaseNavigation = await mockBlockedRouteSegment(page, '/onboarding/cover-letter');
 
     // When — 이전 단계 클릭
     await page.getByRole('button', { name: '이전 단계' }).click();
 
     // Then — 프로그레스 바 노출 후 소멸
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
+    releaseNavigation();
     await expect(page).toHaveURL('/onboarding/cover-letter');
     await expect(page.locator(PROGRESS_BAR)).toBeHidden();
   });
@@ -419,7 +414,7 @@ test.describe('AC2: 온보딩 포트폴리오 — 버튼 클릭 시 로딩 바',
 // ---------------------------------------------------------------------------
 
 test.describe('AC3: 지원자 대시보드 프로필 편집 전환', () => {
-  test('프로필 편집 버튼 클릭 후 300ms 소요 시 프로그레스 바가 노출된다', async ({ page }) => {
+  test('프로필 편집 버튼 클릭 후 200ms 이상 전환 중 프로그레스 바가 노출된다', async ({ page }) => {
     // Given — 대시보드 데이터를 목으로 제공하고, 프로필 편집 대상인 이력서 로드를 두 번째 요청부터 지연
     let applicantsRequestCount = 0;
     await page.route(APPLICANTS_API, async (route) => {
@@ -435,13 +430,14 @@ test.describe('AC3: 지원자 대시보드 프로필 편집 전환', () => {
 
     await page.goto('/applicant/dashboard');
     await expect(page.getByRole('button', { name: '프로필 수정' })).toBeVisible();
-    await mockSlowRouteSegment(page, '/onboarding/resume');
+    const releaseNavigation = await mockBlockedRouteSegment(page, '/onboarding/resume');
 
     // When — 프로필 편집 버튼 클릭 → router.push(getProfileEditPath(progress))
     await page.getByRole('button', { name: '프로필 수정' }).click();
 
     // Then — 전환 중 프로그레스 바 노출
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
+    releaseNavigation();
 
     // Then — 이동 완료 후 소멸
     await expect(page).not.toHaveURL('/applicant/dashboard');
@@ -461,14 +457,16 @@ test.describe('AC4: 기업 지원자 리스트 breadcrumb 공고목록 이동', 
     await overrideToCorporateRole(page);
   });
 
-  test('"공고목록" breadcrumb 클릭 후 300ms 소요 시 프로그레스 바가 노출된다', async ({ page }) => {
+  test('"공고목록" breadcrumb 클릭 후 200ms 이상 전환 중 프로그레스 바가 노출된다', async ({
+    page,
+  }) => {
     // Given — corporate recruitment 페이지 진입, recruitment 상세 API 즉시 응답
     await page.route(`**/api/job-descriptions/${JD_ID}**`, async (route) => {
       await route.continue();
     });
 
     await page.goto(`/corporate/recruitment/${JD_ID}`);
-    await mockSlowRouteSegment(page, '/corporate/dashboard');
+    const releaseNavigation = await mockBlockedRouteSegment(page, '/corporate/dashboard');
 
     // corporate dashboard 로드 시 job-descriptions 목록 API를 300ms 지연
     await page.route('**/api/job-descriptions', async (route) => {
@@ -485,6 +483,7 @@ test.describe('AC4: 기업 지원자 리스트 breadcrumb 공고목록 이동', 
 
     // Then — 전환 중 프로그레스 바 노출
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
+    releaseNavigation();
 
     // Then — pathname 변경 후 자동 소멸
     await expect(page).toHaveURL('/corporate/dashboard');
@@ -504,7 +503,7 @@ test.describe('AC5: 기업 지원자 리스트 지원자 행 클릭', () => {
     await overrideToCorporateRole(page);
   });
 
-  test('지원자 행 클릭 후 300ms 소요 시 프로그레스 바가 노출된다', async ({ page }) => {
+  test('지원자 행 클릭 후 200ms 이상 전환 중 프로그레스 바가 노출된다', async ({ page }) => {
     // Given — corporate recruitment 페이지에 지원자 목록이 표시된 상태
     await page.route(`**/api/job-postings/${JD_ID}/applicants**`, (route) =>
       fulfillJson(route, 200, APPLICANT_LIST),
@@ -513,7 +512,7 @@ test.describe('AC5: 기업 지원자 리스트 지원자 행 클릭', () => {
     await page.goto(`/corporate/recruitment/${JD_ID}`);
     const applicantLink = page.getByRole('link', { name: '홍길동 상세 리포트 보기' });
     await expect(applicantLink).toBeVisible();
-    await mockSlowRouteSegment(
+    const releaseNavigation = await mockBlockedRouteSegment(
       page,
       `/corporate/recruitment/${JD_ID}/applicants/${PUBLIC_ID}/report`,
     );
@@ -532,6 +531,7 @@ test.describe('AC5: 기업 지원자 리스트 지원자 행 클릭', () => {
 
     // Then — 전환 중 프로그레스 바 노출
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
+    releaseNavigation();
 
     // Then — 리포트 페이지 이동 완료 후 소멸
     await expect(page).toHaveURL(`/corporate/recruitment/${JD_ID}/applicants/${PUBLIC_ID}/report`);
@@ -569,11 +569,12 @@ test.describe('AC6: 전환 완료 및 인터럽션 시 프로그레스 바 자�
     await loadResponse;
 
     await fillRequiredResumeFields(page);
-    await mockSlowRouteSegment(page, '/onboarding/cover-letter');
+    const releaseNavigation = await mockBlockedRouteSegment(page, '/onboarding/cover-letter');
     await page.getByRole('button', { name: '다음' }).click();
 
     // 바가 노출됨을 확인
     await expect(page.locator(PROGRESS_BAR)).toBeVisible();
+    releaseNavigation();
 
     // When — pathname 변경 완료 (URL commit)
     await expect(page).toHaveURL('/onboarding/cover-letter');
@@ -596,9 +597,9 @@ test.describe('AC6: 전환 완료 및 인터럽션 시 프로그레스 바 자�
 
     await page.goto('/onboarding/cover-letter');
 
-    // 첫 번째 portfolio 전환은 수동 해제 전까지 보류하고, 두 번째 resume 전환은 300ms 지연
+    // 두 전환을 보류해 첫 번째가 끝나기 전에 두 번째 내비게이션을 시작한다.
     const releasePortfolio = await mockBlockedRouteSegment(page, '/onboarding/portfolio');
-    await mockSlowRouteSegment(page, '/onboarding/resume');
+    const releaseResume = await mockBlockedRouteSegment(page, '/onboarding/resume');
 
     // When — "나중에 작성" 클릭 → portfolio 전환 시작
     await page.getByRole('button', { name: '나중에 작성' }).click();
@@ -609,6 +610,7 @@ test.describe('AC6: 전환 완료 및 인터럽션 시 프로그레스 바 자�
     // When — 첫 번째 전환이 끝나기 전에 이전 단계 클릭으로 새 내비게이션 발생
     await page.getByRole('button', { name: '이전 단계' }).click();
     releasePortfolio();
+    releaseResume();
 
     // Then — 새 전환이 완료된 후 바가 사라진다
     await expect(page.locator(PROGRESS_BAR)).toBeHidden({ timeout: 1000 });
