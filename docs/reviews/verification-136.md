@@ -1,6 +1,6 @@
 # #136 구현 검증
 
-> 상태: 로컬 코드·인수 검증 완료, Vercel Preview 배포 완료. Preview 화면 인수는 Vercel 로그인 보호로 대기 중이며 운영 배포·실제 예약 CORS·저장은 미완료다. 운영 예약 API preflight 403으로 #136 전체 완료·병합 가능 상태로 판정하지 않는다.
+> 상태: Preview 보호 접근, 운영 브랜치 배포, 실제 예약·DB 저장 및 본품 경로 회귀 검증을 완료했다. PR #137은 develop을 대상으로 하며 기존 CI 통과 후 병합·main 승격을 따른다. 본품의 실제 기업 인증·회원가입·면접 검증은 통합 이슈 #17에서 별도로 미완료로 추적한다.
 
 ## 구현과 인수 대응
 
@@ -74,3 +74,18 @@
 ## 세션 로그
 
 `/tmp/weiver-136-{build-red,build,build-production,typecheck,lint,red,e2e-targeted,e2e-reservation,e2e-full,e2e-toast,coverage-before,coverage-after,isolation}.log`.
+
+## 운영 배포 인수 — 2026-10-13 05:46 UTC
+
+- 사용자의 명시적 운영 배포 승인 후 Vercel 기존 weiver-web 프로젝트에 production으로 배포. 소스 e34c734, deployment dpl_9nV2QkHrNc6BHud7J4nDQBK6BzqM, 공개 주소 https://weiverai.com . 기존 운영 deployment 정보는 검증 세션 /tmp/weiver-136-previous-production.txt에 보관.
+- Production 환경변수에 기존 API 주소·E2E 플래그 없음. 소스의 api.weiverai.com/wss 기본값 확인. API_BACKEND_URL도 같은 새 주소 기본값 사용.
+- Oracle API는 테스트 68개를 통과한 cb30207 후보 이미지. 운영·지정 Preview Origin preflight 200, 미등록 Origin 403. health UP.
+- 1440×900/390×844 실제 공개 랜딩·이미지 decode·예약 필드와 /login 렌더링 확인. 화면-only 검사에서는 분석 API를 모의 처리.
+- 공개 운영 폼에서 합성 예약 201, 실제 완료 안내, localStorage 이어쓰기 정보 보관 확인. bootstrap/reservation은 실제 API이고 events만 모의 처리해 통계 오염을 피함. DB의 FE/entry_level/web_frontend, survey not_started, 64자 SHA-256 해시 확인. 생성한 예약·설문·방문자는 exact UUID와 테스트 이메일·이름으로 정리하고 잔여 0개 확인.
+- 첫 합성 이메일의 local part가 64자 제한을 넘어 400으로 거부됐음. 테스트 이메일을 유효한 길이로 조정해 실제 성공 검증했고 첫 bootstrap 방문자도 정리했다. 제품 동작을 바꾼 것이 아니다.
+- /login → 개인 회원 탭 → 회원가입 Link 내부 이동과 signup 직접 새로고침 확인. /onboarding/resume, /applicant/dashboard, /corporate/dashboard는 비인증 상태에서 실제 csrf GET 200/reissue 401 후 /login으로 이동하고 새로고침 동작 유지. 초기 hydration 이전 클릭 및 networkidle 대기 때문에 첫 검증 스크립트가 timeout했고, 실제 UI/URL 상태로 재검증해 통과.
+- 실제 404 → 홈 링크는 document navigation으로 Oracle 랜딩을 표시. 공개 루트 새로고침 및 Next 정적 에셋 오류 없음. favicon/JS/CSS HTTP 200 및 올바른 MIME 확인.
+- 실제 Next 회원가입 완료 route는 invalid 테스트 토큰으로 4xx JSON, access cookie 미발급 확인. 실제 회원가입 완료를 뜻하지 않는다.
+- 사용자 확인: 공개 랜딩 표시 및 개인 계정 로그인·새로고침/재접속 정상. 기업 계정·실제 회원가입·면접은 사용자가 미확인이라고 답했으므로 #17 체크리스트에 미완료로 유지.
+- 검증 이미지: /tmp/weiver-production-136-screenshots/ . 개인정보/접근 토큰/보호 비밀값을 문서·이슈에 기록하지 않음.
+- git flow: feat/136-landing-oracle-rewrite → develop(PR #137) → 기존 promote-main workflow에서 required CI/E2E를 확인한 승격 → main. 기존 develop 전용 CI 설정은 의도된 것이므로 변경하지 않음.
