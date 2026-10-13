@@ -7,14 +7,13 @@
 백엔드 CORS/CSRF trusted origin에 아래 origin이 등록되어 있어야 한다.
 
 ```text
-https://weiver.local.piuda.site:3000
+https://weiver.local.weiverai.com:3000
 ```
 
-DNS는 아래처럼 설정되어 있어야 한다.
+개발 컴퓨터의 `/etc/hosts`에 아래 항목을 추가한다. Cloudflare의 공개 DNS 설정은 필요하지 않다.
 
 ```text
-local.piuda.site      A  127.0.0.1
-*.local.piuda.site    A  127.0.0.1
+127.0.0.1 weiver.local.weiverai.com
 ```
 
 ## 최초 1회 설정
@@ -30,9 +29,9 @@ mkcert -install
 ```bash
 mkdir -p .certs
 mkcert \
-  -cert-file .certs/local.piuda.site.pem \
-  -key-file .certs/local.piuda.site-key.pem \
-  local.piuda.site "*.local.piuda.site"
+  -cert-file .certs/local.weiverai.com.pem \
+  -key-file .certs/local.weiverai.com-key.pem \
+  local.weiverai.com "*.local.weiverai.com"
 ```
 
 `.certs/`는 git에 올리지 않는다.
@@ -46,7 +45,7 @@ pnpm dev:https
 브라우저에서 접속한다.
 
 ```text
-https://weiver.local.piuda.site:3000
+https://weiver.local.weiverai.com:3000
 ```
 
 ## API 설정
@@ -54,10 +53,10 @@ https://weiver.local.piuda.site:3000
 HTTPS 로컬 도메인에서는 dev proxy를 사용하지 않고 백엔드 API를 직접 호출한다.
 
 ```text
-NEXT_PUBLIC_API_BASE_URL=https://api.piuda.site
+NEXT_PUBLIC_API_BASE_URL=https://api.weiverai.com
 ```
 
-이 방식에서는 백엔드가 내려주는 `Domain=.piuda.site`, `Secure`, `SameSite` 쿠키 정책을 프론트에서 가공하지 않는다.
+이 방식에서는 백엔드가 내려주는 `Domain=.weiverai.com`, `Secure`, `SameSite` 쿠키 정책을 프론트에서 가공하지 않는다.
 
 ## dev proxy와의 차이
 

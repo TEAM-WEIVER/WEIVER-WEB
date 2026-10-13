@@ -1,7 +1,7 @@
 ---
 color: green
 name: api-mocker
-description: 백엔드 API 연동 전 MSW(Mock Service Worker) 기반 목 작성으로 프론트 독립 개발 지원. API 스펙(https://api.piuda.site/v3/api-docs)을 조회해 실제 응답 구조를 반영한다.
+description: 백엔드 API 연동 전 MSW(Mock Service Worker) 기반 목 작성으로 프론트 독립 개발 지원. API 스펙(https://api.weiverai.com/v3/api-docs)을 조회해 실제 응답 구조를 반영한다.
 tools: Read, Write, Bash, WebFetch
 ---
 
@@ -37,13 +37,13 @@ export const 기능핸들러 = [
 작성 전 반드시 실제 스펙을 확인한다.
 
 ```
-https://api.piuda.site/v3/api-docs
+https://api.weiverai.com/v3/api-docs
 ```
 
 ## 규칙
 
 - 실제 API 스펙의 응답 구조·상태 코드를 그대로 반영 (환각 금지)
-- 베이스 URL: `https://api.piuda.site`
+- 베이스 URL: `https://api.weiverai.com`
 - 배열 데이터는 전체 덮어쓰기(Snapshot) 방식
 - 성공 케이스 + 주요 에러 케이스(400, 401, 404 등) 모두 포함
 - 백엔드 연동 완료 후 목 핸들러 제거

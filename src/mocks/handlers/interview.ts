@@ -48,7 +48,7 @@ export const QUESTION_READY_PAYLOAD = (sequence: number) => ({
  */
 export const QUESTION_READY_WITH_AUDIO_PAYLOAD = (
   sequence: number,
-  audioUrl = 'https://cdn.piuda.site/tts/mock-question.mp3',
+  audioUrl = 'https://cdn.example.test/tts/mock-question.mp3',
 ) => ({
   type: 'QUESTION_READY',
   interview_session_id: 'session-abc-123',
@@ -144,7 +144,7 @@ export const STOMP_GENERAL_ERROR_PAYLOAD = {
  * 지원자 문서 상태 조회 — 면접 페이지 진입 시 레이아웃이 호출할 수 있음
  */
 export const interviewPageHandlers = [
-  http.get('https://api.piuda.site/api/applicants/document-status', () => {
+  http.get('https://api.weiverai.com/api/applicants/document-status', () => {
     return HttpResponse.json({
       status: 'OK',
       code: 200,
@@ -158,7 +158,7 @@ export const interviewPageHandlers = [
 // #119 답변 녹음 업로드 (POST /api/interviews/:id/answers/audio)
 // ──────────────────────────────────────────────
 
-const API_BASE = 'https://api.piuda.site';
+const API_BASE = 'https://api.weiverai.com';
 const AUDIO_UPLOAD_URL = `${API_BASE}/api/interviews/:interviewSessionId/answers/audio`;
 const REISSUE_URL = `${API_BASE}/api/auth/reissue`;
 

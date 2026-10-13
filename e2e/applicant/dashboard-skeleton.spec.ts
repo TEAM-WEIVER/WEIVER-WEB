@@ -6,7 +6,7 @@ import { test, expect } from '../fixtures/auth';
  * AC1: API 응답 지연 시 스켈레톤 표시
  * AC2: API 완료 후 실제 컴포넌트 렌더링 / 에러 시 에러 메시지 표시
  *
- * Next.js rewrites: /api/* → https://api.piuda.site/api/*
+ * Next.js rewrites: /api/* → https://api.weiverai.com/api/*
  * E2E 인터셉트 경로는 `/api/*` 기준으로 작성한다.
  */
 
