@@ -12,7 +12,7 @@ import type { InterviewMessage, QuestionReadyPayload } from '@/store/interview-s
 // ──────────────────────────────────────────────
 
 export function normalizeBrokerUrl(url: string | undefined): string {
-  const fallbackUrl = 'wss://api.piuda.site/ws';
+  const fallbackUrl = 'wss://api.weiverai.com/ws';
   const value = url?.trim() || fallbackUrl;
 
   if (value.startsWith('https://')) {

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:https": "next dev --hostname weiver.local.piuda.site --experimental-https --experimental-https-key .certs/local.piuda.site-key.pem --experimental-https-cert .certs/local.piuda.site.pem",
+    "dev:https": "next dev --hostname weiver.local.weiverai.com --experimental-https --experimental-https-key .certs/local.weiverai.com-key.pem --experimental-https-cert .certs/local.weiverai.com.pem",
     "build": "next build",
     "start": "next start",
     "test": "vitest --project unit",

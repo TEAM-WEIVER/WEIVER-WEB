@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_BASE_URL = process.env.API_BACKEND_URL ?? 'https://api.piuda.site';
+const BACKEND_BASE_URL = process.env.API_BACKEND_URL ?? 'https://api.weiverai.com';
 const ACCESS_TOKEN_COOKIE = 'weiver.access_token';
 
 export async function POST(request: NextRequest) {

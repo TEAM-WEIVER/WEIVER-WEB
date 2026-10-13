@@ -168,8 +168,8 @@ describe('normalizeBrokerUrl', () => {
     ['http://localhost:8080/ws', 'ws://localhost:8080/ws'],
     ['wss://api.example.com/ws', 'wss://api.example.com/ws'],
     ['  ws://local/ws  ', 'ws://local/ws'],
-    [undefined, 'wss://api.piuda.site/ws'],
-    ['   ', 'wss://api.piuda.site/ws'],
+    [undefined, 'wss://api.weiverai.com/ws'],
+    ['   ', 'wss://api.weiverai.com/ws'],
   ])('%j → %s', (input, expected) => {
     expect(normalizeBrokerUrl(input)).toBe(expected);
   });
