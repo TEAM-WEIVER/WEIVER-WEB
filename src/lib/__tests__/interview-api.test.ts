@@ -15,7 +15,7 @@ import {
   submitInterviewAnswerAudio,
 } from '../interview-api';
 
-const csrfHandler = http.get('https://api.piuda.site/api/auth/csrf', () =>
+const csrfHandler = http.get('https://api.weiverai.com/api/auth/csrf', () =>
   HttpResponse.json({ status: 'OK', code: 200, data: { csrfToken: 'csrf-token' }, message: 'OK' }),
 );
 
@@ -45,14 +45,17 @@ describe('submitInterviewAnswerAudio (#119)', () => {
   it('question_code·sequence를 쿼리로, file만 multipart로 보내 200 응답을 받는다', async () => {
     let captured: { url: URL; keys: string[]; contentType: string | null } | null = null;
     server.use(
-      http.post('https://api.piuda.site/api/interviews/:id/answers/audio', async ({ request }) => {
-        captured = {
-          url: new URL(request.url),
-          keys: Array.from((await request.clone().formData()).keys()),
-          contentType: request.headers.get('content-type'),
-        };
-        return undefined;
-      }),
+      http.post(
+        'https://api.weiverai.com/api/interviews/:id/answers/audio',
+        async ({ request }) => {
+          captured = {
+            url: new URL(request.url),
+            keys: Array.from((await request.clone().formData()).keys()),
+            contentType: request.headers.get('content-type'),
+          };
+          return undefined;
+        },
+      ),
       ...createInterviewAudioUploadHandlers('success'),
     );
 
@@ -134,7 +137,7 @@ describe('submitInterviewAnswerAudio (#119)', () => {
   });
 });
 
-const API = 'https://api.piuda.site';
+const API = 'https://api.weiverai.com';
 
 describe('getInterviewRemaining', () => {
   it('GET /api/interviews/remaining 응답 envelope을 반환한다', async () => {

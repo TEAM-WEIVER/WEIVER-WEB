@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 
 const DEV_PROXY_BASE_URL = '/api/dev-proxy';
-const DEFAULT_PROXY_TARGET = 'https://api.piuda.site';
+const DEFAULT_PROXY_TARGET = 'https://api.weiverai.com';
 const PROXY_TARGET = process.env.API_PROXY_TARGET ?? DEFAULT_PROXY_TARGET;
 
 const HOP_BY_HOP_HEADERS = new Set([
