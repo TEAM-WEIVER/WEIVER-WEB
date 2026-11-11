@@ -18,8 +18,8 @@ pnpm lint:check
 pnpm typecheck
 pnpm test --run
 pnpm build-storybook
-VITE_E2E_TEST=true pnpm build
+pnpm build
 CI=true pnpm test:e2e
 ```
 
-일반 배포 빌드는 `pnpm build`로 실행한다. Vercel은 `dist`를 배포하며 `vercel.json`에 지정된 본품 경로에서 React 앱을 제공한다.
+Vercel은 `dist`를 배포하며 `vercel.json`에 지정된 본품 경로에서 React 앱을 제공한다.

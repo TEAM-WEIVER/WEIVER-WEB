@@ -1,20 +1,20 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const e2ePort = process.env.E2E_PORT ?? '3000';
-const useExternalServer = process.env.E2E_EXTERNAL_SERVER === 'true';
+const isCI = Boolean(process.env.CI);
+const baseURL = `http://127.0.0.1:${e2ePort}`;
 
 export default defineConfig({
   testDir: './e2e',
   testIgnore: '**/*.live.spec.ts',
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,
+  forbidOnly: isCI,
   retries: 0,
-  workers: process.env.CI ? 1 : undefined,
-  // Keep test progress visible in the GitHub Actions log.
-  reporter: process.env.CI ? 'line' : 'html',
+  workers: isCI ? 2 : undefined,
+  reporter: isCI ? 'line' : 'html',
   use: {
-    baseURL: `http://localhost:${e2ePort}`,
-    trace: 'on-first-retry',
+    baseURL,
+    trace: 'retain-on-failure',
   },
   projects: [
     {
@@ -22,15 +22,9 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  ...(useExternalServer
-    ? {}
-    : {
-        webServer: {
-          command: process.env.CI
-            ? `VITE_E2E_TEST=true pnpm exec vite preview --strictPort --port ${e2ePort}`
-            : `VITE_E2E_TEST=true pnpm exec vite --strictPort --port ${e2ePort}`,
-          url: `http://localhost:${e2ePort}/login`,
-          reuseExistingServer: !process.env.CI,
-        },
-      }),
+  webServer: {
+    command: `pnpm exec vite ${isCI ? 'preview ' : ''}--host 127.0.0.1 --strictPort --port ${e2ePort}`,
+    url: `${baseURL}/login`,
+    reuseExistingServer: !isCI,
+  },
 });

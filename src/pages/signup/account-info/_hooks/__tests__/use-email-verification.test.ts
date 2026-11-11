@@ -108,6 +108,32 @@ describe('useEmailVerification', () => {
     expect(result.current.verificationToken).toBe('token-abc');
   });
 
+  it('인증 시간이 지나면 기존 코드를 검증하지 않고 재전송 시 타이머를 다시 시작한다', async () => {
+    const { result } = renderHook(() => useEmailVerification('user@example.com'));
+
+    await act(async () => {
+      await result.current.sendVerification();
+    });
+    act(() => {
+      result.current.updateVerificationCode('123456');
+      vi.advanceTimersByTime(5 * 60 * 1000);
+    });
+    expect(result.current.timer.isExpired).toBe(true);
+
+    await act(async () => {
+      await result.current.verifyCode();
+    });
+    expect(verifyApplicantEmail).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.sendVerification();
+    });
+    expect(sendApplicantVerificationEmail).toHaveBeenCalledTimes(2);
+    expect(result.current.timer.isRunning).toBe(true);
+    expect(result.current.timer.seconds).toBe(300);
+    expect(result.current.verificationCode).toBe('');
+  });
+
   it('API 전송 실패 시 sendError가 설정된다', async () => {
     vi.mocked(sendApplicantVerificationEmail).mockRejectedValueOnce(new Error('send failed'));
     const { result } = renderHook(() => useEmailVerification('user@example.com'));

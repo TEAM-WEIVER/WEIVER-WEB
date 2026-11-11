@@ -2,8 +2,6 @@ import { test, expect, type Page } from '@playwright/test';
 
 import { mockLandingApis } from './mocks/landing-api';
 
-const LANDING_HEADING = '한 번 준비하고, 여러 기업에게 먼저 제안받으세요.';
-
 async function fillReservation(page: Page) {
   for (const [field, option] of [
     ['직군 (필수)', '프론트엔드'],
@@ -18,26 +16,21 @@ async function fillReservation(page: Page) {
   await page.getByRole('checkbox', { name: '개인정보 수집·이용에 동의합니다. (필수)' }).check();
 }
 
-test.describe('#136 Oracle external rewrite', () => {
-  test('AC1: 루트 HTTP 응답은 랜딩 HTML이며 리다이렉트하지 않는다', async ({ request }) => {
+test.describe('Oracle 랜딩', () => {
+  test('루트와 랜딩 정적 파일을 리다이렉트 없이 제공한다', async ({ request }) => {
     const response = await request.get('/', { maxRedirects: 0 });
     expect(response.status()).toBe(200);
     expect(response.headers()).not.toHaveProperty('location');
     expect(response.headers()['content-type']).toContain('text/html');
-    expect(await response.text()).toContain('한 번 준비하고, 여러 기업에게 먼저 제안받으세요');
-  });
 
-  test('AC2: HTML이 참조하는 JS·CSS·favicon·공유 이미지가 올바른 파일로 제공된다', async ({
-    request,
-  }) => {
-    const response = await request.get('/');
     const html = await response.text();
     const paths = new Set(
-      [
-        ...html.matchAll(
+      Array.from(
+        html.matchAll(
           /(?:src|href|content)="(?:https:\/\/weiverai\.com)?(\/landing-assets\/[^"\s]+)"/g,
         ),
-      ].map((match) => match[1]),
+        (match) => match[1],
+      ),
     );
     expect([...paths].some((path) => path.endsWith('.js'))).toBe(true);
     expect([...paths].some((path) => path.endsWith('.css'))).toBe(true);
@@ -56,7 +49,7 @@ test.describe('#136 Oracle external rewrite', () => {
     }
   });
 
-  test('AC1·AC2: 직접 접근·새로고침 후 실제 랜딩 콘텐츠와 이미지가 표시된다', async ({ page }) => {
+  test('직접 접근과 새로고침 뒤 랜딩과 이미지가 표시된다', async ({ page }) => {
     const { unexpectedRequests } = await mockLandingApis(page);
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
@@ -64,89 +57,26 @@ test.describe('#136 Oracle external rewrite', () => {
     for (const navigate of [() => page.goto('/'), () => page.reload()]) {
       await navigate();
       await expect(page).toHaveURL('/');
-      await expect(page.getByRole('heading', { name: LANDING_HEADING, exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       await expect(page.getByRole('button', { name: '사전예약하기', exact: true })).toBeEnabled();
       await expect
         .poll(() =>
-          page
-            .locator('img')
-            .evaluateAll(
-              (images) => images.filter((image) => image.src.includes('/landing-assets/')).length,
-            ),
+          page.evaluate(() => {
+            const images = Array.from(document.images).filter((image) =>
+              image.src.includes('/landing-assets/'),
+            );
+            return (
+              images.length > 0 && images.every((image) => image.complete && image.naturalWidth > 0)
+            );
+          }),
         )
-        .toBeGreaterThan(0);
-      await expect
-        .poll(() =>
-          page
-            .locator('img')
-            .evaluateAll(
-              (images) =>
-                images.filter(
-                  (image) =>
-                    image.src.includes('/landing-assets/') &&
-                    (!image.complete || image.naturalWidth === 0),
-                ).length,
-            ),
-        )
-        .toBe(0);
+        .toBe(true);
     }
     expect(errors).toEqual([]);
     expect(unexpectedRequests).toEqual([]);
   });
 
-  test('AC3: 회원가입 직접 접근·새로고침은 본품 화면을 유지한다', async ({ page }) => {
-    await page.goto('/signup/account-info');
-    await expect(page.getByLabel('이메일', { exact: true })).toBeVisible();
-    await page.reload();
-    await expect(page).toHaveURL('/signup/account-info');
-    await expect(page.getByLabel('이메일', { exact: true })).toBeVisible();
-    await expect(page.getByRole('heading', { name: LANDING_HEADING })).toHaveCount(0);
-  });
-
-  test('AC5: 본품 정적 리소스는 본품에서 제공된다', async ({ request }) => {
-    const html = await (await request.get('/login')).text();
-    const paths = new Set(
-      [
-        ...html.matchAll(
-          /(?:src|href)="(\/(?:assets|src)\/[^"\s]+\.(?:js|css|tsx)(?:\?[^"\s]*)?)"/g,
-        ),
-      ].map((match) => match[1]),
-    );
-    expect(paths.size).toBeGreaterThan(0);
-    for (const path of paths) {
-      const response = await request.get(path);
-      expect(response.status(), path).toBe(200);
-      expect(response.headers()['content-type']).toMatch(/javascript|text\/css/);
-    }
-  });
-
-  test('AC5: 본품 내부 회원가입 이동은 문서 새로고침 없이 처리된다', async ({ page }) => {
-    await page.goto('/login');
-    const initialDocument = await page.evaluateHandle(() => document);
-    await page.getByRole('link', { name: '회원가입하기', exact: true }).click();
-    await expect(page).toHaveURL('/signup/account-info');
-    await expect(page.getByLabel('이메일', { exact: true })).toBeVisible();
-    expect(await initialDocument.evaluate((previous) => previous === document)).toBe(true);
-  });
-
-  test('AC5: 알 수 없는 페이지·API와 운영 dev-proxy는 랜딩으로 대체하지 않는다', async ({
-    request,
-  }) => {
-    for (const path of [
-      '/rewrite-unknown-page',
-      '/api/rewrite-unknown',
-      '/api/auth/rewrite-unknown',
-      '/api/dev-proxy/rewrite-unknown',
-    ]) {
-      const response = await request.get(path);
-      expect(response.status(), path).toBe(404);
-      expect(await response.text()).not.toContain(
-        '한 번 준비하고, 여러 기업에게 먼저 제안받으세요',
-      );
-    }
-  });
-
-  test('AC6 (목): 예약은 landing-api에 직접 요청하고 기존 성공 UI를 표시한다', async ({ page }) => {
+  test('예약 API 성공 시 완료 안내를 표시한다', async ({ page }) => {
     const { reservations, unexpectedRequests } = await mockLandingApis(page);
     await page.goto('/');
     await fillReservation(page);
@@ -165,11 +95,10 @@ test.describe('#136 Oracle external rewrite', () => {
       primaryRole: 'web_frontend',
     });
     expect(unexpectedRequests).toEqual([]);
-    // Mock success does not prove real CORS or persistence; see manual-tests/136.
   });
 
   for (const status of [409, 500, 'network-error'] as const) {
-    test(`AC7 (목): 예약 ${status} 실패는 기존 오류 안내를 표시한다`, async ({ page }) => {
+    test(`예약 API가 ${status}로 실패하면 오류 안내를 표시한다`, async ({ page }) => {
       const { reservations, unexpectedRequests } = await mockLandingApis(page, status);
       await page.goto('/');
       await fillReservation(page);

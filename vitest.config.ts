@@ -34,6 +34,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit',
+          env: { VITE_API_BASE_URL: 'https://api.weiverai.com' },
           environment: 'jsdom',
           include: ['src/**/*.test.{ts,tsx}'],
           setupFiles: ['./vitest.setup.ts'],
