@@ -47,7 +47,8 @@ jobs:
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium
+        # The hosted runner already provides Chromium system libraries.
+        run: pnpm exec playwright install chromium --only-shell
 
       - name: Build
         env:

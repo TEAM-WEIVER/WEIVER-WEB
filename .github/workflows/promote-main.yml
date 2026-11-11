@@ -131,7 +131,8 @@ jobs:
         run: pnpm approve-builds --yes || true
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        # The hosted runner already provides Chromium system libraries.
+        run: pnpm exec playwright install chromium --only-shell
 
       - name: Build
         env:
