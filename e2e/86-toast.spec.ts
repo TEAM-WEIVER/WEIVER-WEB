@@ -231,7 +231,6 @@ test.describe('AC6: 글로벌 배치 — 페이지 이동 시 유지', () => {
   }) => {
     // Given: ToastContainer 가 루트 레이아웃에 있고 토스트가 표시 중이다
     await page.goto('/login');
-    await page.getByRole('button', { name: '개인 회원', exact: true }).click();
     await addToast(page, { type: 'warning', title: '라우팅 유지 테스트', duration: 30000 });
 
     const toast = page.getByRole('alert').filter({ hasText: '라우팅 유지 테스트' });

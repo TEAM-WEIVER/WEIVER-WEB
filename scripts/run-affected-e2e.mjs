@@ -1,4 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 
 const baseRef = process.env.E2E_BASE_REF;
 
@@ -19,6 +20,10 @@ const add = (...targets) => targets.forEach((target) => testTargets.add(target))
 
 for (const file of changedFiles) {
   if (file.startsWith('e2e/') && file.endsWith('.spec.ts')) {
+    if (!existsSync(file)) {
+      runFullSuite = true;
+      break;
+    }
     add(file);
     continue;
   }
@@ -51,21 +56,8 @@ for (const file of changedFiles) {
     break;
   }
 
-  if (file.startsWith('src/app/onboarding/')) {
-    add('e2e/onboarding', 'e2e/cover-letter', 'e2e/79-global-route-loading.spec.ts');
-  } else if (file.startsWith('src/app/signup/')) {
+  if (file.startsWith('src/app/signup/')) {
     add('e2e/signup');
-  } else if (file.startsWith('src/app/applicant/dashboard/')) {
-    add(
-      'e2e/applicant/dashboard-skeleton.spec.ts',
-      'e2e/applicant/dashboard-submission-status.spec.ts',
-    );
-  } else if (file.startsWith('src/app/applicant/interview/')) {
-    add('e2e/applicant/interview.spec.ts', 'e2e/88-skeleton-spinner.spec.ts');
-  } else if (file.startsWith('src/app/corporate/dashboard/')) {
-    add('e2e/corporate/dashboard-skeleton.spec.ts', 'e2e/88-skeleton-spinner.spec.ts');
-  } else if (file.startsWith('src/app/corporate/recruitment/')) {
-    add('e2e/79-global-route-loading.spec.ts', 'e2e/88-skeleton-spinner.spec.ts');
   } else if (file.startsWith('src/app/')) {
     runFullSuite = true;
     break;

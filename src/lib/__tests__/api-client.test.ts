@@ -120,7 +120,6 @@ describe('apiRequest', () => {
     '/api/auth/applicants/login',
     '/api/auth/applicants/email/verify',
     '/api/auth/applicants/email/send',
-    '/api/auth/companies/login',
   ])('공개 auth 요청에는 CSRF 토큰을 요청하지 않는다: %s', async (path) => {
     vi.resetModules();
     const fetchMock = vi.fn().mockResolvedValue(

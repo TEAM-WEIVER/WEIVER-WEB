@@ -45,8 +45,6 @@ test('운영 API: @weiver.test 계정의 실제 회원가입을 완료한다', a
   await page.getByRole('button', { name: '다음 단계' }).click();
 
   const completeResponse = await completeResponsePromise;
-  expect(completeResponse.ok()).toBe(true);
-  await expect(completeResponse.json()).resolves.toMatchObject({
-    data: { role: 'APPLICANT' },
-  });
+  expect(completeResponse.status()).toBe(204);
+  await expect(page).toHaveURL('/login');
 });

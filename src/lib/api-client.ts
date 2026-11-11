@@ -10,7 +10,6 @@ const CSRF_EXCLUDED_PATHS = new Set([
   '/api/auth/applicants/login',
   '/api/auth/applicants/email/verify',
   '/api/auth/applicants/email/send',
-  '/api/auth/companies/login',
 ]);
 const AUTHORIZATION_EXCLUDED_PATHS = new Set([...CSRF_EXCLUDED_PATHS, REISSUE_PATH]);
 

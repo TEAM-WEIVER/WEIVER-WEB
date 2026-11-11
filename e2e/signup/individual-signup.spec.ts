@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { fulfillJson } from '../fixtures/msw-helpers';
 import { API, FIXTURES } from '../mocks/signup-handlers';
 
 // ---------------------------------------------------------------------------
@@ -137,7 +138,7 @@ test('AC3: 이메일 인증 완료 + 비밀번호 입력 후 다음 단계 클�
 // AC4. 약관 동의 및 가입 완료
 // ---------------------------------------------------------------------------
 
-test('AC4: 필수 약관 5개 모두 동의 후 회원가입 완료 API가 성공한다', async ({ page }) => {
+test('AC4: 회원가입 후 로그인하고 회원 홈에 진입한다', async ({ page }) => {
   // Given — signupToken을 Zustand store에 세팅하려면 account-info 단계를 거쳐야 한다
   await setupHappyPath(page);
   await gotoAccountInfo(page);
@@ -163,12 +164,25 @@ test('AC4: 필수 약관 5개 모두 동의 후 회원가입 완료 API가 성�
 
   await page.getByRole('button', { name: '다음 단계' }).click();
 
-  // Then — 회원가입 이후 화면 검증은 인증 fixture 기반 후속 E2E에서 담당
   const completeResponse = await completeResponsePromise;
-  expect(completeResponse.ok()).toBe(true);
-  await expect(completeResponse.json()).resolves.toMatchObject({
-    data: { role: 'APPLICANT' },
-  });
+  expect(completeResponse.status()).toBe(204);
+  await expect(page).toHaveURL('/login');
+  expect(await page.evaluate(() => sessionStorage.getItem('weiver.auth.role'))).toBeNull();
+
+  const session = { data: { accessToken: 'mock-access-token', role: 'APPLICANT' } };
+  await page.route('**/api/auth/applicants/login', (route) => fulfillJson(route, 200, session));
+  await page.route('**/api/auth/csrf', (route) =>
+    fulfillJson(route, 200, { data: { csrfToken: 'mock-csrf-token' } }),
+  );
+  await page.route('**/api/auth/reissue', (route) => fulfillJson(route, 200, session));
+
+  await page.getByLabel('이메일', { exact: true }).fill('test@example.com');
+  await page.getByLabel('비밀번호', { exact: true }).fill('Password1!');
+  await page.getByRole('button', { name: '로그인하기' }).click();
+  await expect(page).toHaveURL('/home');
+  await expect(page.getByRole('heading', { name: '회원 홈' })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '회원 홈' })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------

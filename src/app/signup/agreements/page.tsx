@@ -8,7 +8,8 @@ import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { setAuthSession } from '@/lib/auth-token';
+import { LOGIN_PATH } from '@/lib/auth-paths';
+import { clearAccessToken } from '@/lib/auth-token';
 import { completeSignup } from '@/lib/signup-api';
 import { getPrevStep, getStepNumber } from '@/lib/signup-flow';
 import { INDIVIDUAL_TERMS } from '@/lib/signup-terms';
@@ -86,14 +87,14 @@ export default function SignupAgreementsPage() {
     setSubmitError(null);
 
     try {
-      const response = await completeSignup({
+      await completeSignup({
         account,
         terms: data,
       });
-      setAuthSession(response.data.accessToken, response.data.role);
+      clearAccessToken();
       setIsSignupCompleted(true);
       reset();
-      router.push('/onboarding/resume');
+      router.replace(LOGIN_PATH);
     } catch {
       setSubmitError('회원가입 처리에 실패했습니다. 잠시 후 다시 시도해주세요.');
     }

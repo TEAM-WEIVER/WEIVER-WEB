@@ -44,7 +44,7 @@ export const FIXTURES = {
     failure: { status: 400, body: failure(400, '회원가입 계정 등록에 실패했습니다.') },
   },
   signupComplete: {
-    success: { status: 200, body: success({ role: 'APPLICANT' }) },
+    success: { status: 204, body: null },
     failure: {
       status: 500,
       body: failure(500, '회원가입 처리에 실패했습니다. 잠시 후 다시 시도해주세요.'),

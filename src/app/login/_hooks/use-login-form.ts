@@ -1,46 +1,20 @@
 import { type FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { MEMBER_HOME_PATH } from '@/lib/auth-paths';
 import { setAuthSession } from '@/lib/auth-token';
-import { loginApplicant, loginCompany } from '@/lib/login-api';
-
-import type { LoginTab } from '../_components/login-tabs';
-
-export const TAB_CONTENT = {
-  corporate: {
-    description: '가장 적합한 지원자를 빠르고 정확하게 확인해보세요.',
-    accountLabel: '아이디',
-    accountErrorLabel: '아이디와',
-    accountPlaceholder: 'weiver',
-    accountAutoComplete: 'username',
-  },
-  individual: {
-    description: '나에게 가장 알맞는 공고를 확인해보세요.',
-    accountLabel: '이메일',
-    accountErrorLabel: '이메일과',
-    accountPlaceholder: 'personal@gmail.com',
-    accountAutoComplete: 'email',
-  },
-} as const;
+import { loginApplicant } from '@/lib/login-api';
 
 export function useLoginForm() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<LoginTab>('corporate');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [accountId, setAccountId] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currentTab = TAB_CONTENT[activeTab];
-  const trimmedAccountId = accountId.trim();
-  const isFormValid = trimmedAccountId !== '' && password.trim() !== '';
-
-  const handleTabChange = (tab: LoginTab) => {
-    setActiveTab(tab);
-    setLoginError(null);
-  };
+  const trimmedEmail = email.trim();
+  const isFormValid = trimmedEmail !== '' && password.trim() !== '';
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,46 +25,31 @@ export function useLoginForm() {
     setLoginError(null);
 
     try {
-      if (activeTab === 'corporate') {
-        const response = await loginCompany({
-          id: trimmedAccountId,
-          password,
-        });
-        setAuthSession(response.data.accessToken, response.data.role);
-        router.push('/corporate/dashboard');
-        return;
+      const { data } = await loginApplicant({ email: trimmedEmail, password });
+
+      if (data.role !== 'APPLICANT' || !data.accessToken) {
+        throw new Error('Invalid applicant session');
       }
 
-      const response = await loginApplicant({
-        email: trimmedAccountId,
-        password,
-      });
-      setAuthSession(response.data.accessToken, response.data.role);
-      router.push('/applicant/dashboard');
+      setAuthSession(data.accessToken, data.role);
+      router.push(MEMBER_HOME_PATH);
     } catch {
-      setLoginError(
-        `로그인에 실패했습니다. ${currentTab.accountErrorLabel} 비밀번호를 다시 확인해주세요.`,
-      );
+      setLoginError('로그인에 실패했습니다. 이메일과 비밀번호를 다시 확인해주세요.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return {
-    activeTab,
-    currentTab,
     showPassword,
-    rememberMe,
-    accountId,
+    email,
     password,
     loginError,
     isSubmitting,
     isFormValid,
-    setAccountId,
+    setEmail,
     setPassword,
-    setRememberMe,
     setShowPassword,
-    handleTabChange,
     handleSubmit,
   };
 }

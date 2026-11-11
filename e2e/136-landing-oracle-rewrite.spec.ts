@@ -5,9 +5,14 @@ import { mockLandingApis } from './mocks/landing-api';
 const LANDING_HEADING = '한 번 준비하고, 여러 기업에게 먼저 제안받으세요.';
 
 async function fillReservation(page: Page) {
-  await page.getByRole('combobox', { name: '직군 (필수)', exact: true }).selectOption('FE');
-  await page.getByRole('combobox', { name: '현재 지원 유형 (필수)' }).selectOption('student');
-  await page.getByRole('combobox', { name: '주 관심 직무 (필수)' }).selectOption('web_frontend');
+  for (const [field, option] of [
+    ['직군 (필수)', '프론트엔드'],
+    ['현재 지원 유형 (필수)', '대학생'],
+    ['주 관심 직무 (필수)', '웹 프론트엔드 (서비스·제품 UI)'],
+  ]) {
+    await page.getByRole('combobox', { name: field, exact: true }).click();
+    await page.getByRole('option', { name: option, exact: true }).click();
+  }
   await page.getByRole('textbox', { name: '이름', exact: true }).fill('테스트 방문자');
   await page.getByRole('textbox', { name: '이메일', exact: true }).fill('rewrite-test@example.com');
   await page.getByRole('checkbox', { name: '개인정보 수집·이용에 동의합니다. (필수)' }).check();
@@ -121,7 +126,6 @@ test.describe('#136 Oracle external rewrite', () => {
       }
     });
     await page.goto('/login');
-    await page.getByRole('button', { name: '개인 회원', exact: true }).click();
     await page.getByRole('link', { name: '회원가입하기', exact: true }).click();
     await expect(page).toHaveURL('/signup/account-info');
     await expect(page.getByLabel('이메일', { exact: true })).toBeVisible();

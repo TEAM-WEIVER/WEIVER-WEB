@@ -13,11 +13,11 @@ export default function LoginPage() {
     <div className="bg-bg-secondary min-h-screen">
       <Header />
 
-      <main className="flex justify-center pt-[113px] pb-20">
-        <div className="border-border-light bg-bg-primary w-[628px] rounded-[20px] border px-16 py-11">
-          <div className="flex w-[500px] flex-col gap-6">
+      <main className="flex justify-center px-4 pt-[113px] pb-20">
+        <div className="border-border-light bg-bg-primary w-full max-w-[628px] rounded-[20px] border px-6 py-11 sm:px-16">
+          <div className="flex flex-col gap-6">
             <LoginForm {...loginForm} />
-            <LoginFooter activeTab={loginForm.activeTab} />
+            <LoginFooter />
           </div>
         </div>
       </main>

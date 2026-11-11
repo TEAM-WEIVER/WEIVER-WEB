@@ -33,19 +33,15 @@ test.describe('AC1: 존재하지 않는 경로 접근 시 404 페이지 노출',
     await expect(page.getByRole('link', { name: /홈/ })).toBeVisible();
   });
 
-  test('AC1-b: 정의되지 않은 중첩 경로 접근 시 404 안내 메시지와 홈 복귀 버튼이 표시된다', async ({
-    page,
-  }) => {
-    // Given: 인증 여부와 무관하게 어떤 사용자가
-
-    // When: 앱 내에 정의되지 않은 중첩 URL 경로(/applicant/xyz)로 접근
-    await page.goto('/applicant/xyz');
-
-    // Then: 404 안내 메시지가 표시된다
-    await expect(page.getByText('페이지를 찾을 수 없습니다', { exact: false })).toBeVisible();
-
-    // Then: 홈으로 이동하는 버튼이 표시된다
-    await expect(page.getByRole('link', { name: /홈/ })).toBeVisible();
+  test('제거한 기업과 이전 지원자 경로가 404를 반환한다', async ({ request }) => {
+    for (const path of [
+      '/corporate/dashboard',
+      '/corporate-dashboard-preview',
+      '/applicant/dashboard',
+      '/onboarding/resume',
+    ]) {
+      expect((await request.get(path)).status(), path).toBe(404);
+    }
   });
 
   test('AC1-c: 직접 접근(SSR) 시 HTTP 응답 상태 코드가 404이다', async ({ request }) => {

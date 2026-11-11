@@ -76,15 +76,9 @@ describe('signup-api', () => {
   });
 
   it('회원가입 2단계 약관 동의 요청을 내부 Route Handler로 보낸다', async () => {
-    const mockResponseBody = {
-      status: 'OK',
-      code: 200,
-      data: { role: 'APPLICANT', accessToken: 'access-token' },
-      message: 'OK',
-    };
     fetchMock.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockResponseBody),
+      status: 204,
     });
 
     await expect(
@@ -102,7 +96,7 @@ describe('signup-api', () => {
           marketingConsent: false,
         },
       }),
-    ).resolves.toEqual(mockResponseBody);
+    ).resolves.toBeUndefined();
 
     expect(fetchMock).toHaveBeenCalledWith('/api/auth/signup/complete', {
       method: 'POST',

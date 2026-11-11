@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { clearAccessToken, getAccessToken, getAuthRole } from '@/lib/auth-token';
-import { loginApplicant, loginCompany } from '@/lib/login-api';
+import { loginApplicant } from '@/lib/login-api';
 
 import LoginPage from '../page';
 
@@ -19,22 +19,12 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/lib/login-api', () => ({
   loginApplicant: vi.fn(),
-  loginCompany: vi.fn(),
 }));
 
 describe('로그인 페이지', () => {
   beforeEach(() => {
     navigationMock.push.mockClear();
     clearAccessToken();
-    vi.mocked(loginCompany).mockResolvedValue({
-      status: 'OK',
-      code: 200,
-      data: {
-        accessToken: 'access-token',
-        role: 'COMPANY',
-      },
-      message: 'OK',
-    });
     vi.mocked(loginApplicant).mockResolvedValue({
       status: 'OK',
       code: 200,
@@ -52,50 +42,13 @@ describe('로그인 페이지', () => {
     vi.clearAllMocks();
   });
 
-  it('기업 로그인 성공 시 기업 대시보드로 이동한다', async () => {
+  it('개인 로그인 성공 시 회원 홈으로 이동한다', async () => {
     const user = userEvent.setup();
 
     render(<LoginPage />);
 
-    await user.type(screen.getByPlaceholderText('weiver'), 'weiver');
-    await user.type(screen.getByPlaceholderText('올바른 비밀번호를 입력하세요'), 'Password123!');
-    await user.click(screen.getByRole('button', { name: '로그인하기' }));
-
-    await waitFor(() => {
-      expect(loginCompany).toHaveBeenCalledWith({
-        id: 'weiver',
-        password: 'Password123!',
-      });
-    });
-    expect(getAccessToken()).toBe('access-token');
-    expect(getAuthRole()).toBe('COMPANY');
-    expect(navigationMock.push).toHaveBeenCalledWith('/corporate/dashboard');
-  });
-
-  it('기업 로그인 실패 시 오류를 표시하고 이동하지 않는다', async () => {
-    const user = userEvent.setup();
-    vi.mocked(loginCompany).mockRejectedValue(new Error('login failed'));
-
-    render(<LoginPage />);
-
-    await user.type(screen.getByPlaceholderText('weiver'), 'weiver');
-    await user.type(screen.getByPlaceholderText('올바른 비밀번호를 입력하세요'), 'wrong-password');
-    await user.click(screen.getByRole('button', { name: '로그인하기' }));
-
-    expect(
-      await screen.findByText('로그인에 실패했습니다. 아이디와 비밀번호를 다시 확인해주세요.'),
-    ).toBeInTheDocument();
-    expect(navigationMock.push).not.toHaveBeenCalled();
-  });
-
-  it('개인 로그인 성공 시 개인 대시보드로 이동한다', async () => {
-    const user = userEvent.setup();
-
-    render(<LoginPage />);
-
-    await user.click(screen.getByRole('button', { name: '개인 회원' }));
-    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('올바른 비밀번호를 입력하세요'), 'Password123!');
+    await user.type(screen.getByLabelText('이메일', { exact: true }), 'user@example.com');
+    await user.type(screen.getByLabelText('비밀번호', { exact: true }), 'Password123!');
     await user.click(screen.getByRole('button', { name: '로그인하기' }));
 
     await waitFor(() => {
@@ -104,10 +57,9 @@ describe('로그인 페이지', () => {
         password: 'Password123!',
       });
     });
-    expect(loginCompany).not.toHaveBeenCalled();
     expect(getAccessToken()).toBe('access-token');
     expect(getAuthRole()).toBe('APPLICANT');
-    expect(navigationMock.push).toHaveBeenCalledWith('/applicant/dashboard');
+    expect(navigationMock.push).toHaveBeenCalledWith('/home');
   });
 
   it('개인 로그인 실패 시 이메일 기준 오류를 표시하고 이동하지 않는다', async () => {
@@ -116,9 +68,8 @@ describe('로그인 페이지', () => {
 
     render(<LoginPage />);
 
-    await user.click(screen.getByRole('button', { name: '개인 회원' }));
-    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('올바른 비밀번호를 입력하세요'), 'wrong-password');
+    await user.type(screen.getByLabelText('이메일', { exact: true }), 'user@example.com');
+    await user.type(screen.getByLabelText('비밀번호', { exact: true }), 'wrong-password');
     await user.click(screen.getByRole('button', { name: '로그인하기' }));
 
     expect(

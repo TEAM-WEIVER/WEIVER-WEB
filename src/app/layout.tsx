@@ -3,7 +3,6 @@ import localFont from 'next/font/local';
 import 'pretendard/dist/web/variable/pretendardvariable.css';
 import './globals.css';
 
-import { RouteProgressBar } from '@/components/common/route-progress-bar';
 import { ToastContainer } from '@/components/common/toast-container';
 
 const pretendard = localFont({
@@ -15,7 +14,7 @@ const pretendard = localFont({
 
 export const metadata: Metadata = {
   title: '위버',
-  description: '검증된 인재를 엮다, Weiver',
+  description: '위버 AI 면접 서비스',
 };
 
 export default function RootLayout({
@@ -26,7 +25,6 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`${pretendard.variable} font-sans antialiased`}>
-        <RouteProgressBar />
         {children}
         <ToastContainer />
       </body>
