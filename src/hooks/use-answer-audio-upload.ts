@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router';
 
 import { ApiError, REISSUE_FAILED_MESSAGE } from '@/lib/api-client';
 import { createAnswerAudioFile } from '@/lib/audio-recording';
@@ -167,7 +167,7 @@ export function useAnswerAudioUpload({
   finishInterview,
   disconnect,
 }: UseAnswerAudioUploadOptions): UseAnswerAudioUploadReturn {
-  const router = useRouter();
+  const navigate = useNavigate();
   const currentQuestionKey = useInterviewStore(selectCurrentQuestionKey);
 
   const [local, setLocal] = useState<LocalState>(() => ({
@@ -181,11 +181,11 @@ export function useAnswerAudioUpload({
   const blobRef = useRef<{ blob: Blob; mimeType: string } | null>(null);
   const requestSeqRef = useRef(0);
   const activeRequestRef = useRef<ActiveRequest | null>(null);
-  const optionsRef = useRef({ finishInterview, disconnect, router });
+  const optionsRef = useRef({ finishInterview, disconnect, navigate });
 
   useEffect(() => {
-    optionsRef.current = { finishInterview, disconnect, router };
-  }, [finishInterview, disconnect, router]);
+    optionsRef.current = { finishInterview, disconnect, navigate };
+  }, [finishInterview, disconnect, navigate]);
 
   const updateLocal = useCallback((next: LocalState) => {
     localRef.current = next;
@@ -258,12 +258,12 @@ export function useAnswerAudioUpload({
   );
 
   const handleAuthFailure = useCallback(() => {
-    const { disconnect: disconnectSocket, router: currentRouter } = optionsRef.current;
+    const { disconnect: disconnectSocket, navigate: currentNavigate } = optionsRef.current;
     blobRef.current = null;
     toast.add({ type: 'error', title: ANSWER_UPLOAD_MESSAGES.sessionExpired });
     disconnectSocket();
     useInterviewStore.getState().reset();
-    currentRouter.replace('/login');
+    currentNavigate('/login', { replace: true });
   }, []);
 
   const acceptAndWait = useCallback(

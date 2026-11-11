@@ -158,14 +158,14 @@ test('AC4: 회원가입 후 로그인하고 회원 홈에 진입한다', async (
 
   const completeResponsePromise = page.waitForResponse(
     (response) =>
-      response.url().endsWith('/api/auth/signup/complete') &&
+      response.url().endsWith('/api/auth/applicants/signup/agreements') &&
       response.request().method() === 'POST',
   );
 
   await page.getByRole('button', { name: '다음 단계' }).click();
 
   const completeResponse = await completeResponsePromise;
-  expect(completeResponse.status()).toBe(204);
+  expect(completeResponse.ok()).toBe(true);
   await expect(page).toHaveURL('/login');
   expect(await page.evaluate(() => sessionStorage.getItem('weiver.auth.role'))).toBeNull();
 

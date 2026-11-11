@@ -1,7 +1,7 @@
 'use client';
 
 import { type ReactNode, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router';
 
 import { reissueAccessToken } from '@/lib/auth-api';
 import { getAccessToken, getAuthRole } from '@/lib/auth-token';
@@ -22,7 +22,7 @@ async function hasApplicantSession() {
 }
 
 export function ProtectedRouteGuard({ children }: { children: ReactNode }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [isAllowed, setIsAllowed] = useState(false);
 
   useEffect(() => {
@@ -34,14 +34,14 @@ export function ProtectedRouteGuard({ children }: { children: ReactNode }) {
       if (allowed) {
         setIsAllowed(true);
       } else {
-        router.replace(LOGIN_PATH);
+        navigate(LOGIN_PATH, { replace: true });
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, [router]);
+  }, [navigate]);
 
   if (!isAllowed) return null;
 

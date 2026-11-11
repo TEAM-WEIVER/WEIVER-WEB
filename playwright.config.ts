@@ -27,8 +27,8 @@ export default defineConfig({
     : {
         webServer: {
           command: process.env.CI
-            ? `NEXT_PUBLIC_E2E_TEST=true pnpm exec next start --port ${e2ePort}`
-            : `NEXT_PUBLIC_E2E_TEST=true pnpm exec next dev --port ${e2ePort}`,
+            ? `VITE_E2E_TEST=true pnpm exec vite preview --strictPort --port ${e2ePort}`
+            : `VITE_E2E_TEST=true pnpm exec vite --strictPort --port ${e2ePort}`,
           url: `http://localhost:${e2ePort}/login`,
           reuseExistingServer: !process.env.CI,
         },

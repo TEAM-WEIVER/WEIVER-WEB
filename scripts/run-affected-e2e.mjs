@@ -41,10 +41,13 @@ for (const file of changedFiles) {
     file === 'package.json' ||
     file === 'pnpm-lock.yaml' ||
     file === 'playwright.config.ts' ||
-    file === 'next.config.ts' ||
-    file.startsWith('src/app/api/') ||
-    file.startsWith('src/app/layout') ||
-    file.startsWith('src/app/globals') ||
+    file === 'vite.config.ts' ||
+    file === 'vercel.json' ||
+    file === 'app.html' ||
+    file === '404.html' ||
+    file === 'src/main.tsx' ||
+    file === 'src/not-found-entry.tsx' ||
+    file.startsWith('src/styles/') ||
     file.startsWith('src/components/common/') ||
     file.startsWith('src/components/ui/') ||
     file.startsWith('src/hooks/') ||
@@ -56,9 +59,9 @@ for (const file of changedFiles) {
     break;
   }
 
-  if (file.startsWith('src/app/signup/')) {
+  if (file.startsWith('src/pages/signup/')) {
     add('e2e/signup');
-  } else if (file.startsWith('src/app/')) {
+  } else if (file.startsWith('src/pages/')) {
     runFullSuite = true;
     break;
   }

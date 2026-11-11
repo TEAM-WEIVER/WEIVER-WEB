@@ -6,15 +6,15 @@ import { test, expect, type Page } from '@playwright/test';
  * 커버 AC: AC1, AC2, AC3, AC4, AC5, AC6
  *
  * 전제:
- * - Next.js 앱이 http://localhost:3000 에서 실행 중이어야 한다.
+ * - Vite 앱이 http://localhost:3000 에서 실행 중이어야 한다.
  * - `src/store/toast-store.ts`, `src/components/ui/toast.tsx`,
  *   `src/components/common/toast-container.tsx` 가 구현되어 있어야 한다 (ATDD — 구현 전 작성).
- * - ToastContainer 는 루트 레이아웃(`src/app/layout.tsx`)에 포함되어 있어야 한다.
+ * - ToastContainer 는 앱 진입점(`src/main.tsx`)에 포함되어 있어야 한다.
  * - API 연동 없음 — MSW 핸들러 불필요.
  *
  * 토스트 호출 전략:
  * - `page.evaluate()` 로 브라우저 컨텍스트에서 `window.__toast.add()` 를 직접 호출한다.
- * - toast facade는 `NEXT_PUBLIC_E2E_TEST=true`일 때만 `window.__toast`로 노출된다.
+ * - toast facade는 `VITE_E2E_TEST=true`일 때만 `window.__toast`로 노출된다.
  */
 
 // ---------------------------------------------------------------------------

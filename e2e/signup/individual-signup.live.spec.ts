@@ -38,13 +38,13 @@ test('운영 API: @weiver.test 계정의 실제 회원가입을 완료한다', a
 
   const completeResponsePromise = page.waitForResponse(
     (response) =>
-      response.url().endsWith('/api/auth/signup/complete') &&
+      response.url().endsWith('/api/auth/applicants/signup/agreements') &&
       response.request().method() === 'POST',
   );
 
   await page.getByRole('button', { name: '다음 단계' }).click();
 
   const completeResponse = await completeResponsePromise;
-  expect(completeResponse.status()).toBe(204);
+  expect(completeResponse.ok()).toBe(true);
   await expect(page).toHaveURL('/login');
 });

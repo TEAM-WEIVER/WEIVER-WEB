@@ -103,12 +103,14 @@ test.describe('#136 Oracle external rewrite', () => {
     await expect(page.getByRole('heading', { name: LANDING_HEADING })).toHaveCount(0);
   });
 
-  test('AC5: 본품 Next 정적 리소스는 본품에서 제공된다', async ({ request }) => {
+  test('AC5: 본품 정적 리소스는 본품에서 제공된다', async ({ request }) => {
     const html = await (await request.get('/login')).text();
     const paths = new Set(
-      [...html.matchAll(/(?:src|href)="(\/_next\/[^"\s]+\.(?:js|css)(?:\?[^"\s]*)?)"/g)].map(
-        (match) => match[1],
-      ),
+      [
+        ...html.matchAll(
+          /(?:src|href)="(\/(?:assets|src)\/[^"\s]+\.(?:js|css|tsx)(?:\?[^"\s]*)?)"/g,
+        ),
+      ].map((match) => match[1]),
     );
     expect(paths.size).toBeGreaterThan(0);
     for (const path of paths) {
@@ -118,18 +120,13 @@ test.describe('#136 Oracle external rewrite', () => {
     }
   });
 
-  test('AC5: 본품 내부 회원가입 이동은 Next RSC 응답으로 처리된다', async ({ page }) => {
-    const rscPaths: string[] = [];
-    page.on('response', (response) => {
-      if (response.headers()['content-type']?.includes('text/x-component')) {
-        rscPaths.push(new URL(response.url()).pathname);
-      }
-    });
+  test('AC5: 본품 내부 회원가입 이동은 문서 새로고침 없이 처리된다', async ({ page }) => {
     await page.goto('/login');
+    const initialDocument = await page.evaluateHandle(() => document);
     await page.getByRole('link', { name: '회원가입하기', exact: true }).click();
     await expect(page).toHaveURL('/signup/account-info');
     await expect(page.getByLabel('이메일', { exact: true })).toBeVisible();
-    await expect.poll(() => rscPaths.includes('/signup/account-info')).toBe(true);
+    expect(await initialDocument.evaluate((previous) => previous === document)).toBe(true);
   });
 
   test('AC5: 알 수 없는 페이지·API와 운영 dev-proxy는 랜딩으로 대체하지 않는다', async ({

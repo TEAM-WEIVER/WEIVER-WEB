@@ -12,15 +12,9 @@ import { useSignupStore } from '@/store/signup-store';
 
 import SignupAccountInfoPage from '../account-info/page';
 
-const navigationMock = vi.hoisted(() => ({
-  push: vi.fn(),
-}));
+const navigationMock = vi.hoisted(() => ({ navigate: vi.fn() }));
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: navigationMock.push,
-  }),
-}));
+vi.mock('react-router', () => ({ useNavigate: () => navigationMock.navigate }));
 
 vi.mock('@/lib/signup-api', () => ({
   initApplicantSignup: vi.fn(),
@@ -30,7 +24,7 @@ vi.mock('@/lib/signup-api', () => ({
 
 describe('개인 회원가입 플로우', () => {
   beforeEach(() => {
-    navigationMock.push.mockClear();
+    navigationMock.navigate.mockClear();
     vi.mocked(initApplicantSignup).mockResolvedValue({
       status: 'OK',
       code: 200,
@@ -79,7 +73,7 @@ describe('개인 회원가입 플로우', () => {
       expect(screen.getByText('올바른 이메일 형식을 입력해주세요.')).toBeInTheDocument(),
     );
     expect(nextButton).toBeDisabled();
-    expect(navigationMock.push).not.toHaveBeenCalled();
+    expect(navigationMock.navigate).not.toHaveBeenCalled();
   });
 
   it('비밀번호 규칙을 만족하지 않으면 인증 후에도 계정 단계 제출을 막는다', async () => {
@@ -100,7 +94,7 @@ describe('개인 회원가입 플로우', () => {
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
     await waitFor(() => expect(screen.getByText('인증 완료')).toBeInTheDocument());
     expect(nextButton).toBeDisabled();
-    expect(navigationMock.push).not.toHaveBeenCalled();
+    expect(navigationMock.navigate).not.toHaveBeenCalled();
   });
 
   it('비밀번호 규칙을 모두 만족하면 기존 비밀번호 오류 메시지를 숨긴다', async () => {
@@ -137,7 +131,7 @@ describe('개인 회원가입 플로우', () => {
       expect(screen.getByText('비밀번호가 일치하지 않습니다.')).toBeInTheDocument(),
     );
     expect(screen.getByRole('button', { name: /다음 단계/ })).toBeDisabled();
-    expect(navigationMock.push).not.toHaveBeenCalled();
+    expect(navigationMock.navigate).not.toHaveBeenCalled();
   });
 
   it('이메일 인증 전에는 계정 단계에서 다음 단계로 이동할 수 없다', async () => {
@@ -158,7 +152,7 @@ describe('개인 회원가입 플로우', () => {
     );
 
     await waitFor(() => expect(nextButton).toBeDisabled());
-    expect(navigationMock.push).not.toHaveBeenCalled();
+    expect(navigationMock.navigate).not.toHaveBeenCalled();
   });
 
   it('이메일 인증과 유효한 계정 입력 후 약관 단계로 이동한다', async () => {
@@ -192,7 +186,7 @@ describe('개인 회원가입 플로우', () => {
       passwordConfirm: 'Aa1!aaaa',
       verificationToken: 'verification-token',
     });
-    expect(navigationMock.push).toHaveBeenCalledWith('/signup/agreements');
+    expect(navigationMock.navigate).toHaveBeenCalledWith('/signup/agreements');
     expect(useSignupStore.getState().account).toEqual({
       email: 'user@example.com',
       signupToken: 'signup-token',
@@ -222,7 +216,7 @@ describe('개인 회원가입 플로우', () => {
     expect(
       await screen.findByText('회원가입 계정 등록에 실패했습니다. 잠시 후 다시 시도해주세요.'),
     ).toBeInTheDocument();
-    expect(navigationMock.push).not.toHaveBeenCalled();
+    expect(navigationMock.navigate).not.toHaveBeenCalled();
   });
 
   it('인증번호 전송 요청이 실패하면 인증 코드 입력 UI를 열지 않는다', async () => {
@@ -315,6 +309,6 @@ describe('개인 회원가입 플로우', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /다음 단계/ })).toBeDisabled();
     expect(initApplicantSignup).not.toHaveBeenCalled();
-    expect(navigationMock.push).not.toHaveBeenCalled();
+    expect(navigationMock.navigate).not.toHaveBeenCalled();
   });
 });

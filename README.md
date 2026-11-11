@@ -1,36 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WEIVER Web
 
-## Getting Started
+위버 AI 면접 서비스의 React 프론트엔드. Vite로 빌드하며 본품 API는 백엔드가 제공한다. 공개 랜딩과 `/landing-assets`는 Oracle에서 제공하고 Vercel과 Vite 개발 서버가 해당 요청을 전달한다.
 
-First, run the development server:
+## 개발
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
+```sh
+pnpm install --frozen-lockfile
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+개인 로그인 화면은 `http://localhost:3000/login`에서 열 수 있다. 본품은 기본적으로 `https://api.weiverai.com`을 호출한다. API 주소를 바꿀 때는 `VITE_API_BASE_URL`을, 면접 WebSocket 주소를 바꿀 때는 `VITE_WS_URL`을 지정한다. Vite 환경 변수는 브라우저 빌드에 포함되므로 공개 가능한 값만 사용한다. [로컬 HTTPS 및 개발용 API 프록시 설정](docs/local-https.md).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 검증
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```sh
+pnpm lint:check
+pnpm typecheck
+pnpm test --run
+pnpm build-storybook
+VITE_E2E_TEST=true pnpm build
+CI=true pnpm test:e2e
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+일반 배포 빌드는 `pnpm build`로 실행한다. Vercel은 `dist`를 배포하며 `vercel.json`에 지정된 본품 경로에서 React 앱을 제공한다.

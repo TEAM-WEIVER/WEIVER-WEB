@@ -2,15 +2,14 @@
  * 회원가입 API 응답 픽스처
  * Playwright page.route()와 함께 사용한다.
  *
- * 이메일 인증과 계정 등록은 실제 API 베이스 URL로 요청하고,
- * 가입 완료는 브라우저에서 Next.js Route Handler로 요청한다.
+ * 모든 요청은 브라우저에서 백엔드 회원가입 API로 보낸다.
  */
 
 export const API = {
   EMAIL_SEND: '**/api/auth/applicants/email/send',
   EMAIL_VERIFY: '**/api/auth/applicants/email/verify',
   SIGNUP_INIT: '**/api/auth/applicants/signup/init',
-  SIGNUP_COMPLETE: '**/api/auth/signup/complete',
+  SIGNUP_COMPLETE: '**/api/auth/applicants/signup/agreements',
 } as const;
 
 const success = <TData>(data: TData) => ({
@@ -44,7 +43,10 @@ export const FIXTURES = {
     failure: { status: 400, body: failure(400, '회원가입 계정 등록에 실패했습니다.') },
   },
   signupComplete: {
-    success: { status: 204, body: null },
+    success: {
+      status: 200,
+      body: success({ accessToken: 'ignored-signup-access-token', role: 'APPLICANT' }),
+    },
     failure: {
       status: 500,
       body: failure(500, '회원가입 처리에 실패했습니다. 잠시 후 다시 시도해주세요.'),

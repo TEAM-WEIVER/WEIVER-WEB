@@ -13,28 +13,21 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "paths": {
       "@/*": ["./src/*"],
       "@/components/*": ["./src/components/*"]
-    }
+    },
+    "types": ["vite/client", "node"]
   },
   "include": [
-    "next-env.d.ts",
     "vitest.shims.d.ts",
     "vitest.setup.ts",
     "vitest.config.ts",
-    "next.config.ts",
+    "vite.config.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
     "*.mts",
-    "eslint.config.mjs",
-    ".next/dev/types/**/*.ts",
-    ".next/types/**/*.ts"
+    "eslint.config.mjs"
   ],
   "exclude": ["node_modules"]
 }

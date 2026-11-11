@@ -8,8 +8,8 @@ import { mockLandingApis } from './mocks/landing-api';
  * 커버 AC: AC1, AC2, AC3, AC4
  *
  * 전제:
- * - Next.js 앱이 http://localhost:3000 에서 실행 중이어야 한다.
- * - `src/app/not-found.tsx`가 구현되어 있어야 한다 (ATDD — 구현 전 작성).
+ * - Vite 앱이 http://localhost:3000 에서 실행 중이어야 한다.
+ * - `src/pages/not-found.tsx`가 구현되어 있어야 한다 (ATDD — 구현 전 작성).
  * - API 연동 없음 → MSW 핸들러 불필요.
  */
 
@@ -44,7 +44,7 @@ test.describe('AC1: 존재하지 않는 경로 접근 시 404 페이지 노출',
     }
   });
 
-  test('AC1-c: 직접 접근(SSR) 시 HTTP 응답 상태 코드가 404이다', async ({ request }) => {
+  test('AC1-c: 직접 접근 시 HTTP 응답 상태 코드가 404이다', async ({ request }) => {
     // Given: 정의되지 않은 URL에 직접(서버) 접근
 
     // When: HTTP GET 요청
@@ -94,7 +94,7 @@ test.describe('AC3: Unmatched URL 접근 시 공통 404 페이지 적용', () =>
   }) => {
     // Given: 정적으로 정의되지 않은 URL에 직접 접근
 
-    // When: Next.js 라우터가 일치하는 세그먼트를 찾지 못하는 경로로 이동
+    // When: 등록되지 않은 경로로 이동
     await page.goto('/this-route-does-not-exist');
 
     // Then: 404 안내 메시지가 표시된다

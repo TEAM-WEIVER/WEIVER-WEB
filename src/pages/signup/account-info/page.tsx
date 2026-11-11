@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight } from 'lucide-react';
@@ -17,7 +17,7 @@ import { PasswordFieldsSection } from './_components/password-fields-section';
 import { useEmailVerification } from './_hooks/use-email-verification';
 
 export default function SignupAccountInfoPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const savedAccount = useSignupStore((state) => state.account);
   const setAccount = useSignupStore((state) => state.setAccount);
 
@@ -60,7 +60,7 @@ export default function SignupAccountInfoPage() {
       });
 
       setAccount({ email: data.email, signupToken: response.data.signupToken });
-      if (nextStep) router.push(`/signup/${nextStep}`);
+      if (nextStep) navigate(`/signup/${nextStep}`);
     } catch {
       setSubmitError('회원가입 계정 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
     }

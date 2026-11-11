@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,14 +8,11 @@ import { loginApplicant } from '@/lib/login-api';
 
 import LoginPage from '../page';
 
-const navigationMock = vi.hoisted(() => ({
-  push: vi.fn(),
-}));
+const navigationMock = vi.hoisted(() => ({ navigate: vi.fn() }));
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: navigationMock.push,
-  }),
+vi.mock('react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router')>()),
+  useNavigate: () => navigationMock.navigate,
 }));
 
 vi.mock('@/lib/login-api', () => ({
@@ -23,7 +21,7 @@ vi.mock('@/lib/login-api', () => ({
 
 describe('로그인 페이지', () => {
   beforeEach(() => {
-    navigationMock.push.mockClear();
+    navigationMock.navigate.mockClear();
     clearAccessToken();
     vi.mocked(loginApplicant).mockResolvedValue({
       status: 'OK',
@@ -45,7 +43,11 @@ describe('로그인 페이지', () => {
   it('개인 로그인 성공 시 회원 홈으로 이동한다', async () => {
     const user = userEvent.setup();
 
-    render(<LoginPage />);
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    );
 
     await user.type(screen.getByLabelText('이메일', { exact: true }), 'user@example.com');
     await user.type(screen.getByLabelText('비밀번호', { exact: true }), 'Password123!');
@@ -59,14 +61,18 @@ describe('로그인 페이지', () => {
     });
     expect(getAccessToken()).toBe('access-token');
     expect(getAuthRole()).toBe('APPLICANT');
-    expect(navigationMock.push).toHaveBeenCalledWith('/home');
+    expect(navigationMock.navigate).toHaveBeenCalledWith('/home');
   });
 
   it('개인 로그인 실패 시 이메일 기준 오류를 표시하고 이동하지 않는다', async () => {
     const user = userEvent.setup();
     vi.mocked(loginApplicant).mockRejectedValue(new Error('login failed'));
 
-    render(<LoginPage />);
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    );
 
     await user.type(screen.getByLabelText('이메일', { exact: true }), 'user@example.com');
     await user.type(screen.getByLabelText('비밀번호', { exact: true }), 'wrong-password');
@@ -75,6 +81,6 @@ describe('로그인 페이지', () => {
     expect(
       await screen.findByText('로그인에 실패했습니다. 이메일과 비밀번호를 다시 확인해주세요.'),
     ).toBeInTheDocument();
-    expect(navigationMock.push).not.toHaveBeenCalled();
+    expect(navigationMock.navigate).not.toHaveBeenCalled();
   });
 });

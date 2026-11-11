@@ -8,17 +8,9 @@ import { useSignupStore } from '@/store/signup-store';
 
 import SignupAgreementsPage from '../agreements/page';
 
-const navigationMock = vi.hoisted(() => ({
-  push: vi.fn(),
-  replace: vi.fn(),
-}));
+const navigationMock = vi.hoisted(() => ({ navigate: vi.fn() }));
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: navigationMock.push,
-    replace: navigationMock.replace,
-  }),
-}));
+vi.mock('react-router', () => ({ useNavigate: () => navigationMock.navigate }));
 
 vi.mock('@/lib/signup-api', () => ({
   completeSignup: vi.fn(),
@@ -26,8 +18,7 @@ vi.mock('@/lib/signup-api', () => ({
 
 describe('개인 회원가입 후 로그인 연결', () => {
   beforeEach(() => {
-    navigationMock.push.mockClear();
-    navigationMock.replace.mockClear();
+    navigationMock.navigate.mockClear();
     clearAccessToken();
     vi.mocked(completeSignup).mockResolvedValue(undefined);
     useSignupStore.getState().reset();
@@ -80,8 +71,10 @@ describe('개인 회원가입 후 로그인 연결', () => {
     expect(useSignupStore.getState().terms).toEqual({});
     expect(getAccessToken()).toBeNull();
     expect(getAuthRole()).toBeNull();
-    expect(navigationMock.replace).toHaveBeenCalledWith('/login');
-    expect(navigationMock.replace).not.toHaveBeenCalledWith('/signup/account-info');
+    expect(navigationMock.navigate).toHaveBeenCalledWith('/login', { replace: true });
+    expect(navigationMock.navigate).not.toHaveBeenCalledWith('/signup/account-info', {
+      replace: true,
+    });
   });
 
   it('signupToken이 없으면 account-info로 리다이렉트된다 (AC11)', async () => {
@@ -90,10 +83,11 @@ describe('개인 회원가입 후 로그인 연결', () => {
     render(<SignupAgreementsPage />);
 
     await waitFor(() => {
-      expect(navigationMock.replace).toHaveBeenCalledWith('/signup/account-info');
+      expect(navigationMock.navigate).toHaveBeenCalledWith('/signup/account-info', {
+        replace: true,
+      });
     });
     expect(completeSignup).not.toHaveBeenCalled();
-    expect(navigationMock.push).not.toHaveBeenCalled();
   });
 
   it('회원가입 완료 요청이 실패하면 오류를 표시하고 약관 단계에 머무른다', async () => {
@@ -113,7 +107,6 @@ describe('개인 회원가입 후 로그인 연결', () => {
     expect(
       await screen.findByText('회원가입 처리에 실패했습니다. 잠시 후 다시 시도해주세요.'),
     ).toBeInTheDocument();
-    expect(navigationMock.push).not.toHaveBeenCalled();
-    expect(navigationMock.replace).not.toHaveBeenCalled();
+    expect(navigationMock.navigate).not.toHaveBeenCalled();
   });
 });

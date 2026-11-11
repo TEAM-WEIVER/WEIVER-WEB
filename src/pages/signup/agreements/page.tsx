@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft } from 'lucide-react';
@@ -19,7 +19,7 @@ import { useSignupStore } from '@/store/signup-store';
 import { TermSection } from './_components/term-section';
 
 export default function SignupAgreementsPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const account = useSignupStore((state) => state.account);
   const savedTerms = useSignupStore((state) => state.terms);
   const reset = useSignupStore((state) => state.reset);
@@ -52,9 +52,9 @@ export default function SignupAgreementsPage() {
     if (isSignupCompleted) return;
 
     if (!account.signupToken) {
-      router.replace('/signup/account-info');
+      navigate('/signup/account-info', { replace: true });
     }
-  }, [account.signupToken, isSignupCompleted, router]);
+  }, [account.signupToken, isSignupCompleted, navigate]);
 
   if (!account.signupToken) return null;
 
@@ -94,14 +94,14 @@ export default function SignupAgreementsPage() {
       clearAccessToken();
       setIsSignupCompleted(true);
       reset();
-      router.replace(LOGIN_PATH);
+      navigate(LOGIN_PATH, { replace: true });
     } catch {
       setSubmitError('회원가입 처리에 실패했습니다. 잠시 후 다시 시도해주세요.');
     }
   };
 
   const handleBack = () => {
-    router.push(prevStep ? `/signup/${prevStep}` : '/login');
+    navigate(prevStep ? `/signup/${prevStep}` : '/login');
   };
 
   return (

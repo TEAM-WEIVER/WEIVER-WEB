@@ -51,15 +51,15 @@ jobs:
 
       - name: Build
         env:
-          NEXT_PUBLIC_E2E_TEST: 'true'
+          VITE_E2E_TEST: 'true'
         run: pnpm build
 
       - name: Run affected E2E tests
         if: github.event_name == 'pull_request'
         run: |
-          export NEXT_PUBLIC_E2E_TEST=true
+          export VITE_E2E_TEST=true
           export E2E_EXTERNAL_SERVER=true
-          ./node_modules/.bin/next start --hostname 127.0.0.1 --port 3000 > "$RUNNER_TEMP/next-e2e.log" 2>&1 &
+          ./node_modules/.bin/vite preview --host 127.0.0.1 --port 3000 --strictPort > "$RUNNER_TEMP/vite-e2e.log" 2>&1 &
           server_pid=$!
           cleanup() {
             kill "$server_pid" 2>/dev/null || true
@@ -73,7 +73,7 @@ jobs:
             sleep 1
           done
           if ! curl --fail --silent http://127.0.0.1:3000/login > /dev/null; then
-            cat "$RUNNER_TEMP/next-e2e.log"
+            cat "$RUNNER_TEMP/vite-e2e.log"
             exit 1
           fi
           if find e2e -name "*.spec.ts" | grep -q .; then
@@ -85,9 +85,9 @@ jobs:
       - name: Run full E2E tests
         if: github.event_name == 'push'
         run: |
-          export NEXT_PUBLIC_E2E_TEST=true
+          export VITE_E2E_TEST=true
           export E2E_EXTERNAL_SERVER=true
-          ./node_modules/.bin/next start --hostname 127.0.0.1 --port 3000 > "$RUNNER_TEMP/next-e2e.log" 2>&1 &
+          ./node_modules/.bin/vite preview --host 127.0.0.1 --port 3000 --strictPort > "$RUNNER_TEMP/vite-e2e.log" 2>&1 &
           server_pid=$!
           cleanup() {
             kill "$server_pid" 2>/dev/null || true
@@ -101,7 +101,7 @@ jobs:
             sleep 1
           done
           if ! curl --fail --silent http://127.0.0.1:3000/login > /dev/null; then
-            cat "$RUNNER_TEMP/next-e2e.log"
+            cat "$RUNNER_TEMP/vite-e2e.log"
             exit 1
           fi
           if find e2e -name "*.spec.ts" | grep -q .; then

@@ -1,9 +1,4 @@
-import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
-
-export const metadata: Metadata = {
-  title: '404 | WEIVER',
-};
 
 export default function NotFound() {
   return (
@@ -15,7 +10,6 @@ export default function NotFound() {
       </p>
       <Button asChild>
         {/* The landing is a separate HTML app, so this boundary needs a document navigation. */}
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a href="/">홈으로 돌아가기</a>
       </Button>
     </main>

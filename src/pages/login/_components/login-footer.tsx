@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from 'react-router';
 
 import { getFirstStep } from '@/lib/signup-flow';
 
@@ -8,7 +8,7 @@ export function LoginFooter() {
       <div className="flex items-center gap-3">
         <span className="text-body2 text-text-tertiary">아직 회원이 아니신가요?</span>
         <Link
-          href={`/signup/${getFirstStep()}`}
+          to={`/signup/${getFirstStep()}`}
           className="text-body2 text-text-primary hover:underline"
         >
           회원가입하기

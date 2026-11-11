@@ -2,19 +2,20 @@
 
 ## 프로젝트 개요
 
-**WEIVER** — 지원자(applicant)와 기업(corporate) 양쪽을 지원하는 AI 채용 매칭 플랫폼. → `docs/project-overview.md` 참고
-Next.js 16 App Router + TypeScript + Tailwind CSS + shadcn/ui + Zustand + React Hook Form + Zod 스택.
+**WEIVER** — 개인 사용자를 위한 AI 면접 서비스.
+Vite + React Router + TypeScript + Tailwind CSS + shadcn/ui + Zustand + React Hook Form + Zod 스택.
 
 ### 주요 라우트
 
-- `/login`, `/signup` — 인증
-- `/onboarding` — 이력서, 포트폴리오, 자기소개서 작성
-- `/applicant` — 지원자 대시보드, 마이페이지
-- `/corporate` — 기업 대시보드
+- `/`, `/landing-assets` — Oracle 공개 랜딩과 정적 리소스
+- `/login`, `/signup/account-info`, `/signup/agreements` — 개인 인증
+- `/home` — 로그인한 개인 회원의 홈
 
 ### 디렉토리
 
-- `src/app` — 페이지 및 라우트
+- `src/pages` — 페이지 컴포넌트
+- `src/main.tsx` — React Router의 라우트 구성
+- `vercel.json` — Oracle 전달 및 본품 URL 직접 접근 설정
 - `src/components/ui` — 재사용 원시 컴포넌트
 - `src/components/common` — 레이아웃/공통 컴포넌트
 - `src/hooks` — 클라이언트 훅

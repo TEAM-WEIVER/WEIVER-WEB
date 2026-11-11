@@ -1,12 +1,12 @@
 import { type FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router';
 
 import { MEMBER_HOME_PATH } from '@/lib/auth-paths';
 import { setAuthSession } from '@/lib/auth-token';
 import { loginApplicant } from '@/lib/login-api';
 
 export function useLoginForm() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,7 +32,7 @@ export function useLoginForm() {
       }
 
       setAuthSession(data.accessToken, data.role);
-      router.push(MEMBER_HOME_PATH);
+      navigate(MEMBER_HOME_PATH);
     } catch {
       setLoginError('로그인에 실패했습니다. 이메일과 비밀번호를 다시 확인해주세요.');
     } finally {

@@ -47,7 +47,7 @@
   --color-icon-muted: var(--icon-muted);
 
   /* 폰트 */
-  --font-sans: var(--font-pretendard), system-ui, sans-serif;
+  --font-sans: 'Pretendard Variable', system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
 
   /* 둥글기 */

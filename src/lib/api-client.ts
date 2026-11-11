@@ -1,6 +1,6 @@
 import { clearAccessToken, getAccessToken, setAccessToken } from './auth-token';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://api.weiverai.com';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://api.weiverai.com';
 const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
 const CSRF_COOKIE_NAME = 'XSRF-TOKEN';
 const REISSUE_PATH = '/api/auth/reissue';
@@ -200,6 +200,7 @@ export async function apiRequest<TResponse>(
   {
     body,
     headers,
+    credentials = 'include',
     skipCsrf = false,
     skipAuthorization = false,
     skipAuthRetry = false,
@@ -238,7 +239,7 @@ export async function apiRequest<TResponse>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     method,
-    credentials: 'include',
+    credentials,
     headers: requestHeaders,
     body: requestBody,
   });
@@ -252,7 +253,7 @@ export async function apiRequest<TResponse>(
     const retryResponse = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       method,
-      credentials: 'include',
+      credentials,
       headers: retryHeaders,
       body: requestBody,
     });

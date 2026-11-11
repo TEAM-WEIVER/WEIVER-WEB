@@ -1,7 +1,7 @@
 'use client';
 
 import { cloneElement, isValidElement, type ReactElement, type ReactNode, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router';
 import { LogOut } from 'lucide-react';
 
 import { logout } from '@/lib/auth-api';
@@ -24,7 +24,7 @@ export function LogoutButton({
   label = '로그아웃',
   showLabel = true,
 }: LogoutButtonProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -37,7 +37,7 @@ export function LogoutButton({
     } catch {
       // 로그아웃 API가 실패해도 로컬 인증 상태는 auth-api에서 정리된다.
     } finally {
-      router.replace('/login');
+      navigate('/login', { replace: true });
       setIsLoggingOut(false);
     }
   };
