@@ -11,11 +11,7 @@ export default function MemberHomePage() {
             <img src="/weiver.svg" alt="위버" width={72} height={18} />
           </Link>
         }
-        navigation={
-          <HeaderNavItem asChild active>
-            <Link to="/home">홈</Link>
-          </HeaderNavItem>
-        }
+        navigation={<MemberHeaderNavigation />}
         profile={<ApplicantHeaderProfile />}
       />
       <main className="mx-auto flex w-full max-w-xl items-center justify-between gap-4 px-6 py-12">
@@ -32,4 +28,5 @@ export default function MemberHomePage() {
 import { Link } from 'react-router';
 
 import { ApplicantHeaderProfile } from '@/components/common/applicant-header-profile';
-import { GlobalHeader, HeaderNavItem } from '@/components/common/global-header';
+import { GlobalHeader } from '@/components/common/global-header';
+import { MemberHeaderNavigation } from '@/components/common/member-header-navigation';
