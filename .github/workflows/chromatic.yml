@@ -1,35 +1,70 @@
 name: Chromatic
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Let an upload finish before publishing a newer main commit.
+# Cancelling a runner does not necessarily cancel Chromatic's remote publication.
+concurrency:
+  group: storybook-deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   chromatic:
     name: Storybook 배포
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+      - name: Check deployment configuration
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+        run: |
+          if [[ -z "$CHROMATIC_PROJECT_TOKEN" ]]; then
+            echo "::error::CHROMATIC_PROJECT_TOKEN 저장소 시크릿을 등록해주세요."
+            exit 1
+          fi
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'pnpm'
+      - uses: ./.github/actions/setup-ci
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Build Storybook
+        run: pnpm build-storybook
 
-      - name: Publish to Chromatic
-        uses: chromaui/action@latest
-        with:
-          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-          exitZeroOnChanges: true
-          autoAcceptChanges: main
+      - name: Publish Storybook
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+        run: |
+          pnpm exec chromatic \
+            --storybook-build-dir storybook-static \
+            --exit-once-uploaded \
+            --auto-accept-changes main \
+            --diagnostics-file "$RUNNER_TEMP/chromatic-diagnostics.json" \
+            --no-interactive
+
+      - name: Write deployment links
+        run: |
+          node <<'JS'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const diagnostics = JSON.parse(fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'chromatic-diagnostics.json'), 'utf8'));
+          const { storybookUrl, webUrl } = diagnostics;
+          if (!storybookUrl) throw new Error('Chromatic did not return a Storybook URL');
+          const lines = [
+            '## Storybook 배포 완료',
+            `- 커밋: \`${process.env.GITHUB_SHA}\``,
+            `- [배포된 Storybook](${storybookUrl})`,
+          ];
+          if (webUrl) lines.push(`- [Chromatic 빌드](${webUrl})`);
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+          JS
