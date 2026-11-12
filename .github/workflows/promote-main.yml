@@ -19,7 +19,7 @@ env:
 jobs:
   prepare:
     name: 승격 커밋 준비
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       promotion_sha: ${{ steps.prepare.outputs.promotion_sha }}
@@ -42,7 +42,7 @@ jobs:
 
   lint-typecheck-test:
     name: lint-typecheck-test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     needs: prepare
     env:
@@ -55,31 +55,7 @@ jobs:
           ref: ${{ env.PROMOTION_SHA }}
           persist-credentials: false
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: latest
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Approve builds
-        run: pnpm approve-builds --yes || true
-
-      - name: Lint
-        run: pnpm lint:check
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Unit test
-        run: pnpm test --run
+      - uses: ./.github/actions/check-quality
 
       - name: Report required check
         if: always()
@@ -113,32 +89,7 @@ jobs:
           ref: ${{ env.PROMOTION_SHA }}
           persist-credentials: false
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: latest
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Approve builds
-        run: pnpm approve-builds --yes || true
-
-      - name: Install Playwright browsers
-        # The hosted runner already provides Chromium system libraries.
-        run: pnpm exec playwright install chromium --only-shell
-
-      - name: Build
-        run: pnpm build
-
-      - name: Run E2E tests
-        run: pnpm test:e2e
+      - uses: ./.github/actions/check-e2e
 
       - name: Report required check
         if: always()
@@ -159,7 +110,7 @@ jobs:
 
   promote:
     name: main 자동 병합
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     needs: [prepare, lint-typecheck-test, e2e]
     env:
@@ -255,4 +206,10 @@ jobs:
             exit 1
           fi
 
-          gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --merge
+          current_develop_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/develop" --jq '.object.sha')"
+          if [[ "$current_develop_sha" != "$GITHUB_SHA" ]]; then
+            echo "::error::새로운 develop 커밋이 감지되어 현재 승격을 중단합니다."
+            exit 1
+          fi
+
+          gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --merge --match-head-commit "$PROMOTION_SHA"
