@@ -171,3 +171,21 @@ export const KeyboardActivation: Story = {
     await expect(args.onClick).toHaveBeenCalledTimes(1);
   },
 };
+
+export const ResponsiveWidth: Story = {
+  render: () => (
+    <div style={{ width: 280 }} className="flex flex-col gap-3">
+      <Button size="md" className="w-full">
+        전체 너비
+      </Button>
+      <Button size="sm" className="self-start">
+        내용에 맞춤
+      </Button>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const button of within(canvasElement).getAllByRole('button')) {
+      await expect(button.getBoundingClientRect().width).toBeLessThanOrEqual(280);
+    }
+  },
+};

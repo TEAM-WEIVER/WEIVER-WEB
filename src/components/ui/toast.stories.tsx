@@ -46,3 +46,22 @@ export const Info: Story = {
     toast: { id: 'info', type: 'info', title: '리포트를 준비하고 있습니다.', duration: 60000 },
   },
 };
+
+export const LongContent: Story = {
+  args: {
+    toast: {
+      id: 'long',
+      type: 'info',
+      title: '아주긴알림제목이공백없이이어져도화면밖으로넘치지않아야합니다'.repeat(3),
+      description: 'https://example.com/' + 'long-path'.repeat(20),
+      duration: 60000,
+    },
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 280 }}>
+        <Story />
+      </div>
+    ),
+  ],
+};

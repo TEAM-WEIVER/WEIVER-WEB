@@ -48,6 +48,11 @@ export const Expired: Story = {
   play: Guest.play,
 };
 export const Pending: Story = {
+  play: async ({ canvasElement }) => {
+    await expect(
+      within(canvasElement).getByRole('status', { name: '로그인 상태 확인 중' }),
+    ).toBeVisible();
+  },
   beforeEach: () => {
     setAuthRole('APPLICANT');
     mocked(reissueAccessToken).mockImplementation(() => new Promise(() => {}));
@@ -55,8 +60,7 @@ export const Pending: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          '현재 가드는 인증 확인 중 null을 반환하므로 빈 화면이 표시됩니다. 공통 로딩 UI 적용은 후속 개선 사항입니다.',
+        story: '인증 확인 중 기존 Spinner와 상태 문구를 표시합니다.',
       },
     },
   },
