@@ -6,15 +6,16 @@ const meta = {
   title: 'Common/ApplicantHeaderProfile',
   component: ApplicantHeaderProfile,
   tags: ['autodocs'],
-  args: { loadName: async () => '민수', onClick: fn() },
+  args: { loadName: async () => '김민채', onClick: fn() },
 } satisfies Meta<typeof ApplicantHeaderProfile>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Loaded: Story = {
   play: async ({ canvasElement }) => {
     await expect(
-      await within(canvasElement).findByRole('button', { name: '민수 프로필' }),
+      await within(canvasElement).findByRole('button', { name: '김민채 프로필' }),
     ).toBeVisible();
+    await expect(within(canvasElement).getByText('민채')).toBeVisible();
   },
 };
 export const Loading: Story = { args: { loadName: () => new Promise<string>(() => {}) } };
@@ -31,13 +32,13 @@ export const Retry: Story = {
     let count = 0;
     const loadName = async () => {
       if (count++ === 0) throw new Error('예시 오류');
-      return '지수';
+      return '이지수';
     };
     return <ApplicantHeaderProfile loadName={loadName} />;
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole('button', { name: '프로필 다시 불러오기' }));
-    await expect(await canvas.findByRole('button', { name: '지수 프로필' })).toBeVisible();
+    await expect(await canvas.findByRole('button', { name: '이지수 프로필' })).toBeVisible();
   },
 };
