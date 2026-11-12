@@ -1,0 +1,15 @@
+name: Check quality
+description: Run the same lint, typecheck and unit tests on the checked-out commit.
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/setup-ci
+    - name: Lint
+      shell: bash
+      run: pnpm lint:check
+    - name: Typecheck
+      shell: bash
+      run: pnpm typecheck
+    - name: Unit test
+      shell: bash
+      run: pnpm test --run
