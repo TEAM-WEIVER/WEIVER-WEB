@@ -16,9 +16,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const onProfileClick = fn();
-const menus = ['홈', '지원 준비', 'AI면접', '역량 리포트'];
+const menus = ['홈', '지원 준비', 'AI 면접', '역량 리포트'];
 
-function HeaderExample({ givenName = '민수' }: { givenName?: string | null }) {
+function HeaderExample({ fullName = '김민수' }: { fullName?: string | null }) {
   const [selected, setSelected] = useState('지원 준비');
 
   return (
@@ -30,7 +30,7 @@ function HeaderExample({ givenName = '민수' }: { givenName?: string | null }) 
           </button>
         </HeaderNavItem>
       ))}
-      profile={<HeaderProfileButton givenName={givenName} onClick={onProfileClick} />}
+      profile={<HeaderProfileButton fullName={fullName} onClick={onProfileClick} />}
     />
   );
 }
@@ -43,15 +43,15 @@ export const Default: Story = {
       'aria-current',
       'page',
     );
-    await userEvent.click(canvas.getByRole('button', { name: 'AI면접' }));
-    await expect(canvas.getByRole('button', { name: 'AI면접' })).toHaveAttribute(
+    await userEvent.click(canvas.getByRole('button', { name: 'AI 면접' }));
+    await expect(canvas.getByRole('button', { name: 'AI 면접' })).toHaveAttribute(
       'aria-current',
       'page',
     );
     await expect(canvas.getByRole('button', { name: '지원 준비' })).not.toHaveAttribute(
       'aria-current',
     );
-    await userEvent.click(canvas.getByRole('button', { name: '민수 프로필' }));
+    await userEvent.click(canvas.getByRole('button', { name: '김민수 프로필' }));
     await expect(onProfileClick).toHaveBeenCalled();
   },
 };
@@ -63,17 +63,19 @@ export const WithoutProfile: Story = {
 };
 
 export const MissingName: Story = {
-  render: () => <HeaderExample givenName={null} />,
+  render: () => <HeaderExample fullName={null} />,
 };
 
 export const SingleCharacterName: Story = {
-  render: () => <HeaderExample givenName="준" />,
+  render: () => <HeaderExample fullName="박준" />,
 };
 
 export const TwoCharacterLimit: Story = {
-  render: () => <HeaderExample givenName="하늘빛" />,
+  render: () => <HeaderExample fullName="김하늘빛" />,
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole('button', { name: '하늘 프로필' })).toBeVisible();
+    await expect(
+      within(canvasElement).getByRole('button', { name: '김하늘빛 프로필' }),
+    ).toBeVisible();
   },
 };
 

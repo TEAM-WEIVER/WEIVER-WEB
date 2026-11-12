@@ -59,5 +59,5 @@ export function ApplicantHeaderProfile({
     );
   }
 
-  return <HeaderProfileButton givenName={state.name} onClick={onClick} />;
+  return <HeaderProfileButton fullName={state.name} onClick={onClick} />;
 }
