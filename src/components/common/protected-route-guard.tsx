@@ -1,54 +1,47 @@
 'use client';
 
 import { type ReactNode, useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router';
 
 import { reissueAccessToken } from '@/lib/auth-api';
 import { getAccessToken, getAuthRole } from '@/lib/auth-token';
-import { type ProtectedArea, getRoleRedirectPath } from '@/lib/protected-routing';
+import { LOGIN_PATH } from '@/lib/auth-paths';
 
-interface ProtectedRouteGuardProps {
-  area: ProtectedArea;
-  children: ReactNode;
+async function hasApplicantSession() {
+  if (getAuthRole() !== 'APPLICANT') return false;
+
+  if (!getAccessToken()) {
+    try {
+      await reissueAccessToken();
+    } catch {
+      return false;
+    }
+  }
+
+  return getAuthRole() === 'APPLICANT' && Boolean(getAccessToken());
 }
 
-export function ProtectedRouteGuard({ area, children }: ProtectedRouteGuardProps) {
-  const pathname = usePathname();
-  const router = useRouter();
+export function ProtectedRouteGuard({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const [isAllowed, setIsAllowed] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    async function guardRoute() {
-      setIsAllowed(false);
+    void hasApplicantSession().then((allowed) => {
+      if (!isMounted) return;
 
-      let role = getAuthRole();
-
-      if (!getAccessToken() || !role) {
-        try {
-          await reissueAccessToken();
-          role = getAuthRole();
-        } catch {
-          role = null;
-        }
+      if (allowed) {
+        setIsAllowed(true);
+      } else {
+        navigate(LOGIN_PATH, { replace: true });
       }
-
-      const roleRedirectPath = getRoleRedirectPath(pathname, role);
-      if (roleRedirectPath) {
-        router.replace(roleRedirectPath);
-        return;
-      }
-
-      if (isMounted) setIsAllowed(true);
-    }
-
-    void guardRoute();
+    });
 
     return () => {
       isMounted = false;
     };
-  }, [area, pathname, router]);
+  }, [navigate]);
 
   if (!isAllowed) return null;
 

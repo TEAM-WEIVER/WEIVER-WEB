@@ -1,61 +1,75 @@
-// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
-import storybook from 'eslint-plugin-storybook';
-import { defineConfig, globalIgnores } from 'eslint/config';
-import nextVitals from 'eslint-config-next/core-web-vitals';
-import nextTs from 'eslint-config-next/typescript';
-import unusedImports from 'eslint-plugin-unused-imports';
+import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+import storybook from 'eslint-plugin-storybook';
+import unusedImports from 'eslint-plugin-unused-imports';
+import { defineConfig, globalIgnores } from 'eslint/config';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
+export default defineConfig([
   globalIgnores([
-    // Default ignores of eslint-config-next:
     '.next/**',
+    'dist/**',
     'out/**',
     'build/**',
     'coverage/**',
+    'storybook-static/**',
     'next-env.d.ts',
   ]),
-  ...storybook.configs['flat/recommended'],
-
-  // Prettier 충돌 방지 (반드시 마지막에 위치)
-  prettier,
-
-  // 커스텀 규칙
+  js.configs.recommended,
+  tseslint.configs.recommended,
   {
-    plugins: {
-      'unused-imports': unusedImports,
-    },
+    files: ['**/*.{js,jsx,mjs,ts,tsx,mts}'],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+    plugins: { 'unused-imports': unusedImports },
     rules: {
-      // 사용하지 않는 import 자동 제거
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
       'unused-imports/no-unused-imports': 'error',
       'unused-imports/no-unused-vars': [
         'warn',
         {
-          vars: 'all',
           varsIgnorePattern: '^_',
           args: 'after-used',
-          argsIgnorePattern: '^_',
-        },
-      ],
-
-      // 사용하지 않는 변수 (_로 시작하는 변수 무시)
-      '@typescript-eslint/no-unused-vars': [
-        'warn',
-        {
-          varsIgnorePattern: '^_',
           argsIgnorePattern: '^_',
           destructuredArrayIgnorePattern: '^_',
         },
       ],
-
-      // React 관련
+    },
+  },
+  {
+    files: ['**/*.{jsx,tsx}'],
+    extends: [
+      react.configs.flat.recommended,
+      react.configs.flat['jsx-runtime'],
+      jsxA11y.flatConfigs.recommended,
+    ],
+    settings: { react: { version: 'detect' } },
+    rules: {
+      'react/prop-types': 'off',
       'react/self-closing-comp': 'error',
       'react/jsx-curly-brace-presence': ['error', { props: 'never', children: 'never' }],
     },
   },
+  {
+    // The shadcn addon click is a pointer shortcut to the already focusable input.
+    files: ['src/components/ui/input-group.tsx'],
+    rules: {
+      'jsx-a11y/click-events-have-key-events': 'off',
+      'jsx-a11y/no-noninteractive-element-interactions': 'off',
+    },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+  storybook.configs['flat/recommended'],
+  prettier,
 ]);
-
-export default eslintConfig;

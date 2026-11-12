@@ -2,9 +2,9 @@
 
 ## Project Structure & Module Organization
 
-This is a Next.js App Router project using TypeScript, React 19, Tailwind CSS, Zustand, React Hook Form, and Zod.
+This is a Vite project with React Router using TypeScript, React 19, Tailwind CSS, Zustand, React Hook Form, and Zod.
 
-- `src/app`: route segments and pages, including `login`, `signup/[type]`, `onboarding`, and `corporate`.
+- `src/pages`: React pages for login, signup, and the member home. Register routes in `src/main.tsx` and direct-entry rewrites in `vercel.json`.
 - `src/components`: shared UI and common components. Put reusable primitives in `components/ui` and layout/shared pieces in `components/common`.
 - `src/hooks`: reusable client hooks such as timers or form helpers.
 - `src/lib`: route flow utilities and shared pure functions.
@@ -17,9 +17,9 @@ This is a Next.js App Router project using TypeScript, React 19, Tailwind CSS, Z
 
 Use `pnpm` because the repository includes `pnpm-lock.yaml`.
 
-- `pnpm dev`: start the local Next.js dev server.
+- `pnpm dev`: start the local Vite dev server.
 - `pnpm build`: create a production build.
-- `pnpm start`: run the built app.
+- `pnpm start`: preview the production build locally.
 - `pnpm lint:check`: run ESLint without writing changes.
 - `pnpm lint`: run ESLint with autofix.
 - `pnpm format:check`: check Prettier formatting.
@@ -29,9 +29,9 @@ Use `pnpm` because the repository includes `pnpm-lock.yaml`.
 
 ## Coding Style & Naming Conventions
 
-Prettier uses 2 spaces, semicolons, single quotes, trailing commas, `printWidth: 100`, and Tailwind class sorting. ESLint extends Next core web vitals, TypeScript, Storybook rules, and removes unused imports.
+Prettier uses 2 spaces, semicolons, single quotes, trailing commas, `printWidth: 100`, and Tailwind class sorting. ESLint uses TypeScript, React, JSX accessibility, and Storybook rules, and removes unused imports.
 
-Use `PascalCase` for React components, `camelCase` for variables/functions, and kebab-case filenames for non-component utilities where practical. Keep route folders aligned with Next conventions, for example `src/app/signup/[type]/account/page.tsx`.
+Use `PascalCase` for React components, `camelCase` for variables/functions, and kebab-case filenames for non-component utilities where practical. Keep page files grouped by route, for example `src/pages/signup/account-info/page.tsx`.
 
 ## Testing Guidelines
 

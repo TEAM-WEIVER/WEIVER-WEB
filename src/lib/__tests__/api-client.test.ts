@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('apiRequest', () => {
   beforeEach(() => {
-    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.weiverai.com');
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.weiverai.com');
   });
 
   afterEach(() => {
@@ -30,6 +30,23 @@ describe('apiRequest', () => {
       expect.objectContaining({
         method: 'GET',
       }),
+    );
+  });
+
+  it('가입 완료 요청의 쿠키 제외 옵션을 fetch에 전달한다', async () => {
+    vi.resetModules();
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const { apiRequest } = await import('../api-client');
+
+    await apiRequest('/api/auth/applicants/signup/agreements', {
+      method: 'POST',
+      credentials: 'omit',
+    });
+
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      'https://api.weiverai.com/api/auth/applicants/signup/agreements',
+      expect.objectContaining({ method: 'POST', credentials: 'omit' }),
     );
   });
 
@@ -120,7 +137,6 @@ describe('apiRequest', () => {
     '/api/auth/applicants/login',
     '/api/auth/applicants/email/verify',
     '/api/auth/applicants/email/send',
-    '/api/auth/companies/login',
   ])('공개 auth 요청에는 CSRF 토큰을 요청하지 않는다: %s', async (path) => {
     vi.resetModules();
     const fetchMock = vi.fn().mockResolvedValue(

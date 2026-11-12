@@ -7,15 +7,9 @@ import { Button } from '@/components/ui/button';
 
 import { LogoutButton } from '../logout-button';
 
-const navigationMock = vi.hoisted(() => ({
-  replace: vi.fn(),
-}));
+const navigationMock = vi.hoisted(() => ({ navigate: vi.fn() }));
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    replace: navigationMock.replace,
-  }),
-}));
+vi.mock('react-router', () => ({ useNavigate: () => navigationMock.navigate }));
 
 vi.mock('@/lib/auth-api', () => ({
   logout: vi.fn(),
@@ -43,7 +37,7 @@ describe('LogoutButton', () => {
     await waitFor(() => {
       expect(logout).toHaveBeenCalled();
     });
-    expect(navigationMock.replace).toHaveBeenCalledWith('/login');
+    expect(navigationMock.navigate).toHaveBeenCalledWith('/login', { replace: true });
   });
 
   it('로그아웃 API가 실패해도 로그인 페이지로 이동한다', async () => {
@@ -55,7 +49,7 @@ describe('LogoutButton', () => {
     await user.click(screen.getByRole('button', { name: '로그아웃' }));
 
     await waitFor(() => {
-      expect(navigationMock.replace).toHaveBeenCalledWith('/login');
+      expect(navigationMock.navigate).toHaveBeenCalledWith('/login', { replace: true });
     });
   });
 

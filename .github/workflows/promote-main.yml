@@ -100,7 +100,7 @@ jobs:
 
   e2e:
     name: e2e
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     needs: prepare
     env:
@@ -131,39 +131,14 @@ jobs:
         run: pnpm approve-builds --yes || true
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        # The hosted runner already provides Chromium system libraries.
+        run: pnpm exec playwright install chromium --only-shell
 
       - name: Build
-        env:
-          NEXT_PUBLIC_E2E_TEST: 'true'
         run: pnpm build
 
       - name: Run E2E tests
-        run: |
-          export NEXT_PUBLIC_E2E_TEST=true
-          export E2E_EXTERNAL_SERVER=true
-          ./node_modules/.bin/next start --hostname 127.0.0.1 --port 3000 > "$RUNNER_TEMP/next-e2e.log" 2>&1 &
-          server_pid=$!
-          cleanup() {
-            kill "$server_pid" 2>/dev/null || true
-            wait "$server_pid" 2>/dev/null || true
-          }
-          trap cleanup EXIT INT TERM
-          for attempt in {1..30}; do
-            if curl --fail --silent --show-error http://127.0.0.1:3000/login > /dev/null; then
-              break
-            fi
-            sleep 1
-          done
-          if ! curl --fail --silent http://127.0.0.1:3000/login > /dev/null; then
-            cat "$RUNNER_TEMP/next-e2e.log"
-            exit 1
-          fi
-          if find e2e -name "*.spec.ts" | grep -q .; then
-            pnpm test:e2e --workers=2
-          else
-            echo "E2E 테스트 파일 없음 — 건너뜀"
-          fi
+        run: pnpm test:e2e
 
       - name: Report required check
         if: always()
