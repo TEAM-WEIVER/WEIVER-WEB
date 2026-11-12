@@ -15,10 +15,9 @@ import {
 } from '../use-answer-audio-upload';
 
 const routerReplace = vi.fn();
-const router = { replace: routerReplace, push: vi.fn() };
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => router,
+vi.mock('react-router', () => ({
+  useNavigate: () => routerReplace,
 }));
 
 vi.mock('@/lib/interview-api', () => ({
@@ -397,7 +396,7 @@ describe('useAnswerAudioUpload — 오류 처리', () => {
     ]);
     expect(disconnect).toHaveBeenCalledTimes(1);
     expect(useInterviewStore.getState().status).toBe('IDLE');
-    expect(routerReplace).toHaveBeenCalledWith('/login');
+    expect(routerReplace).toHaveBeenCalledWith('/login', { replace: true });
   });
 });
 

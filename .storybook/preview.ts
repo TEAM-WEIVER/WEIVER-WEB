@@ -1,7 +1,7 @@
-import type { Preview } from '@storybook/nextjs-vite';
+import type { Preview } from '@storybook/react-vite';
 
 import 'pretendard/dist/web/variable/pretendardvariable.css';
-import '../src/app/globals.css';
+import '../src/styles/globals.css';
 
 const preview: Preview = {
   parameters: {

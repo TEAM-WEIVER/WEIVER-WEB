@@ -29,11 +29,6 @@ interface VerifyApplicantEmailData {
   verificationToken: string;
 }
 
-interface CompleteApplicantSignupData {
-  role: 'APPLICANT';
-  accessToken: string;
-}
-
 interface CompleteSignupPayload {
   account: SignupAccount;
   terms: Record<string, boolean>;
@@ -97,15 +92,9 @@ function buildCompleteApplicantSignupRequest(
 
 export async function completeSignup(payload: CompleteSignupPayload) {
   const request = buildCompleteApplicantSignupRequest(payload);
-  const response = await fetch('/api/auth/signup/complete', {
+  await apiRequest('/api/auth/applicants/signup/agreements', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
+    body: request,
+    credentials: 'omit',
   });
-
-  if (!response.ok) {
-    throw new Error('회원가입 처리에 실패했습니다.');
-  }
-
-  return response.json() as Promise<ApiResponse<CompleteApplicantSignupData>>;
 }
