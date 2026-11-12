@@ -2,13 +2,13 @@ name: Chromatic
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# Let an upload finish before publishing a newer main commit.
+# Let an upload finish before publishing a newer develop commit.
 # Cancelling a runner does not necessarily cancel Chromatic's remote publication.
 concurrency:
   group: storybook-deploy-${{ github.ref }}
@@ -49,7 +49,7 @@ jobs:
             --storybook-build-dir storybook-static \
             --branch-name "$GITHUB_REF_NAME" \
             --exit-once-uploaded \
-            --auto-accept-changes main \
+            --auto-accept-changes develop \
             --diagnostics-file "$RUNNER_TEMP/chromatic-diagnostics.json" \
             --no-interactive
 
