@@ -47,6 +47,7 @@ jobs:
         run: |
           pnpm exec chromatic \
             --storybook-build-dir storybook-static \
+            --branch-name "$GITHUB_REF_NAME" \
             --exit-once-uploaded \
             --auto-accept-changes main \
             --diagnostics-file "$RUNNER_TEMP/chromatic-diagnostics.json" \
