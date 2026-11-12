@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { BriefcaseBusiness, Building2, Info, Link } from 'lucide-react';
@@ -17,6 +17,7 @@ export type JobPostingFormProps = {
 export function JobPostingForm({ initialValues, onSubmit }: JobPostingFormProps) {
   const id = useId();
   const submitting = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
   const {
     register,
     handleSubmit,
@@ -37,6 +38,7 @@ export function JobPostingForm({ initialValues, onSubmit }: JobPostingFormProps)
   const submit = handleSubmit(async (values) => {
     if (submitting.current) return;
     submitting.current = true;
+    setIsSaving(true);
     clearErrors('root');
     try {
       await onSubmit(values);
@@ -46,12 +48,13 @@ export function JobPostingForm({ initialValues, onSubmit }: JobPostingFormProps)
       });
     } finally {
       submitting.current = false;
+      setIsSaving(false);
     }
   });
 
   return (
     <form noValidate onSubmit={submit} aria-busy={isSubmitting} className="space-y-6">
-      <fieldset disabled={isSubmitting} className="min-w-0 space-y-6">
+      <fieldset disabled={isSaving} className="min-w-0 space-y-6">
         <legend className="sr-only">지원 공고 정보</legend>
         <section
           aria-labelledby={`${id}-basic`}
@@ -139,15 +142,23 @@ export function JobPostingForm({ initialValues, onSubmit }: JobPostingFormProps)
             id={`${id}-content-heading`}
             className="text-body2 text-text-primary border-border-light mb-5 border-b pb-4"
           >
-            <label htmlFor={`${id}-content`}>채용 공고 내용</label>
+            <label htmlFor={`${id}-content`}>채용 공고 내용 *</label>
           </h2>
           <Textarea
             {...register('content')}
             id={`${id}-content`}
+            aria-required="true"
+            aria-invalid={Boolean(errors.content)}
+            aria-describedby={errors.content ? `${id}-content-error` : undefined}
             variant="default"
             placeholder="채용 공고 내용 전체를 붙여넣어주세요."
             className="min-h-[300px] resize-y px-3 py-3 text-[13px] leading-[18px]"
           />
+          {errors.content ? (
+            <p id={`${id}-content-error`} className="text-caption text-error mt-2">
+              {errors.content.message}
+            </p>
+          ) : null}
         </section>
       </fieldset>
 

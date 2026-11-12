@@ -15,7 +15,7 @@ export const jobPostingSchema = z.object({
         return false;
       }
     }, 'http:// 또는 https://로 시작하는 올바른 URL을 입력해주세요.'),
-  content: z.string().trim(),
+  content: z.string().trim().min(1, '채용 공고 내용을 입력해주세요.'),
 });
 
 export type JobPostingValues = z.infer<typeof jobPostingSchema>;

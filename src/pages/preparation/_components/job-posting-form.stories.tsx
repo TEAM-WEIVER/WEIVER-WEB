@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 
 import { JobPostingForm } from './job-posting-form';
 
@@ -42,6 +42,9 @@ export const Invalid: Story = {
     await expect(canvas.getByText('회사명을 입력해주세요.')).toBeVisible();
     await expect(canvas.getByText('포지션명을 입력해주세요.')).toBeVisible();
     await expect(
+      canvas.getByRole('textbox', { name: '채용 공고 내용 *' }),
+    ).toHaveAccessibleDescription('채용 공고 내용을 입력해주세요.');
+    await expect(
       canvas.getByText('http:// 또는 https://로 시작하는 올바른 URL을 입력해주세요.'),
     ).toBeVisible();
     await expect(args.onSubmit).not.toHaveBeenCalled();
@@ -54,7 +57,7 @@ export const Submit: Story = {
     await userEvent.type(canvas.getByRole('textbox', { name: '회사명 *' }), '  카카오뱅크  ');
     await userEvent.type(canvas.getByRole('textbox', { name: '포지션명 *' }), 'AI 서비스 기획');
     await userEvent.type(
-      canvas.getByRole('textbox', { name: '채용 공고 내용' }),
+      canvas.getByRole('textbox', { name: '채용 공고 내용 *' }),
       'AI 서비스 기획 및 운영',
     );
     await userEvent.click(canvas.getByRole('button', { name: '공고 등록하기' }));
@@ -64,6 +67,18 @@ export const Submit: Story = {
       sourceUrl: '',
       content: 'AI 서비스 기획 및 운영',
     });
+  },
+};
+
+export const WhitespaceContent: Story = {
+  args: { initialValues: { ...initialValues, content: '   \n   ' } },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: '공고 등록하기' }));
+    const content = canvas.getByRole('textbox', { name: '채용 공고 내용 *' });
+    await expect(content).toHaveAttribute('aria-invalid', 'true');
+    await waitFor(() => expect(content).toHaveFocus());
+    await expect(args.onSubmit).not.toHaveBeenCalled();
   },
 };
 
