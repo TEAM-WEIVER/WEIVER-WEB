@@ -27,37 +27,33 @@ export function EmailVerificationSection({
 
   return (
     <div className="flex flex-col gap-3.5">
-      <FormField
-        label="이메일"
-        error={emailError ? <span id="email-error">{emailError}</span> : undefined}
-      >
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input
-            id="email"
-            type="email"
-            {...emailInputProps}
-            placeholder="personal@gmail.com"
-            disabled={verification.isEmailVerified}
-            aria-label="이메일"
-            aria-describedby={emailError ? 'email-error' : undefined}
-            aria-invalid={!!emailError}
-            className="flex-1"
-          />
-          <Button
-            type="button"
-            onClick={() => void verification.sendVerification()}
-            disabled={
-              verification.isEmailVerified ||
-              !watchedEmail ||
-              !!emailError ||
-              verification.isSending ||
-              timer.isRunning
-            }
-            className="w-full rounded-lg sm:w-24"
-          >
-            {verification.isSending ? '전송 중' : '인증번호 전송'}
-          </Button>
-        </div>
+      <FormField id="email" label="이메일" error={emailError}>
+        {(field) => (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              type="email"
+              {...emailInputProps}
+              {...field}
+              placeholder="personal@gmail.com"
+              disabled={verification.isEmailVerified}
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              onClick={() => void verification.sendVerification()}
+              disabled={
+                verification.isEmailVerified ||
+                !watchedEmail ||
+                !!emailError ||
+                verification.isSending ||
+                timer.isRunning
+              }
+              className="w-full rounded-lg sm:w-24"
+            >
+              {verification.isSending ? '전송 중' : '인증번호 전송'}
+            </Button>
+          </div>
+        )}
       </FormField>
       {verification.sendError ? (
         <p className="text-caption text-error">{verification.sendError}</p>
@@ -66,7 +62,9 @@ export function EmailVerificationSection({
       {verification.isCodeSent ? (
         <div className="flex flex-col gap-2">
           <div className="flex items-end justify-between gap-4">
-            <Label className="text-text-primary">인증 코드를 입력해주세요.</Label>
+            <Label htmlFor="email-verification-code" className="text-text-primary">
+              인증 코드를 입력해주세요.
+            </Label>
             <span
               role="timer"
               aria-live="polite"
@@ -81,6 +79,7 @@ export function EmailVerificationSection({
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
+              id="email-verification-code"
               type="text"
               inputMode="numeric"
               maxLength={6}
@@ -89,6 +88,8 @@ export function EmailVerificationSection({
               placeholder="숫자 6자리"
               disabled={verification.isEmailVerified || timer.isExpired}
               aria-label="이메일 인증번호"
+              aria-invalid={Boolean(verification.verifyError)}
+              aria-describedby={verification.verifyError ? 'verification-error' : undefined}
               className="flex-1"
             />
             {!verification.isEmailVerified ? (
@@ -108,7 +109,9 @@ export function EmailVerificationSection({
             ) : null}
           </div>
           {verification.verifyError ? (
-            <p className="text-caption text-error">{verification.verifyError}</p>
+            <p id="verification-error" className="text-caption text-error">
+              {verification.verifyError}
+            </p>
           ) : null}
           {verification.isEmailVerified ? (
             <p className="text-caption text-success">인증 완료</p>
