@@ -73,10 +73,10 @@
   --primary-900: #1e293b;
 
   /* 시맨틱 */
-  --success: #2dd4bf;
+  --success: #0f766e;
   --info: #60a5fa;
   --warning: #fbbf24;
-  --error: #ef4444;
+  --error: #dc2626;
 
   /* 배경 */
   --bg-primary: #fcfcfc;

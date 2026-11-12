@@ -68,7 +68,7 @@ export function Toast({ toast }: ToastProps) {
       role={role}
       aria-live={ariaLive}
       className={cn(
-        'relative flex w-[360px] overflow-hidden bg-[#fcfcfc]',
+        'relative flex w-full max-w-[360px] overflow-hidden bg-[#fcfcfc]',
         'drop-shadow-[0px_8px_12px_rgba(149,157,165,0.2)]',
       )}
     >
@@ -79,7 +79,7 @@ export function Toast({ toast }: ToastProps) {
       />
 
       {/* 본문 */}
-      <div className="flex flex-1 items-center gap-3 rounded-tr-[10px] rounded-br-[10px] p-[14px]">
+      <div className="flex min-w-0 flex-1 items-center gap-3 rounded-tr-[10px] rounded-br-[10px] p-[14px] pr-10">
         {/* 아이콘 컨테이너 40×40px */}
         <div
           className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[4px]"
@@ -89,8 +89,8 @@ export function Toast({ toast }: ToastProps) {
         </div>
 
         {/* 텍스트 */}
-        <div className="flex flex-1 flex-col justify-center gap-0.5">
-          <p className="w-[220px] text-[14px] leading-5 font-medium tracking-[-0.28px] text-[#0f172a]">
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 [overflow-wrap:anywhere]">
+          <p className="text-[14px] leading-5 font-medium tracking-[-0.28px] text-[#0f172a]">
             {title}
           </p>
           {description && (
