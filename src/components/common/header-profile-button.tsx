@@ -3,21 +3,21 @@ import { ChevronDown, UserRound } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { getHeaderGivenName } from '@/lib/header-profile-name';
 
 type HeaderProfileButtonProps = Omit<ComponentProps<'button'>, 'children'> & {
-  /** Given name only, without the family name: 김민수 → 민수. */
-  givenName?: string | null;
+  /** API에서 받은 전체 성명. 원형에만 축약한 이름을 표시한다. */
+  fullName?: string | null;
 };
 
 export function HeaderProfileButton({
-  givenName,
+  fullName,
   className,
   'aria-label': ariaLabel,
   ...props
 }: HeaderProfileButtonProps) {
-  const name = Array.from(givenName?.trim() ?? '')
-    .slice(0, 2)
-    .join('');
+  const name = fullName?.trim() ?? '';
+  const avatarName = getHeaderGivenName(name);
 
   return (
     <Button
@@ -31,7 +31,7 @@ export function HeaderProfileButton({
         aria-hidden="true"
         className="border-border-default bg-bg-tertiary text-caption flex size-8 shrink-0 items-center justify-center rounded-full border"
       >
-        {name || <UserRound className="size-4" />}
+        {avatarName || <UserRound className="size-4" />}
       </span>
       <span>{name || '내 계정'}</span>
       <ChevronDown aria-hidden="true" className="text-text-tertiary size-4" />

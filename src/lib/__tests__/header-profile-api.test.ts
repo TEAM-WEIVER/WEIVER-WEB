@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { apiRequest } from '../api-client';
-import { getHeaderGivenName, getHeaderProfileName } from '../header-profile-api';
+import { getHeaderProfileName } from '../header-profile-api';
+import { getHeaderGivenName } from '../header-profile-name';
 
 vi.mock('../api-client', () => ({ apiRequest: vi.fn() }));
 
@@ -18,7 +19,7 @@ describe('헤더 이름', () => {
 
   it('회원정보 API에서 이름을 가져온다', async () => {
     vi.mocked(apiRequest).mockResolvedValue({ data: { ApplicantDTO: { name: '김민수' } } });
-    await expect(getHeaderProfileName()).resolves.toBe('민수');
+    await expect(getHeaderProfileName()).resolves.toBe('김민수');
     expect(apiRequest).toHaveBeenCalledWith('/api/applicants');
   });
 
