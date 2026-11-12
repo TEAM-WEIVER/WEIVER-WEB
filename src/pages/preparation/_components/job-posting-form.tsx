@@ -10,11 +10,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { jobPostingSchema, type JobPostingValues } from '@/schemas/job-posting';
 
 export type JobPostingFormProps = {
+  mode?: 'create' | 'edit';
+  onCancel?: () => void;
   initialValues?: Partial<JobPostingValues>;
   onSubmit: (values: JobPostingValues) => Promise<void>;
 };
 
-export function JobPostingForm({ initialValues, onSubmit }: JobPostingFormProps) {
+export function JobPostingForm({
+  initialValues,
+  onSubmit,
+  mode = 'create',
+  onCancel,
+}: JobPostingFormProps) {
+  const isEdit = mode === 'edit';
   const id = useId();
   const submitting = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,7 +52,9 @@ export function JobPostingForm({ initialValues, onSubmit }: JobPostingFormProps)
       await onSubmit(values);
     } catch {
       setError('root', {
-        message: '공고를 등록하지 못했어요. 입력한 내용을 확인하고 다시 시도해주세요.',
+        message: isEdit
+          ? '변경사항을 저장하지 못했어요. 입력한 내용을 확인하고 다시 시도해주세요.'
+          : '공고를 등록하지 못했어요. 입력한 내용을 확인하고 다시 시도해주세요.',
       });
     } finally {
       submitting.current = false;
@@ -170,11 +180,26 @@ export function JobPostingForm({ initialValues, onSubmit }: JobPostingFormProps)
       <div className="border-border-light flex flex-wrap items-center justify-between gap-4 border-t pt-5">
         <p className="text-caption text-text-tertiary flex items-center gap-2">
           <Info aria-hidden="true" className="size-3.5 shrink-0" />
-          입력한 내용을 확인한 후 공고를 등록해주세요.
+          {isEdit
+            ? '변경한 내용을 확인한 후 저장해주세요.'
+            : '입력한 내용을 확인한 후 공고를 등록해주세요.'}
         </p>
-        <Button type="submit" isLoading={isSubmitting} className="h-9 px-3 text-sm font-medium">
-          공고 등록하기
-        </Button>
+        <div className="flex gap-2">
+          {onCancel ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSubmitting}
+              onClick={onCancel}
+              className="h-9 px-3 text-sm"
+            >
+              취소
+            </Button>
+          ) : null}
+          <Button type="submit" isLoading={isSubmitting} className="h-9 px-3 text-sm font-medium">
+            {isEdit ? '변경사항 저장' : '공고 등록하기'}
+          </Button>
+        </div>
       </div>
     </form>
   );

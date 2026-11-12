@@ -85,6 +85,9 @@ export const NoSourceOrHistory: Story = {
     },
   },
 };
+export const InterviewReady: Story = {
+  args: { detail: { ...exampleDetail, canStartInterview: true } },
+};
 export const Unconnected: Story = {
   args: {
     onOpenDocument: undefined,

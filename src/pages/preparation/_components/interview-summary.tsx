@@ -1,6 +1,7 @@
 import { useId } from 'react';
-import { Lightbulb, PlayCircle } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 
+import { InterviewStartButton } from '@/components/common/interview-start-button';
 import { SectionHeading } from '@/components/common/section-heading';
 import { Button } from '@/components/ui/button';
 
@@ -34,18 +35,11 @@ export function InterviewSummary({
           title="AI 모의면접"
           description="등록한 채용공고와 지원서류를 바탕으로 맞춤형 모의면접을 진행해보세요."
         />
-        {/* TODO: AI 면접 시작 버튼의 디자인을 확정·반영하고 전용 Storybook 스토리를 추가한다. */}
-        <Button
-          type="button"
-          variant="outline"
+        <InterviewStartButton
           disabled={disabled}
           aria-describedby={reason ? reasonId : undefined}
           onClick={onStart}
-          className="h-9 gap-1 px-3 text-xs font-normal"
-        >
-          <PlayCircle aria-hidden="true" />
-          AI 면접 시작
-        </Button>
+        />
       </div>
       {reason ? (
         <p id={reasonId} className="text-body3 text-text-tertiary mb-3">
