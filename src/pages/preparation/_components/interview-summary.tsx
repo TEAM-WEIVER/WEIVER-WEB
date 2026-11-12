@@ -34,6 +34,7 @@ export function InterviewSummary({
           title="AI 모의면접"
           description="등록한 채용공고와 지원서류를 바탕으로 맞춤형 모의면접을 진행해보세요."
         />
+        {/* TODO: AI 면접 시작 버튼의 디자인을 확정·반영하고 전용 Storybook 스토리를 추가한다. */}
         <Button
           type="button"
           variant="outline"
