@@ -1,0 +1,23 @@
+name: Check E2E
+description: Build and test the checked-out commit using Chromium on Ubuntu 24.04.
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/setup-ci
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-ubuntu-24.04-${{ hashFiles('pnpm-lock.yaml') }}
+    - name: Install Playwright browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      shell: bash
+      # The hosted runner already provides Chromium system libraries.
+      run: pnpm exec playwright install chromium --only-shell
+    - name: Build
+      shell: bash
+      run: pnpm build
+    - name: Run E2E tests
+      shell: bash
+      run: pnpm test:e2e
