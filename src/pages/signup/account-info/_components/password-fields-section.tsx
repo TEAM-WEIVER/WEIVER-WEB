@@ -26,7 +26,9 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
     <div className="flex flex-col gap-3.5">
       <div className="flex flex-col gap-2">
         <div className="flex flex-col gap-2">
-          <Label className="text-text-primary">비밀번호를 입력해주세요.</Label>
+          <Label htmlFor="password" className="text-text-primary">
+            비밀번호를 입력해주세요.
+          </Label>
           <div className="relative">
             <Input
               id="password"
@@ -34,6 +36,8 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
               {...register('password')}
               placeholder="영문, 숫자, 특수문자 조합 8-64자"
               aria-label="비밀번호"
+              aria-invalid={Boolean(passwordErrorMessage)}
+              aria-describedby={passwordErrorMessage ? 'password-error' : undefined}
               className="pr-14"
             />
             <button
@@ -48,11 +52,13 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
           </div>
         </div>
         <PasswordRules password={password} />
-        <FieldError>{passwordErrorMessage}</FieldError>
+        <FieldError id="password-error">{passwordErrorMessage}</FieldError>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-text-primary">비밀번호를 확인해주세요.</Label>
+        <Label htmlFor="passwordConfirm" className="text-text-primary">
+          비밀번호를 확인해주세요.
+        </Label>
         <div className="relative">
           <Input
             id="passwordConfirm"
@@ -60,6 +66,8 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
             {...register('passwordConfirm')}
             placeholder="위에서 입력한 비밀번호를 입력해주세요."
             aria-label="비밀번호 확인"
+            aria-invalid={Boolean(errors.passwordConfirm)}
+            aria-describedby={errors.passwordConfirm ? 'password-confirm-error' : undefined}
             className="pr-14"
           />
           <button
@@ -74,7 +82,7 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
             {showPasswordConfirm ? <EyeOff size={22} /> : <Eye size={22} />}
           </button>
         </div>
-        <FieldError>{errors.passwordConfirm?.message}</FieldError>
+        <FieldError id="password-confirm-error">{errors.passwordConfirm?.message}</FieldError>
       </div>
     </div>
   );

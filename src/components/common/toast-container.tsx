@@ -8,8 +8,9 @@ export function ToastContainer() {
 
   return (
     <div
+      role="region"
       data-testid="toast-container"
-      className="fixed right-6 bottom-6 z-[9999] flex flex-col gap-3"
+      className="fixed right-4 bottom-4 z-[9999] flex w-[calc(100%-2rem)] max-w-[360px] flex-col gap-3 sm:right-6 sm:bottom-6"
       aria-label="알림"
     >
       {toasts.map((toast) => (

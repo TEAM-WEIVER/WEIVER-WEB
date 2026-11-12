@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router';
 import { reissueAccessToken } from '@/lib/auth-api';
 import { getAccessToken, getAuthRole } from '@/lib/auth-token';
 import { LOGIN_PATH } from '@/lib/auth-paths';
+import { Spinner } from '@/components/ui/spinner';
 
 async function hasApplicantSession() {
   if (getAuthRole() !== 'APPLICANT') return false;
@@ -43,7 +44,13 @@ export function ProtectedRouteGuard({ children }: { children: ReactNode }) {
     };
   }, [navigate]);
 
-  if (!isAllowed) return null;
+  if (!isAllowed)
+    return (
+      <div className="text-text-secondary flex min-h-48 items-center justify-center gap-3">
+        <Spinner aria-label="로그인 상태 확인 중" />
+        <span>로그인 상태를 확인하고 있습니다.</span>
+      </div>
+    );
 
   return children;
 }

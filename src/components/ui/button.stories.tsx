@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Search, ArrowRight, ArrowLeft, Plus, Check } from 'lucide-react';
 import { Button } from './button';
+import { expect, fn, userEvent, within } from 'storybook/test';
 
 const meta: Meta<typeof Button> = {
   title: 'UI/Button',
@@ -125,13 +126,13 @@ export const IconOnly: Story = {
   name: '아이콘 버튼',
   render: () => (
     <div className="flex flex-wrap items-center gap-4">
-      <Button size="icon-xs">
+      <Button size="icon-xs" aria-label="검색 작은 버튼">
         <Search />
       </Button>
-      <Button size="icon-sm">
+      <Button size="icon-sm" aria-label="검색 중간 버튼">
         <Search />
       </Button>
-      <Button size="icon-md">
+      <Button size="icon-md" aria-label="검색 큰 버튼">
         <Search />
       </Button>
     </div>
@@ -142,5 +143,49 @@ export const Disabled: Story = {
   args: {
     children: 'Disabled',
     disabled: true,
+  },
+};
+
+export const Loading: Story = {
+  args: { children: '저장 중', isLoading: true, onClick: fn() },
+  play: async ({ canvasElement, args }) => {
+    const button = within(canvasElement).getByRole('button');
+    await expect(button).toBeDisabled();
+    await expect(button).toHaveAttribute('aria-busy', 'true');
+    await expect(args.onClick).not.toHaveBeenCalled();
+  },
+};
+export const AsLink: Story = {
+  render: () => (
+    <Button asChild>
+      <a href="/home">회원 홈</a>
+    </Button>
+  ),
+};
+export const KeyboardActivation: Story = {
+  args: { children: '확인', onClick: fn() },
+  play: async ({ canvasElement, args }) => {
+    const button = within(canvasElement).getByRole('button');
+    button.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const ResponsiveWidth: Story = {
+  render: () => (
+    <div style={{ width: 280 }} className="flex flex-col gap-3">
+      <Button size="md" className="w-full">
+        전체 너비
+      </Button>
+      <Button size="sm" className="self-start">
+        내용에 맞춤
+      </Button>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const button of within(canvasElement).getAllByRole('button')) {
+      await expect(button.getBoundingClientRect().width).toBeLessThanOrEqual(280);
+    }
   },
 };
