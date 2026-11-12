@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 
-import { GlobalHeader, HeaderNavItem } from '@/components/common/global-header';
-import { HeaderProfileButton } from '@/components/common/header-profile-button';
+import { withPreparationHeader } from '../../../../.storybook/decorators/preparation-header';
 
 import PreparationListPage from './page';
 
@@ -19,21 +18,7 @@ const meta = {
     },
   },
   args: { onRegister: fn() },
-  decorators: [
-    (Story) => (
-      <>
-        <GlobalHeader
-          navigation={['홈', '지원 준비', 'AI 면접', '역량 리포트'].map((label) => (
-            <HeaderNavItem key={label} active={label === '지원 준비'} asChild>
-              <button type="button">{label}</button>
-            </HeaderNavItem>
-          ))}
-          profile={<HeaderProfileButton fullName="김민채" />}
-        />
-        <Story />
-      </>
-    ),
-  ],
+  decorators: [withPreparationHeader],
 } satisfies Meta<typeof PreparationListPage>;
 
 export default meta;

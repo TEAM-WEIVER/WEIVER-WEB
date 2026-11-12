@@ -31,6 +31,13 @@ export const PageTitle: Story = {
 };
 
 export const TitleOnly: Story = { args: { title: '자격증', description: undefined } };
+export const Compact: Story = {
+  args: {
+    title: '지원서류 준비 현황',
+    description: '이 공고에 사용할 지원서류를 확인하고 관리해보세요.',
+    size: 'sm',
+  },
+};
 export const Section: Story = {
   args: { as: 'h2', title: '수상', description: '수상 내역을 입력해주세요.' },
 };
