@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { apiRequest } from '../api-client';
-import { loginApplicant, loginCompany } from '../login-api';
+import { loginApplicant } from '../login-api';
 
 vi.mock('../api-client', () => ({
   apiRequest: vi.fn(),
@@ -14,7 +14,7 @@ describe('login-api', () => {
       code: 200,
       data: {
         accessToken: 'access-token',
-        role: 'COMPANY',
+        role: 'APPLICANT',
       },
       message: 'OK',
     });
@@ -22,21 +22,6 @@ describe('login-api', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('기업 로그인 요청을 서버 스펙에 맞게 보낸다', async () => {
-    await loginCompany({
-      id: 'weiver',
-      password: 'Password123!',
-    });
-
-    expect(apiRequest).toHaveBeenCalledWith('/api/auth/companies/login', {
-      method: 'POST',
-      body: {
-        loginId: 'weiver',
-        password: 'Password123!',
-      },
-    });
   });
 
   it('개인 로그인 요청을 서버 스펙에 맞게 보낸다', async () => {

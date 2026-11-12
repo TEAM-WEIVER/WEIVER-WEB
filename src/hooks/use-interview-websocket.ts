@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { Client, type IMessage, type IFrame } from '@stomp/stompjs';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router';
 
 import { useInterviewStore } from '@/store/interview-store';
 import type { InterviewMessage, QuestionReadyPayload } from '@/store/interview-store';
@@ -26,7 +26,7 @@ export function normalizeBrokerUrl(url: string | undefined): string {
   return value;
 }
 
-const BROKER_URL = normalizeBrokerUrl(process.env.NEXT_PUBLIC_WS_URL);
+const BROKER_URL = normalizeBrokerUrl(import.meta.env.VITE_WS_URL);
 
 const SUBSCRIBE_DEST = '/user/queue/interviews';
 const START_DEST = '/app/interviews/start';
@@ -42,7 +42,7 @@ const START_RESPONSE_TIMEOUT_MS = 15000;
 // ──────────────────────────────────────────────
 
 export function useInterviewWebSocket() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const {
     status,
     interviewSessionId,
@@ -305,7 +305,7 @@ export function useInterviewWebSocket() {
           void client.deactivate();
 
           if (isAuthError) {
-            router.replace('/login');
+            navigate('/login', { replace: true });
           }
         },
 
@@ -377,7 +377,7 @@ export function useInterviewWebSocket() {
       handleMessage,
       isActiveStatus,
       reactivateClient,
-      router,
+      navigate,
       setError,
       setStatus,
     ],

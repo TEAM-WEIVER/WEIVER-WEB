@@ -1,6 +1,6 @@
 # 로컬 HTTPS 개발 환경
 
-로컬에서 운영과 가까운 쿠키 동작을 확인하려면 dev proxy 대신 HTTPS 로컬 도메인으로 Next.js dev server를 실행한다.
+로컬에서 운영과 가까운 쿠키 동작을 확인하려면 dev proxy 대신 HTTPS 로컬 도메인으로 Vite 개발 서버를 실행한다.
 
 ## 전제
 
@@ -53,7 +53,7 @@ https://weiver.local.weiverai.com:3000
 HTTPS 로컬 도메인에서는 dev proxy를 사용하지 않고 백엔드 API를 직접 호출한다.
 
 ```text
-NEXT_PUBLIC_API_BASE_URL=https://api.weiverai.com
+VITE_API_BASE_URL=https://api.weiverai.com
 ```
 
 이 방식에서는 백엔드가 내려주는 `Domain=.weiverai.com`, `Secure`, `SameSite` 쿠키 정책을 프론트에서 가공하지 않는다.

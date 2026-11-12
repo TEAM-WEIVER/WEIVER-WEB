@@ -1,6 +1,7 @@
 import { getApplicantsAll, getSubmissionStatus } from './onboarding-api';
 import type { SyncStatus } from './onboarding-api';
-import type { OnboardingProgress } from './onboarding-flow';
+
+type OnboardingProgress = Record<'resume' | 'cover-letter' | 'portfolio', boolean>;
 
 export interface ApplicantDetail {
   photoUrl: string | null;

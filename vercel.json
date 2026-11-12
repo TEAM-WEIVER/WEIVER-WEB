@@ -1,0 +1,32 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "https://landing-origin.weiverai.com/"
+    },
+    {
+      "source": "/landing-assets/:path*",
+      "destination": "https://landing-origin.weiverai.com/landing-assets/:path*"
+    },
+    {
+      "source": "/login",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/signup/account-info",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/signup/agreements",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/home",
+      "destination": "/app.html"
+    }
+  ]
+}

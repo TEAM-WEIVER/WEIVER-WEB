@@ -7,8 +7,8 @@ import { normalizeBrokerUrl, useInterviewWebSocket } from '../use-interview-webs
 
 const routerReplace = vi.fn();
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: routerReplace, push: vi.fn() }),
+vi.mock('react-router', () => ({
+  useNavigate: () => routerReplace,
 }));
 
 interface FakeFrame {
@@ -429,7 +429,7 @@ describe('useInterviewWebSocket — STOMP ERROR', () => {
 
     stompError(client, frame);
 
-    expect(routerReplace).toHaveBeenCalledWith('/login');
+    expect(routerReplace).toHaveBeenCalledWith('/login', { replace: true });
   });
 
   it('ERROR 뒤 소켓 close는 ERROR를 덮어쓰지 않고 재연결하지 않는다', async () => {
