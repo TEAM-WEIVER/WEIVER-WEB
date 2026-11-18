@@ -1,10 +1,17 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
-import { ChevronDown, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 import { SectionHeading } from '@/components/common/section-heading';
 import { Button } from '@/components/ui/button';
-import { FormField, nativeSelectClass } from '@/components/ui/form-field';
+import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
@@ -37,7 +44,8 @@ function ResumeEntryForm<Name extends string>({
   onSave,
   onCancel,
 }: ResumeEntryFormProps<Name>) {
-  const headingId = useId();
+  const formId = useId();
+  const headingId = `${formId}-heading`;
   const [submitted, setSubmitted] = useState(false);
   const errors = submitted ? validateEntry(config.fields, values) : null;
 
@@ -47,8 +55,7 @@ function ResumeEntryForm<Name extends string>({
     const firstInvalid = config.fields.find(({ name }) => nextErrors[name]);
     if (firstInvalid) {
       setSubmitted(true);
-      const control = event.currentTarget.elements.namedItem(firstInvalid.name);
-      if (control instanceof HTMLElement) control.focus();
+      event.currentTarget.ownerDocument.getElementById(`${formId}-${firstInvalid.name}`)?.focus();
       return;
     }
 
@@ -83,6 +90,7 @@ function ResumeEntryForm<Name extends string>({
           return (
             <FormField
               key={field.name}
+              id={`${formId}-${field.name}`}
               label={
                 <>
                   {field.label}
@@ -95,29 +103,18 @@ function ResumeEntryForm<Name extends string>({
               {(accessibleProps) => {
                 if (field.options) {
                   return (
-                    <div className="relative">
-                      <select
-                        {...accessibleProps}
-                        {...fieldProps}
-                        onChange={(event) => onChange(field.name, event.currentTarget.value)}
-                        className={cn(
-                          nativeSelectClass,
-                          controlClassName,
-                          'aria-invalid:border-error pr-8',
-                        )}
-                      >
-                        <option value="" disabled>
-                          {field.placeholder}
-                        </option>
+                    <Select {...fieldProps} onValueChange={(value) => onChange(field.name, value)}>
+                      <SelectTrigger {...accessibleProps}>
+                        <SelectValue placeholder={field.placeholder} />
+                      </SelectTrigger>
+                      <SelectContent aria-label={field.label}>
                         {field.options.map((option) => (
-                          <option key={option}>{option}</option>
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
                         ))}
-                      </select>
-                      <ChevronDown
-                        aria-hidden="true"
-                        className="text-text-tertiary pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2"
-                      />
-                    </div>
+                      </SelectContent>
+                    </Select>
                   );
                 }
 

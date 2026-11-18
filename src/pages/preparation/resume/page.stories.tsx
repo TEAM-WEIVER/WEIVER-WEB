@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, within } from 'storybook/test';
+import { expect, fn, waitFor, within } from 'storybook/test';
 
 import { withPreparationHeader } from '../../../../.storybook/decorators/preparation-header';
 import type { ResumeDraft } from './_model/resume-editor';
@@ -86,6 +86,43 @@ export const WithEntries: Story = {
   args: { progress: 100, initialDraft: sampleDraft },
 };
 
+export const SelectKeyboard: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const form = within(canvas.getByRole('form', { name: '학력 정보 입력' }));
+    const trigger = form.getByRole('combobox', { name: '학력구분' });
+    const body = within(canvasElement.ownerDocument.body);
+
+    await expect(canvas.getAllByRole('combobox')).toHaveLength(5);
+    await expect(trigger).toHaveTextContent('학력구분 선택');
+    await expect(trigger).toBeRequired();
+    await userEvent.click(form.getByRole('button', { name: '저장' }));
+    await expect(trigger).toHaveFocus();
+    await expect(trigger).toHaveAttribute('aria-invalid', 'true');
+    await expect(trigger).toHaveAccessibleDescription('항목을 선택해주세요.');
+
+    await userEvent.keyboard('{ArrowDown}');
+    const listbox = await body.findByRole('listbox', { name: '학력구분' });
+    await waitFor(() =>
+      expect(within(listbox).getByRole('option', { name: '고등학교' })).toHaveFocus(),
+    );
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await waitFor(() => expect(trigger).toHaveFocus());
+    await expect(trigger).toHaveTextContent('대학교 (2,3년제)');
+    await expect(trigger).toHaveAttribute('aria-invalid', 'false');
+    await expect(trigger).not.toHaveAttribute('aria-describedby');
+
+    await userEvent.keyboard('{Enter}');
+    const reopenedList = within(await body.findByRole('listbox', { name: '학력구분' }));
+    await expect(reopenedList.getByRole('option', { name: '대학교 (2,3년제)' })).toHaveAttribute(
+      'data-state',
+      'checked',
+    );
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(trigger).toHaveFocus());
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  },
+};
+
 export const AddEditAndDelete: Story = {
   args: { initialDraft: { ...sampleDraft, certifications: [] } },
   play: async ({ canvas, userEvent }) => {
@@ -118,7 +155,15 @@ export const AddEditAndDelete: Story = {
 
 export const EmploymentStatus: Story = {
   args: { progress: 40, initialDraft: sampleDraft },
-  play: async ({ canvas, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body);
+
+    async function selectStatus(trigger: HTMLElement, status: string) {
+      await userEvent.click(trigger);
+      const listbox = within(await body.findByRole('listbox', { name: '재직상태' }));
+      await userEvent.click(listbox.getByRole('option', { name: status }));
+    }
+
     const section = within(canvas.getByRole('region', { name: '경력사항' }));
     await userEvent.click(section.getByRole('button', { name: '위버 수정' }));
     await userEvent.click(section.getByRole('button', { name: '스튜디오 모아 수정' }));
@@ -131,7 +176,7 @@ export const EmploymentStatus: Story = {
     const status = first.getByRole('combobox', { name: '재직상태' });
 
     await expect(endMonth).toHaveValue('2024.08');
-    await userEvent.selectOptions(status, '재직중');
+    await selectStatus(status, '재직중');
     await expect(endMonth).toBeDisabled();
     await expect(endMonth).not.toBeRequired();
     await expect(endMonth).toHaveValue('');
@@ -141,7 +186,7 @@ export const EmploymentStatus: Story = {
     await userEvent.tab();
     await expect(first.getByRole('textbox', { name: '담당업무' })).toHaveFocus();
 
-    await userEvent.selectOptions(status, '퇴사');
+    await selectStatus(status, '퇴사');
     await expect(endMonth).toBeEnabled();
     await expect(endMonth).toBeRequired();
     await userEvent.click(first.getByRole('button', { name: '저장' }));
@@ -149,7 +194,7 @@ export const EmploymentStatus: Story = {
     await expect(endMonth).toHaveAttribute('aria-invalid', 'true');
     await expect(first.getByText('필수 입력 항목입니다.')).toBeVisible();
 
-    await userEvent.selectOptions(status, '재직중');
+    await selectStatus(status, '재직중');
     await expect(endMonth).toHaveAttribute('aria-invalid', 'false');
     await expect(first.queryByText('필수 입력 항목입니다.')).not.toBeInTheDocument();
     await userEvent.click(first.getByRole('button', { name: '저장' }));
@@ -158,7 +203,7 @@ export const EmploymentStatus: Story = {
     await userEvent.click(section.getByRole('button', { name: '위버 수정' }));
     const [reopened] = section.getAllByRole('form', { name: '경력사항 정보 수정' });
     const reopenedForm = within(reopened);
-    await userEvent.selectOptions(reopenedForm.getByRole('combobox', { name: '재직상태' }), '퇴사');
+    await selectStatus(reopenedForm.getByRole('combobox', { name: '재직상태' }), '퇴사');
     await userEvent.type(reopenedForm.getByRole('textbox', { name: '퇴사년월' }), '2025.01');
     await userEvent.click(reopenedForm.getByRole('button', { name: '저장' }));
     await expect(section.getByText('2023.03 ~ 2025.01')).toBeVisible();
@@ -174,13 +219,17 @@ export const SaveDraftWithEdits: Story = {
       career: [{ ...sampleCareer, employmentStatus: '재직중' }, sampleDraft.career[1]],
     },
   },
-  play: async ({ canvas, args, userEvent }) => {
+  play: async ({ canvas, canvasElement, args, userEvent }) => {
     const career = within(canvas.getByRole('region', { name: '경력사항' }));
     await userEvent.click(career.getByRole('button', { name: '스튜디오 모아 수정' }));
     const careerForm = within(career.getByRole('form', { name: '경력사항 정보 수정' }));
     const company = careerForm.getByRole('textbox', { name: '회사명' });
     await userEvent.clear(company);
     await userEvent.type(company, '모아 스튜디오');
+    await userEvent.click(careerForm.getByRole('combobox', { name: '경력형태' }));
+    const body = within(canvasElement.ownerDocument.body);
+    const careerTypes = within(await body.findByRole('listbox', { name: '경력형태' }));
+    await userEvent.click(careerTypes.getByRole('option', { name: '프리랜서' }));
 
     await userEvent.click(canvas.getByRole('button', { name: '수상이력 추가' }));
     const award = within(canvas.getByRole('form', { name: '수상이력 정보 입력' }));
@@ -192,7 +241,7 @@ export const SaveDraftWithEdits: Story = {
       ...sampleDraft,
       career: [
         { ...sampleCareer, employmentStatus: '재직중', endMonth: '' },
-        { ...sampleDraft.career[1], company: '모아 스튜디오' },
+        { ...sampleDraft.career[1], company: '모아 스튜디오', employmentType: '프리랜서' },
       ],
       awards: [
         ...sampleDraft.awards,
