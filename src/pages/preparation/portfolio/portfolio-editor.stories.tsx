@@ -44,7 +44,10 @@ export const Empty: Story = {
 
 export const PdfSelected: Story = {
   play: async ({ canvas, args }) => {
-    await userEvent.type(canvas.getByRole('textbox', { name: '포트폴리오 제목' }), '서비스 기획');
+    const titleInput = canvas.getByRole('textbox', { name: '포트폴리오 제목' });
+    await userEvent.click(canvas.getByRole('button', { name: '포트폴리오 추가' }));
+    await expect(titleInput).toHaveFocus();
+    await userEvent.type(titleInput, '서비스 기획');
     await userEvent.upload(canvas.getByLabelText('포트폴리오 PDF 파일'), examplePdf);
 
     await expect(canvas.getByText(examplePdf.name, { exact: true })).toBeVisible();
@@ -61,7 +64,9 @@ export const PdfSelected: Story = {
 export const Editing: Story = {
   args: { initialItems: [exampleItem] },
   play: async ({ canvas, args }) => {
-    await userEvent.click(canvas.getByRole('button', { name: `${exampleItem.title} 수정` }));
+    const editButton = canvas.getByRole('button', { name: `${exampleItem.title} 수정` });
+    await userEvent.click(editButton);
+    await expect(editButton).toBeDisabled();
     const titleInput = canvas.getByRole('textbox', { name: '포트폴리오 제목' });
     const dropZone = canvas.getByRole('group', { name: 'PDF 파일 첨부' });
     await expect(titleInput).toHaveValue(exampleItem.title);

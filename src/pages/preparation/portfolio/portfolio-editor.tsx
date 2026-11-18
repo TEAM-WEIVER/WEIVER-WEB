@@ -2,8 +2,11 @@ import { useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 
 import { DocumentEditorLayout } from '@/components/common/DocumentEditorLayout';
+import { SectionHeading } from '@/components/common/section-heading';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
+import { DocumentItemActions } from '../_components/document-item-actions';
 import { PortfolioItemForm } from './portfolio-item-form';
 
 type PortfolioItem = {
@@ -90,12 +93,11 @@ export function PortfolioEditor({ initialItems = EMPTY_ITEMS, onSaveDraft }: Por
     >
       <div className="space-y-6">
         <div className="border-border-light flex flex-wrap items-start justify-between gap-4 border-b pb-4">
-          <div className="space-y-1">
-            <h1 className="text-h3 text-text-primary">포트폴리오</h1>
-            <p className="text-body2 text-text-tertiary">
-              PDF 파일로 포트폴리오를 등록하고 관리할 수 있어요.
-            </p>
-          </div>
+          <SectionHeading
+            as="h1"
+            title="포트폴리오"
+            description="PDF 파일로 포트폴리오를 등록하고 관리할 수 있어요."
+          />
           <Button
             type="button"
             variant="outline"
@@ -117,9 +119,12 @@ export function PortfolioEditor({ initialItems = EMPTY_ITEMS, onSaveDraft }: Por
               >
                 <div className="min-w-0 space-y-2">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="text-caption border-border-light bg-bg-secondary text-text-tertiary rounded-sm border px-2 py-0.5">
+                    <Badge
+                      variant="outline"
+                      className="border-border-light bg-bg-secondary text-text-tertiary rounded-sm text-xs/4 font-normal tracking-[-0.02em]"
+                    >
                       PDF 파일
-                    </span>
+                    </Badge>
                     <h2 className="text-h4 text-text-primary wrap-anywhere">{item.title}</h2>
                   </div>
                   <p className="text-body3 text-text-tertiary wrap-anywhere">
@@ -127,28 +132,12 @@ export function PortfolioEditor({ initialItems = EMPTY_ITEMS, onSaveDraft }: Por
                     {formatFileSize(item.file.size)}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-body3 text-text-tertiary h-8 px-2"
-                    aria-label={`${item.title} 수정`}
-                    disabled={editingItem !== null}
-                    onClick={() => setEditingItem(item)}
-                  >
-                    수정
-                  </Button>
-                  <span aria-hidden="true" className="border-border-default h-3 border-l" />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-body3 text-destructive hover:text-destructive h-8 px-2"
-                    aria-label={`${item.title} 삭제`}
-                    onClick={() => handleDeleteItem(item.id)}
-                  >
-                    삭제
-                  </Button>
-                </div>
+                <DocumentItemActions
+                  itemTitle={item.title}
+                  onEdit={() => setEditingItem(item)}
+                  onDelete={() => handleDeleteItem(item.id)}
+                  editDisabled={editingItem !== null}
+                />
               </li>
             ))}
           </ul>

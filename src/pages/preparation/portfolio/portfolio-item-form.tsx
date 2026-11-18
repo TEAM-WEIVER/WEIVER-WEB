@@ -2,6 +2,7 @@ import { useId, useRef, useState, type DragEvent, type Ref } from 'react';
 import { CloudUpload, FileText, FolderOpen } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 
 type PortfolioItemFormProps = {
@@ -98,20 +99,19 @@ export function PortfolioItemForm({
         {isEditing ? '포트폴리오 수정' : '포트폴리오 등록'}
       </h2>
 
-      <div className="space-y-2">
-        <label htmlFor={`${id}-title`} className="text-body2 text-text-primary block">
-          포트폴리오 제목
-        </label>
-        <Input
-          ref={titleInputRef}
-          id={`${id}-title`}
-          value={title}
-          variant="default"
-          className="h-10 px-3 py-2"
-          placeholder="입력하지 않으면 파일명으로 자동 입력됩니다."
-          onChange={(event) => onTitleChange(event.target.value)}
-        />
-      </div>
+      <FormField id={`${id}-title`} label={<span className="text-body2">포트폴리오 제목</span>}>
+        {(field) => (
+          <Input
+            {...field}
+            ref={titleInputRef}
+            value={title}
+            variant="default"
+            className="h-10 px-3 py-2"
+            placeholder="입력하지 않으면 파일명으로 자동 입력됩니다."
+            onChange={(event) => onTitleChange(event.target.value)}
+          />
+        )}
+      </FormField>
 
       <div
         role="group"
