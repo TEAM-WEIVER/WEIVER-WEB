@@ -1,17 +1,21 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import { ApiError } from '@/lib/api-client';
 import { MEMBER_HOME_PATH } from '@/lib/auth-paths';
 import { setAuthSession } from '@/lib/auth-token';
 import { loginApplicant } from '@/lib/login-api';
+
+type LoginError = 'credentials' | 'request';
 
 export function useLoginForm() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<LoginError | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const requestInProgress = useRef(false);
 
   const trimmedEmail = email.trim();
   const isFormValid = trimmedEmail !== '' && password.trim() !== '';
@@ -19,8 +23,9 @@ export function useLoginForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!isFormValid || isSubmitting) return;
+    if (!isFormValid || requestInProgress.current) return;
 
+    requestInProgress.current = true;
     setIsSubmitting(true);
     setLoginError(null);
 
@@ -33,9 +38,14 @@ export function useLoginForm() {
 
       setAuthSession(data.accessToken, data.role);
       navigate(MEMBER_HOME_PATH);
-    } catch {
-      setLoginError('로그인에 실패했습니다. 이메일과 비밀번호를 다시 확인해주세요.');
+    } catch (error) {
+      setLoginError(
+        error instanceof ApiError && error.apiStatus === 'INVALID_PASSWORD'
+          ? 'credentials'
+          : 'request',
+      );
     } finally {
+      requestInProgress.current = false;
       setIsSubmitting(false);
     }
   };
