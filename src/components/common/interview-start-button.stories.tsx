@@ -15,8 +15,8 @@ export const Default: Story = {
   play: async ({ canvasElement, args }) => {
     const button = within(canvasElement).getByRole('button', { name: 'AI 면접 시작' });
     await expect(button).toHaveStyle({
-      backgroundColor: 'rgb(45, 212, 191)',
-      color: 'rgb(15, 23, 42)',
+      backgroundColor: 'rgb(51, 65, 85)',
+      color: 'rgb(255, 255, 255)',
     });
     await userEvent.click(button);
     await expect(args.onClick).toHaveBeenCalledOnce();
@@ -35,9 +35,11 @@ export const Disabled: Story = {
 export const Loading: Story = {
   args: { isLoading: true },
   play: async ({ canvasElement }) => {
-    const button = within(canvasElement).getByRole('button', { name: /AI 면접 시작/ });
+    const button = within(canvasElement).getByRole('button', { name: 'AI 면접 시작' });
     await expect(button).toBeDisabled();
     await expect(button).toHaveAttribute('aria-busy', 'true');
+    await expect(within(button).getByRole('status', { name: '로딩 중' })).toBeVisible();
+    await expect(within(button).getByText('AI 면접 시작')).not.toBeVisible();
   },
 };
 export const KeyboardFocus: Story = {

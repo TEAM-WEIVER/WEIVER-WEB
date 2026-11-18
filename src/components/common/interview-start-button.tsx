@@ -4,6 +4,8 @@ import { PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+const INTERVIEW_START_LABEL = 'AI 면접 시작';
+
 type InterviewStartButtonProps = Omit<
   ComponentProps<typeof Button>,
   'children' | 'asChild' | 'variant' | 'size'
@@ -11,20 +13,27 @@ type InterviewStartButtonProps = Omit<
 
 export function InterviewStartButton({
   className,
+  isLoading,
   type = 'button',
+  'aria-label': ariaLabel,
   ...props
 }: InterviewStartButtonProps) {
   return (
     <Button
       {...props}
       type={type}
+      isLoading={isLoading}
+      aria-label={ariaLabel ?? (isLoading ? INTERVIEW_START_LABEL : undefined)}
       className={cn(
-        'disabled:bg-bg-tertiary disabled:text-text-disabled disabled:hover:bg-bg-tertiary h-9 gap-1.5 bg-[#2DD4BF] px-3 text-xs font-medium text-[#0F172A] hover:bg-[#2DD4BF]/85 focus-visible:ring-[#2DD4BF]',
+        'disabled:bg-bg-tertiary disabled:text-text-disabled disabled:hover:bg-bg-tertiary h-9 gap-1.5 px-3 text-xs font-medium',
+        isLoading && 'relative [&>[role=status]]:absolute',
         className,
       )}
     >
-      <PlayCircle aria-hidden="true" />
-      AI 면접 시작
+      <span className={cn('flex items-center gap-[inherit]', isLoading && 'invisible')}>
+        <PlayCircle aria-hidden="true" />
+        {INTERVIEW_START_LABEL}
+      </span>
     </Button>
   );
 }
