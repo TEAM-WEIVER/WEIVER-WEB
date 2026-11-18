@@ -5,7 +5,7 @@ export async function fillSignupAccount(
   { email, code, password }: { email: string; code: string; password: string },
 ) {
   await page.getByLabel('이메일', { exact: true }).fill(email);
-  await page.getByRole('button', { name: '인증번호 전송' }).click();
+  await page.getByRole('button', { name: '이메일 인증' }).click();
   await expect(page.getByRole('timer')).toBeVisible();
   await page.getByLabel('이메일 인증번호').fill(code);
   await page.getByRole('button', { name: '인증번호 확인' }).click();
