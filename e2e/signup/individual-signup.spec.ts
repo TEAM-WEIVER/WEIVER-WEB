@@ -20,7 +20,7 @@ test('개인 가입 후 직접 로그인하면 새로고침 뒤에도 회원 홈
   await expect(page).toHaveURL('/signup/account-info');
   await fillSignupAccount(page, account);
   await acceptRequiredAgreements(page);
-  await page.getByRole('button', { name: '다음 단계' }).click();
+  await page.getByRole('button', { name: '회원가입 완료' }).click();
 
   await expect(page).toHaveURL('/login');
   expect(await page.evaluate(() => sessionStorage.getItem('weiver.auth.role'))).toBeNull();
@@ -41,7 +41,7 @@ test('가입 완료 API가 실패하면 오류를 보여주고 약관 단계에 
   await page.goto('/signup/account-info');
   await fillSignupAccount(page, account);
   await acceptRequiredAgreements(page);
-  await page.getByRole('button', { name: '다음 단계' }).click();
+  await page.getByRole('button', { name: '회원가입 완료' }).click();
 
   await expect(
     page.getByText('회원가입 처리에 실패했습니다. 잠시 후 다시 시도해주세요.'),

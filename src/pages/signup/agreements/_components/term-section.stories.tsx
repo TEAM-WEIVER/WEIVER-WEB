@@ -16,17 +16,16 @@ const meta = {
   args: { item, checked: false, onToggle: fn() },
   render: function Controlled(args) {
     const [checked, setChecked] = useState(args.checked);
-    return (
-      <TermSection {...args} checked={checked} onToggle={() => setChecked((value) => !value)} />
-    );
+    return <TermSection {...args} checked={checked} onToggle={setChecked} />;
   },
 } satisfies Meta<typeof TermSection>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Required: Story = {
   play: async ({ canvasElement }) => {
-    const checkbox = within(canvasElement).getByRole('checkbox');
-    await userEvent.click(checkbox);
+    const canvas = within(canvasElement);
+    const checkbox = canvas.getByRole('checkbox', { name: item.agreeLabel });
+    await userEvent.click(canvas.getByText(item.agreeLabel));
     await expect(checkbox).toBeChecked();
   },
 };

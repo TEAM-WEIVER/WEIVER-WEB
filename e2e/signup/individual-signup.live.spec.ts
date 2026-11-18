@@ -28,7 +28,7 @@ test('운영 API: @weiver.test 계정의 실제 회원가입을 완료한다', a
       response.request().method() === 'POST',
   );
 
-  await page.getByRole('button', { name: '다음 단계' }).click();
+  await page.getByRole('button', { name: '회원가입 완료' }).click();
 
   const completeResponse = await completeResponsePromise;
   expect(completeResponse.ok()).toBe(true);

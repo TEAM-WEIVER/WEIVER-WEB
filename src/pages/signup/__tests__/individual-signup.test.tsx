@@ -1,5 +1,6 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '@/lib/api-client';
@@ -14,7 +15,10 @@ import SignupAccountInfoPage from '../account-info/page';
 
 const navigationMock = vi.hoisted(() => ({ navigate: vi.fn() }));
 
-vi.mock('react-router', () => ({ useNavigate: () => navigationMock.navigate }));
+vi.mock('react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router')>()),
+  useNavigate: () => navigationMock.navigate,
+}));
 
 vi.mock('@/lib/signup-api', () => ({
   initApplicantSignup: vi.fn(),
@@ -22,17 +26,25 @@ vi.mock('@/lib/signup-api', () => ({
   verifyApplicantEmail: vi.fn(),
 }));
 
+function renderSignup() {
+  return render(
+    <MemoryRouter>
+      <SignupAccountInfoPage />
+    </MemoryRouter>,
+  );
+}
+
+const registeredAccount = {
+  status: 'OK',
+  code: 200,
+  data: { signupToken: 'signup-token' },
+  message: 'OK',
+};
+
 describe('개인 회원가입 플로우', () => {
   beforeEach(() => {
     navigationMock.navigate.mockClear();
-    vi.mocked(initApplicantSignup).mockResolvedValue({
-      status: 'OK',
-      code: 200,
-      data: {
-        signupToken: 'signup-token',
-      },
-      message: 'OK',
-    });
+    vi.mocked(initApplicantSignup).mockResolvedValue(registeredAccount);
     vi.mocked(sendApplicantVerificationEmail).mockResolvedValue({
       status: 'OK',
       code: 200,
@@ -58,16 +70,13 @@ describe('개인 회원가입 플로우', () => {
   it('이메일 형식이 유효하지 않으면 계정 단계 제출을 막는다', async () => {
     const user = userEvent.setup();
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
 
-    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'invalid-email');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
-    await user.type(
-      screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!aaaa',
-    );
+    await user.type(screen.getByRole('textbox', { name: '이메일' }), 'invalid-email');
+    await user.type(screen.getByPlaceholderText('영문/숫자/특수문자 포함 8~64자'), 'Aa1!aaaa');
+    await user.type(screen.getByPlaceholderText('비밀번호를 다시 입력해주세요.'), 'Aa1!aaaa');
 
     await waitFor(() =>
       expect(screen.getByText('올바른 이메일 형식을 입력해주세요.')).toBeInTheDocument(),
@@ -79,16 +88,13 @@ describe('개인 회원가입 플로우', () => {
   it('비밀번호 규칙을 만족하지 않으면 인증 후에도 계정 단계 제출을 막는다', async () => {
     const user = userEvent.setup();
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
-    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1aaa');
-    await user.type(
-      screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1aaa',
-    );
-    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
-    await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
+    await user.type(screen.getByRole('textbox', { name: '이메일' }), 'user@example.com');
+    await user.type(screen.getByPlaceholderText('영문/숫자/특수문자 포함 8~64자'), 'Aa1aaa');
+    await user.type(screen.getByPlaceholderText('비밀번호를 다시 입력해주세요.'), 'Aa1aaa');
+    await user.click(screen.getByRole('button', { name: '이메일 인증' }));
+    await user.type(await screen.findByRole('textbox', { name: '이메일 인증번호' }), '123456');
     await user.click(screen.getByRole('button', { name: '인증번호 확인' }));
 
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
@@ -100,9 +106,9 @@ describe('개인 회원가입 플로우', () => {
   it('비밀번호 규칙을 모두 만족하면 기존 비밀번호 오류 메시지를 숨긴다', async () => {
     const user = userEvent.setup();
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
-    const passwordInput = screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자');
+    const passwordInput = screen.getByPlaceholderText('영문/숫자/특수문자 포함 8~64자');
 
     await user.type(passwordInput, 'Aa1aaaa');
     await waitFor(() => expect(screen.getByText('8자 이상이어야 합니다.')).toBeInTheDocument());
@@ -118,14 +124,11 @@ describe('개인 회원가입 플로우', () => {
   it('비밀번호 확인이 일치하지 않으면 오류를 표시하고 계정 단계 제출을 막는다', async () => {
     const user = userEvent.setup();
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
-    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
-    await user.type(
-      screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!aaab',
-    );
+    await user.type(screen.getByRole('textbox', { name: '이메일' }), 'user@example.com');
+    await user.type(screen.getByPlaceholderText('영문/숫자/특수문자 포함 8~64자'), 'Aa1!aaaa');
+    await user.type(screen.getByPlaceholderText('비밀번호를 다시 입력해주세요.'), 'Aa1!aaab');
 
     await waitFor(() =>
       expect(screen.getByText('비밀번호가 일치하지 않습니다.')).toBeInTheDocument(),
@@ -137,45 +140,53 @@ describe('개인 회원가입 플로우', () => {
   it('이메일 인증 전에는 계정 단계에서 다음 단계로 이동할 수 없다', async () => {
     const user = userEvent.setup();
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
-    expect(screen.getByText('1단계 : 계정 정보를 입력해주세요.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '계정을 생성해주세요.' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '로그인' })).toHaveAttribute('href', '/login');
     expect(screen.queryByText('회사명을 입력해주세요.')).not.toBeInTheDocument();
     expect(nextButton).toBeDisabled();
 
-    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
-    await user.type(
-      screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!aaaa',
-    );
+    await user.type(screen.getByRole('textbox', { name: '이메일' }), 'user@example.com');
+    await user.type(screen.getByPlaceholderText('영문/숫자/특수문자 포함 8~64자'), 'Aa1!aaaa');
+    await user.type(screen.getByPlaceholderText('비밀번호를 다시 입력해주세요.'), 'Aa1!aaaa');
 
     await waitFor(() => expect(nextButton).toBeDisabled());
     expect(navigationMock.navigate).not.toHaveBeenCalled();
   });
 
-  it('이메일 인증과 유효한 계정 입력 후 약관 단계로 이동한다', async () => {
+  it('유효한 계정 정보를 한 번만 등록하고 약관 단계로 이동한다', async () => {
     const user = userEvent.setup();
+    let finishRegistration!: () => void;
+    const pendingRegistration = new Promise<void>((resolve) => {
+      finishRegistration = resolve;
+    });
+    vi.mocked(initApplicantSignup).mockImplementationOnce(async () => {
+      await pendingRegistration;
+      return registeredAccount;
+    });
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
-    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
-    await user.type(
-      screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!aaaa',
-    );
-    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
+    await user.type(screen.getByRole('textbox', { name: '이메일' }), 'user@example.com');
+    await user.type(screen.getByPlaceholderText('영문/숫자/특수문자 포함 8~64자'), 'Aa1!aaaa');
+    await user.type(screen.getByPlaceholderText('비밀번호를 다시 입력해주세요.'), 'Aa1!aaaa');
+    await user.click(screen.getByRole('button', { name: '이메일 인증' }));
     expect(sendApplicantVerificationEmail).toHaveBeenCalledWith('user@example.com');
-    await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
+    await user.type(await screen.findByRole('textbox', { name: '이메일 인증번호' }), '123456');
     await user.click(screen.getByRole('button', { name: '인증번호 확인' }));
 
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
     await waitFor(() => expect(nextButton).toBeEnabled());
 
-    await user.click(nextButton);
+    await user.dblClick(nextButton);
 
+    expect(initApplicantSignup).toHaveBeenCalledTimes(1);
+    expect(nextButton).toBeDisabled();
+    finishRegistration();
+
+    await waitFor(() => expect(navigationMock.navigate).toHaveBeenCalledWith('/signup/agreements'));
     expect(verifyApplicantEmail).toHaveBeenCalledWith({
       email: 'user@example.com',
       code: '123456',
@@ -186,7 +197,6 @@ describe('개인 회원가입 플로우', () => {
       passwordConfirm: 'Aa1!aaaa',
       verificationToken: 'verification-token',
     });
-    expect(navigationMock.navigate).toHaveBeenCalledWith('/signup/agreements');
     expect(useSignupStore.getState().account).toEqual({
       email: 'user@example.com',
       signupToken: 'signup-token',
@@ -197,16 +207,13 @@ describe('개인 회원가입 플로우', () => {
     const user = userEvent.setup();
     vi.mocked(initApplicantSignup).mockRejectedValue(new Error('init failed'));
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
-    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
-    await user.type(
-      screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!aaaa',
-    );
-    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
-    await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
+    await user.type(screen.getByRole('textbox', { name: '이메일' }), 'user@example.com');
+    await user.type(screen.getByPlaceholderText('영문/숫자/특수문자 포함 8~64자'), 'Aa1!aaaa');
+    await user.type(screen.getByPlaceholderText('비밀번호를 다시 입력해주세요.'), 'Aa1!aaaa');
+    await user.click(screen.getByRole('button', { name: '이메일 인증' }));
+    await user.type(await screen.findByRole('textbox', { name: '이메일 인증번호' }), '123456');
     await user.click(screen.getByRole('button', { name: '인증번호 확인' }));
 
     const nextButton = screen.getByRole('button', { name: /다음 단계/ });
@@ -223,15 +230,15 @@ describe('개인 회원가입 플로우', () => {
     const user = userEvent.setup();
     vi.mocked(sendApplicantVerificationEmail).mockRejectedValue(new Error('send failed'));
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
-    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
+    await user.type(screen.getByRole('textbox', { name: '이메일' }), 'user@example.com');
+    await user.click(screen.getByRole('button', { name: '이메일 인증' }));
 
     expect(
       await screen.findByText('인증번호 전송에 실패했습니다. 잠시 후 다시 시도해주세요.'),
     ).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('숫자 6자리')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '이메일 인증번호' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /다음 단계/ })).toBeDisabled();
   });
 
@@ -241,22 +248,22 @@ describe('개인 회원가입 플로우', () => {
       new ApiError('이미 사용 중인 이메일입니다.', 409),
     );
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
-    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
+    await user.type(screen.getByRole('textbox', { name: '이메일' }), 'user@example.com');
+    await user.click(screen.getByRole('button', { name: '이메일 인증' }));
 
     expect(await screen.findByText('이미 사용 중인 이메일입니다.')).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('숫자 6자리')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '이메일 인증번호' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /다음 단계/ })).toBeDisabled();
   });
 
   it('비밀번호 보기 토글 클릭 시 input type이 password에서 text로 전환된다', async () => {
     const user = userEvent.setup();
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
-    const passwordInput = screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자');
+    const passwordInput = screen.getByPlaceholderText('영문/숫자/특수문자 포함 8~64자');
     expect(passwordInput).toHaveAttribute('type', 'password');
 
     const toggleButton = screen.getByRole('button', { name: '비밀번호 보기' });
@@ -272,10 +279,9 @@ describe('개인 회원가입 플로우', () => {
   it('비밀번호 확인 보기 토글 클릭 시 input type이 password에서 text로 전환된다', async () => {
     const user = userEvent.setup();
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
-    const passwordConfirmInput =
-      screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.');
+    const passwordConfirmInput = screen.getByPlaceholderText('비밀번호를 다시 입력해주세요.');
     expect(passwordConfirmInput).toHaveAttribute('type', 'password');
 
     const toggleButton = screen.getByRole('button', { name: '비밀번호 확인 필드 표시' });
@@ -292,16 +298,13 @@ describe('개인 회원가입 플로우', () => {
     const user = userEvent.setup();
     vi.mocked(verifyApplicantEmail).mockRejectedValue(new Error('verify failed'));
 
-    render(<SignupAccountInfoPage />);
+    renderSignup();
 
-    await user.type(screen.getByPlaceholderText('personal@gmail.com'), 'user@example.com');
-    await user.type(screen.getByPlaceholderText('영문, 숫자, 특수문자 조합 8-64자'), 'Aa1!aaaa');
-    await user.type(
-      screen.getByPlaceholderText('위에서 입력한 비밀번호를 입력해주세요.'),
-      'Aa1!aaaa',
-    );
-    await user.click(screen.getByRole('button', { name: '인증번호 전송' }));
-    await user.type(await screen.findByPlaceholderText('숫자 6자리'), '123456');
+    await user.type(screen.getByRole('textbox', { name: '이메일' }), 'user@example.com');
+    await user.type(screen.getByPlaceholderText('영문/숫자/특수문자 포함 8~64자'), 'Aa1!aaaa');
+    await user.type(screen.getByPlaceholderText('비밀번호를 다시 입력해주세요.'), 'Aa1!aaaa');
+    await user.click(screen.getByRole('button', { name: '이메일 인증' }));
+    await user.type(await screen.findByRole('textbox', { name: '이메일 인증번호' }), '123456');
     await user.click(screen.getByRole('button', { name: '인증번호 확인' }));
 
     expect(
