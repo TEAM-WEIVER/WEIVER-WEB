@@ -99,7 +99,7 @@ export function DocumentEditorLayout({
         <main className="min-w-0">
           {children}
           <footer className="border-border-light mt-10 flex justify-end border-t pt-5">
-            <Button type="button" size="xs" onClick={onSaveDraft}>
+            <Button type="button" size="xs" onClick={() => onSaveDraft()}>
               임시 저장
             </Button>
           </footer>
