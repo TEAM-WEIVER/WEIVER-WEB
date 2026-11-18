@@ -27,6 +27,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Empty: Story = {
   play: async ({ canvas }) => {
+    await expect(canvas.getByRole('heading', { name: '자기소개서', level: 1 })).toBeVisible();
     await expect(canvas.getByText('등록된 문항이 없습니다.')).toBeVisible();
     await expect(canvas.getByText('자기소개서', { selector: '[aria-current]' })).toHaveAttribute(
       'aria-current',
@@ -45,17 +46,26 @@ export const AddingQuestion: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: '문항 추가' }));
     const form = within(canvas.getByRole('form', { name: '문항 정보 입력' }));
+    const question = form.getByRole('textbox', { name: /문항 내용/ });
     const answer = form.getByRole('textbox', { name: /자기소개서 본문 내용/ });
     const save = form.getByRole('button', { name: '저장' });
 
+    await expect(question).toHaveFocus();
+    await expect(question).toBeRequired();
+    await expect(answer).toBeRequired();
+    await expect(
+      canvas.getByRole('button', { name: `${existingQuestion.question} 수정` }),
+    ).toBeDisabled();
     await expect(canvas.getByRole('progressbar', { name: '작성 진행률' })).toHaveAttribute(
       'value',
       '66',
     );
     await expect(answer).toHaveAttribute('maxlength', '1500');
     await expect(form.getByText('0 / 1,500자')).toBeVisible();
+    await expect(answer).toHaveAccessibleDescription('0 / 1,500자');
     await userEvent.type(answer, '지원합니다.');
     await expect(form.getByText('6 / 1,500자')).toBeVisible();
+    await expect(answer).toHaveAccessibleDescription('6 / 1,500자');
     await expect(save).toBeDisabled();
 
     await userEvent.click(canvas.getByRole('button', { name: '임시 저장' }));
@@ -80,6 +90,7 @@ export const EditingQuestion: Story = {
     const question = form.getByRole('textbox', { name: /문항 내용/ });
     const answer = form.getByRole('textbox', { name: /자기소개서 본문 내용/ });
 
+    await expect(question).toHaveFocus();
     await expect(question).toHaveValue(existingQuestion.question);
     await expect(answer).toHaveValue(existingQuestion.answer);
     await userEvent.clear(question);

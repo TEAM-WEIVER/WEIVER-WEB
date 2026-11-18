@@ -2,11 +2,14 @@ import { useCallback, useId, useState, type FormEvent } from 'react';
 import { Plus } from 'lucide-react';
 
 import { DocumentEditorLayout } from '@/components/common/DocumentEditorLayout';
+import { SectionHeading } from '@/components/common/section-heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+
+import { DocumentItemActions } from '../_components/document-item-actions';
 
 const ANSWER_MAX_LENGTH = 1500;
 const characterCountFormat = new Intl.NumberFormat('ko-KR');
@@ -59,28 +62,12 @@ function QuestionCard({
           </Badge>
           <h2 className="text-h4 wrap-anywhere">{title}</h2>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            className="text-body3 text-text-tertiary h-8 px-2"
-            aria-label={`${title} 수정`}
-            disabled={editDisabled}
-            onClick={onEdit}
-          >
-            수정
-          </Button>
-          <span aria-hidden="true" className="bg-border-default h-3 w-px" />
-          <Button
-            type="button"
-            variant="ghost"
-            className="text-body3 text-error hover:text-error h-8 px-2"
-            aria-label={`${title} 삭제`}
-            onClick={onDelete}
-          >
-            삭제
-          </Button>
-        </div>
+        <DocumentItemActions
+          itemTitle={title}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          editDisabled={editDisabled}
+        />
       </div>
       <p className="text-body3 border-border-light bg-bg-secondary text-text-secondary rounded-lg border p-4 wrap-anywhere whitespace-pre-wrap">
         {entry.answer}
@@ -104,6 +91,7 @@ function QuestionForm({
   onSave: (entry: CoverLetterQuestion) => void;
 }) {
   const id = useId();
+  const answerCountId = `${id}-answer-count`;
   const focusQuestion = useCallback((input: HTMLInputElement | null) => {
     input?.focus();
   }, []);
@@ -128,40 +116,42 @@ function QuestionForm({
         </h2>
         <p className="text-caption text-text-tertiary">* 필수 입력 사항</p>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${id}-question`} className="text-body2 text-text-secondary">
-          문항 내용 *
-        </Label>
-        <Input
-          ref={focusQuestion}
-          id={`${id}-question`}
-          className="bg-card h-10 px-3"
-          variant="default"
-          placeholder="자기소개서 문항 내용을 입력해주세요."
-          value={entry.question}
-          required
-          onChange={(event) => onChange({ ...entry, question: event.target.value })}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${id}-answer`} className="text-body2 text-text-secondary">
-          자기소개서 본문 내용 *
-        </Label>
-        <Textarea
-          id={`${id}-answer`}
-          className="bg-card min-h-67 px-3 py-3"
-          variant="default"
-          placeholder="자기소개서 문항에 따른 내용을 입력해주세요. 최대 1,500자까지 입력 가능합니다."
-          aria-describedby={`${id}-answer-count`}
-          value={entry.answer}
-          maxLength={ANSWER_MAX_LENGTH}
-          required
-          onChange={(event) => onChange({ ...entry, answer: event.target.value })}
-        />
-        <p id={`${id}-answer-count`} className="text-caption text-text-tertiary text-right">
-          {formatCharacterCount(entry.answer)}
-        </p>
-      </div>
+      <FormField label="문항 내용 *">
+        {(field) => (
+          <Input
+            {...field}
+            ref={focusQuestion}
+            className="bg-card h-10 px-3"
+            variant="default"
+            placeholder="자기소개서 문항 내용을 입력해주세요."
+            value={entry.question}
+            required
+            onChange={(event) => onChange({ ...entry, question: event.target.value })}
+          />
+        )}
+      </FormField>
+      <FormField label="자기소개서 본문 내용 *">
+        {(field) => (
+          <>
+            <Textarea
+              {...field}
+              className="bg-card min-h-67 px-3 py-3"
+              variant="default"
+              placeholder="자기소개서 문항에 따른 내용을 입력해주세요. 최대 1,500자까지 입력 가능합니다."
+              aria-describedby={[field['aria-describedby'], answerCountId]
+                .filter(Boolean)
+                .join(' ')}
+              value={entry.answer}
+              maxLength={ANSWER_MAX_LENGTH}
+              required
+              onChange={(event) => onChange({ ...entry, answer: event.target.value })}
+            />
+            <p id={answerCountId} className="text-caption text-text-tertiary text-right">
+              {formatCharacterCount(entry.answer)}
+            </p>
+          </>
+        )}
+      </FormField>
       <div className="border-border-light flex justify-end gap-2 border-t pt-4">
         <Button type="button" variant="outline" className="h-9 px-4" onClick={onCancel}>
           취소
@@ -220,12 +210,11 @@ export function CoverLetterEditor({ initialQuestions = [], onSaveDraft }: CoverL
       onSaveDraft={handleSaveDraft}
     >
       <div className="border-border-light flex flex-wrap items-start justify-between gap-4 border-b pb-4">
-        <div className="space-y-0.5">
-          <h1 className="text-h3">자기소개서</h1>
-          <p className="text-body3 text-text-tertiary">
-            지원 직무에 부합하는 역량과 강점을 솔직하고 구체적으로 기술해주세요.
-          </p>
-        </div>
+        <SectionHeading
+          as="h1"
+          title="자기소개서"
+          description="지원 직무에 부합하는 역량과 강점을 솔직하고 구체적으로 기술해주세요."
+        />
         <Button
           type="button"
           variant="outline"
