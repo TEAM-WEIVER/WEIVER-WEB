@@ -27,7 +27,7 @@ test('개인 가입 후 직접 로그인하면 새로고침 뒤에도 회원 홈
 
   await page.getByLabel('이메일', { exact: true }).fill(account.email);
   await page.getByLabel('비밀번호', { exact: true }).fill(account.password);
-  await page.getByRole('button', { name: '로그인하기' }).click();
+  await page.getByRole('button', { name: '로그인', exact: true }).click();
   await expect(page).toHaveURL('/home');
   await expect(page.getByRole('heading', { name: '회원 홈' })).toBeVisible();
 
