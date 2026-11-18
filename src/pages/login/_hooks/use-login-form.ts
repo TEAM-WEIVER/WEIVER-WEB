@@ -7,23 +7,47 @@ import { setAuthSession } from '@/lib/auth-token';
 import { loginApplicant } from '@/lib/login-api';
 
 type LoginError = 'credentials' | 'request';
+const REMEMBERED_EMAIL_KEY = 'weiver.auth.remembered-email';
+
+function readRememberedEmail() {
+  try {
+    return window.localStorage.getItem(REMEMBERED_EMAIL_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function saveRememberedEmail(email: string | null) {
+  try {
+    if (email === null) {
+      window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+    } else {
+      window.localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+    }
+  } catch {
+    // Login also works when browser storage is unavailable.
+  }
+}
 
 export function useLoginForm() {
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(readRememberedEmail);
+  const [rememberEmail, setRememberEmail] = useState(Boolean(email));
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<LoginError | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const requestInProgress = useRef(false);
 
-  const trimmedEmail = email.trim();
-  const isFormValid = trimmedEmail !== '' && password.trim() !== '';
+  const updateRememberEmail = (checked: boolean) => {
+    setRememberEmail(checked);
+    if (!checked) saveRememberedEmail(null);
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!isFormValid || requestInProgress.current) return;
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password.trim() || requestInProgress.current) return;
 
     requestInProgress.current = true;
     setIsSubmitting(true);
@@ -37,6 +61,7 @@ export function useLoginForm() {
       }
 
       setAuthSession(data.accessToken, data.role);
+      if (rememberEmail) saveRememberedEmail(trimmedEmail);
       navigate(MEMBER_HOME_PATH);
     } catch (error) {
       setLoginError(
@@ -51,15 +76,14 @@ export function useLoginForm() {
   };
 
   return {
-    showPassword,
     email,
     password,
+    rememberEmail,
     loginError,
     isSubmitting,
-    isFormValid,
     setEmail,
     setPassword,
-    setShowPassword,
+    setRememberEmail: updateRememberEmail,
     handleSubmit,
   };
 }
