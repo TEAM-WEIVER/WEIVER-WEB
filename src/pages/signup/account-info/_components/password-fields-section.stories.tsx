@@ -28,9 +28,12 @@ type Story = StoryObj<typeof PasswordFieldsSection>;
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.type(canvas.getByLabelText('비밀번호', { exact: true }), 'Demo1234!');
+    await userEvent.type(
+      canvas.getByPlaceholderText('영문/숫자/특수문자 포함 8~64자'),
+      'Demo1234!',
+    );
     await userEvent.click(canvas.getByRole('button', { name: '비밀번호 보기' }));
-    await expect(canvas.getByLabelText('비밀번호', { exact: true })).toHaveAttribute(
+    await expect(canvas.getByPlaceholderText('영문/숫자/특수문자 포함 8~64자')).toHaveAttribute(
       'type',
       'text',
     );
