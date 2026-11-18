@@ -15,6 +15,9 @@ interface PasswordFieldsSectionProps {
   password: string;
 }
 
+const visibilityToggleClass =
+  'text-icon-muted hover:text-text-secondary focus-visible:ring-ring absolute top-1/2 right-1 grid size-11 -translate-y-1/2 cursor-pointer place-items-center rounded-md transition-colors focus-visible:ring-2 focus-visible:outline-none';
+
 export function PasswordFieldsSection({ register, errors, password }: PasswordFieldsSectionProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
@@ -23,63 +26,80 @@ export function PasswordFieldsSection({ register, errors, password }: PasswordFi
     : errors.password?.message;
 
   return (
-    <div className="flex flex-col gap-3.5">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="password" className="text-text-primary">
-            비밀번호를 입력해주세요.
-          </Label>
-          <div className="relative">
-            <Input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              {...register('password')}
-              placeholder="영문, 숫자, 특수문자 조합 8-64자"
-              aria-label="비밀번호"
-              aria-invalid={Boolean(passwordErrorMessage)}
-              aria-describedby={passwordErrorMessage ? 'password-error' : undefined}
-              className="pr-14"
-            />
-            <button
-              type="button"
-              aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
-              aria-pressed={showPassword}
-              onClick={() => setShowPassword((current) => !current)}
-              className="text-text-disabled hover:text-text-tertiary absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer transition-colors"
-            >
-              {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
-            </button>
-          </div>
+        <Label htmlFor="password" className="text-text-primary text-sm leading-5">
+          <span>
+            <span id="signup-password-label">비밀번호</span> <span aria-hidden="true">*</span>
+          </span>
+        </Label>
+        <div className="relative">
+          <Input
+            id="password"
+            aria-labelledby="signup-password-label"
+            type={showPassword ? 'text' : 'password'}
+            {...register('password')}
+            required
+            autoComplete="new-password"
+            placeholder="영문/숫자/특수문자 포함 8~64자"
+            aria-invalid={Boolean(passwordErrorMessage)}
+            aria-describedby={
+              passwordErrorMessage ? 'password-rules password-error' : 'password-rules'
+            }
+            className="bg-bg-primary h-14 px-3 pr-12 text-sm leading-5"
+          />
+          <button
+            type="button"
+            aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
+            aria-controls="password"
+            onClick={() => setShowPassword((current) => !current)}
+            className={visibilityToggleClass}
+          >
+            {showPassword ? (
+              <Eye aria-hidden="true" size={22} />
+            ) : (
+              <EyeOff aria-hidden="true" size={22} />
+            )}
+          </button>
         </div>
-        <PasswordRules password={password} />
+        <PasswordRules password={password} id="password-rules" />
         <FieldError id="password-error">{passwordErrorMessage}</FieldError>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="passwordConfirm" className="text-text-primary">
-          비밀번호를 확인해주세요.
+        <Label htmlFor="passwordConfirm" className="text-text-primary text-sm leading-5">
+          <span>
+            <span id="signup-password-confirm-label">비밀번호 확인</span>{' '}
+            <span aria-hidden="true">*</span>
+          </span>
         </Label>
         <div className="relative">
           <Input
             id="passwordConfirm"
+            aria-labelledby="signup-password-confirm-label"
             type={showPasswordConfirm ? 'text' : 'password'}
             {...register('passwordConfirm')}
-            placeholder="위에서 입력한 비밀번호를 입력해주세요."
-            aria-label="비밀번호 확인"
+            required
+            autoComplete="new-password"
+            placeholder="비밀번호를 다시 입력해주세요."
             aria-invalid={Boolean(errors.passwordConfirm)}
             aria-describedby={errors.passwordConfirm ? 'password-confirm-error' : undefined}
-            className="pr-14"
+            className="bg-bg-primary h-14 px-3 pr-12 text-sm leading-5"
           />
           <button
             type="button"
             aria-label={
               showPasswordConfirm ? '비밀번호 확인 필드 숨기기' : '비밀번호 확인 필드 표시'
             }
-            aria-pressed={showPasswordConfirm}
+            aria-controls="passwordConfirm"
             onClick={() => setShowPasswordConfirm((current) => !current)}
-            className="text-text-disabled hover:text-text-tertiary absolute top-1/2 right-5 -translate-y-1/2 cursor-pointer transition-colors"
+            className={visibilityToggleClass}
           >
-            {showPasswordConfirm ? <EyeOff size={22} /> : <Eye size={22} />}
+            {showPasswordConfirm ? (
+              <Eye aria-hidden="true" size={22} />
+            ) : (
+              <EyeOff aria-hidden="true" size={22} />
+            )}
           </button>
         </div>
         <FieldError id="password-confirm-error">{errors.passwordConfirm?.message}</FieldError>

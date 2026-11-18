@@ -119,7 +119,7 @@ export const VerificationFlow: Story = {
   render: () => <InteractiveVerification />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: '인증번호 전송' }));
+    await userEvent.click(canvas.getByRole('button', { name: '이메일 인증' }));
     await userEvent.type(canvas.getByRole('textbox', { name: '이메일 인증번호' }), '000000');
     await userEvent.click(canvas.getByRole('button', { name: '인증번호 확인' }));
     await expect(canvas.getByText('인증번호를 확인해주세요.')).toBeVisible();
@@ -140,7 +140,7 @@ export const ExpiryAndResend: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: '인증번호 전송' }));
+    await userEvent.click(canvas.getByRole('button', { name: '이메일 인증' }));
     await waitFor(() => expect(canvas.getByRole('button', { name: '재전송' })).toBeVisible(), {
       timeout: 4000,
     });

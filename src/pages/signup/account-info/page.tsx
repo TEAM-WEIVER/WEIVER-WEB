@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { LOGIN_PATH } from '@/lib/auth-paths';
 import { initApplicantSignup } from '@/lib/signup-api';
-import { getNextStep, getStepNumber } from '@/lib/signup-flow';
+import { getNextStep } from '@/lib/signup-flow';
 import { individualAccountSchema, type IndividualAccountData } from '@/schemas/signup';
 import { useSignupStore } from '@/store/signup-store';
 
@@ -18,9 +19,9 @@ import { useEmailVerification } from './_hooks/use-email-verification';
 
 export default function SignupAccountInfoPage() {
   const navigate = useNavigate();
-  const savedAccount = useSignupStore((state) => state.account);
+  const savedEmail = useSignupStore((state) => state.account.email);
   const setAccount = useSignupStore((state) => state.setAccount);
-
+  const submitting = useRef(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
@@ -31,22 +32,19 @@ export default function SignupAccountInfoPage() {
   } = useForm<IndividualAccountData>({
     resolver: zodResolver(individualAccountSchema),
     defaultValues: {
-      email: savedAccount.email,
+      email: savedEmail,
       password: '',
       passwordConfirm: '',
     },
     mode: 'onChange',
   });
 
-  const watchedEmail = useWatch({ control, name: 'email' }) ?? '';
-  const watchedPassword = useWatch({ control, name: 'password' }) ?? '';
+  const watchedEmail = useWatch({ control, name: 'email' });
+  const watchedPassword = useWatch({ control, name: 'password' });
   const verification = useEmailVerification(watchedEmail);
-
-  const stepNumber = getStepNumber('account-info');
-  const nextStep = getNextStep('account-info');
   const canSubmit = isValid && verification.isEmailVerified;
 
-  const onSubmit = async (data: IndividualAccountData) => {
+  const submit = handleSubmit(async (data) => {
     if (!verification.isEmailVerified) return;
 
     setSubmitError(null);
@@ -60,26 +58,44 @@ export default function SignupAccountInfoPage() {
       });
 
       setAccount({ email: data.email, signupToken: response.data.signupToken });
+      const nextStep = getNextStep('account-info');
       if (nextStep) navigate(`/signup/${nextStep}`);
     } catch {
       setSubmitError('회원가입 계정 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
     }
-  };
+  });
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="mx-auto flex w-full max-w-[500px] flex-col gap-[34px]"
+    <section
+      aria-labelledby="signup-account-title"
+      className="bg-bg-primary mx-auto w-full max-w-[420px] rounded-[20px] px-5 pt-10 pb-8 sm:px-10 sm:pt-[74px] sm:pb-12"
     >
-      <div className="flex flex-col gap-[34px]">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-h2 text-text-secondary">계정을 생성하세요</h1>
-          <p className="text-body2 text-text-tertiary">
-            {stepNumber}단계 : 계정 정보를 입력해주세요.
-          </p>
-        </div>
+      <header className="mb-7 text-center sm:mb-8">
+        <img src="/weiver.svg" alt="위버" width={72} height={18} className="mx-auto mb-6" />
+        <h1 id="signup-account-title" className="text-h2 text-text-secondary">
+          계정을 생성해주세요.
+        </h1>
+        <p className="text-body2 text-text-tertiary mt-1.5">
+          이메일과 비밀번호로 계정을 만들어주세요.
+        </p>
+      </header>
 
-        <div className="flex flex-col gap-6">
+      <form
+        noValidate
+        aria-busy={isSubmitting}
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (submitting.current) return;
+
+          submitting.current = true;
+          void submit(event).finally(() => {
+            submitting.current = false;
+          });
+        }}
+        className="flex flex-col gap-5"
+      >
+        <fieldset disabled={isSubmitting} className="flex min-w-0 flex-col gap-4">
+          <legend className="sr-only">계정 정보</legend>
           <EmailVerificationSection
             emailInputProps={register('email')}
             emailError={errors.email?.message}
@@ -88,14 +104,30 @@ export default function SignupAccountInfoPage() {
           />
 
           <PasswordFieldsSection register={register} errors={errors} password={watchedPassword} />
-        </div>
-      </div>
+        </fieldset>
 
-      <Button type="submit" size="md" disabled={!canSubmit || isSubmitting} className="w-full">
-        {isSubmitting ? '처리 중' : '다음 단계'}
-        <ArrowRight size={20} />
-      </Button>
-      {submitError ? <p className="text-caption text-error text-right">{submitError}</p> : null}
-    </form>
+        <Button
+          type="submit"
+          size="md"
+          disabled={!canSubmit || isSubmitting}
+          className="w-full text-sm font-medium"
+        >
+          {isSubmitting ? '처리 중' : '다음 단계'}
+          <ArrowRight aria-hidden="true" className="size-5" />
+        </Button>
+        {submitError ? (
+          <p role="alert" className="text-caption text-error">
+            {submitError}
+          </p>
+        ) : null}
+      </form>
+
+      <p className="text-body3 text-text-tertiary border-border-light mt-5 border-t pt-5 text-center">
+        이미 계정이 있으신가요?{' '}
+        <Link to={LOGIN_PATH} className="text-text-secondary underline underline-offset-2">
+          로그인
+        </Link>
+      </p>
+    </section>
   );
 }
