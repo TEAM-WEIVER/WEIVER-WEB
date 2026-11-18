@@ -1,8 +1,15 @@
 .mark {
   position: relative;
   display: block;
+  /* The frame includes padding for the wave around the 64px symbol. */
   width: 76px;
-  height: 50px;
+  aspect-ratio: 76 / 50;
+}
+
+@media (width >= 48rem) {
+  .mark {
+    width: 95px;
+  }
 }
 
 .mark::before,
