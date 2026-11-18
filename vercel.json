@@ -17,6 +17,10 @@
       "destination": "/app.html"
     },
     {
+      "source": "/login/password-reset",
+      "destination": "/app.html"
+    },
+    {
       "source": "/signup/account-info",
       "destination": "/app.html"
     },
