@@ -10,7 +10,7 @@ test('개인 로그인에서 같은 문서 안의 회원가입 화면으로 이�
   await expect(page.getByRole('button', { name: '기업 회원' })).toHaveCount(0);
 
   const document = await page.evaluateHandle(() => window.document);
-  await page.getByRole('link', { name: '회원가입하기', exact: true }).click();
+  await page.getByRole('link', { name: '이메일로 회원가입', exact: true }).click();
   await expect(page).toHaveURL('/signup/account-info');
   await expect(page.getByLabel('이메일', { exact: true })).toBeVisible();
   expect(await document.evaluate((initial) => initial === window.document)).toBe(true);

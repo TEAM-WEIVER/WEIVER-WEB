@@ -4,16 +4,14 @@ import { getFirstStep } from '@/lib/signup-flow';
 
 export function LoginFooter() {
   return (
-    <div className="border-primary-100 flex justify-center border-t pt-6">
-      <div className="flex items-center gap-3">
-        <span className="text-body2 text-text-tertiary">아직 회원이 아니신가요?</span>
-        <Link
-          to={`/signup/${getFirstStep()}`}
-          className="text-body2 text-text-primary hover:underline"
-        >
-          회원가입하기
-        </Link>
-      </div>
-    </div>
+    <p className="text-caption text-text-secondary mt-10 text-center sm:mt-14">
+      아직 계정이 없으신가요?{' '}
+      <Link
+        to={`/signup/${getFirstStep()}`}
+        className="hover:text-text-primary focus-visible:outline-primary-600 rounded-sm underline underline-offset-2 focus-visible:outline-2"
+      >
+        이메일로 회원가입
+      </Link>
+    </p>
   );
 }
