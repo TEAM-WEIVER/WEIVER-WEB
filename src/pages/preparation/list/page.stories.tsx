@@ -12,7 +12,7 @@ const postings = examplePostings.map((posting, index) => ({
 }));
 
 const meta = {
-  title: 'Pages/Preparation/List',
+  title: 'Pages/JobPostings/List',
   component: PreparationListPage,
   parameters: {
     layout: 'fullscreen',

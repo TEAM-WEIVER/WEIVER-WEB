@@ -12,7 +12,7 @@ const initialValues = {
 };
 
 const meta = {
-  title: 'Preparation/JobPostingForm',
+  title: 'Features/JobPostings/JobPostingForm',
   component: JobPostingForm,
   tags: ['autodocs'],
   args: { onSubmit: fn(async () => {}) },

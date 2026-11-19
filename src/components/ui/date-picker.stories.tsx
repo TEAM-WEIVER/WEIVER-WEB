@@ -30,14 +30,16 @@ export const Date: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: '날짜 선택' }));
+    await userEvent.click(canvas.getByRole('combobox', { name: '날짜 선택' }));
     await userEvent.click(
       within(canvasElement.ownerDocument.body).getByRole('button', { name: '2026년 11월 15일' }),
     );
-    await expect(canvas.getByRole('textbox', { name: '날짜 선택 값' })).toHaveValue('2026-11-15');
-    await userEvent.click(canvas.getByRole('button', { name: '날짜 선택' }));
+    await expect(canvas.getByRole('combobox', { name: '날짜 선택' })).toHaveTextContent(
+      '2026-11-15',
+    );
+    await userEvent.click(canvas.getByRole('combobox', { name: '날짜 선택' }));
     await userEvent.keyboard('{Escape}');
-    await expect(canvas.getByRole('button', { name: '날짜 선택' })).toHaveAttribute(
+    await expect(canvas.getByRole('combobox', { name: '날짜 선택' })).toHaveAttribute(
       'aria-expanded',
       'false',
     );
@@ -61,7 +63,7 @@ export const KeyboardNavigation: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
-    const trigger = canvas.getByRole('button', { name: '날짜 선택' });
+    const trigger = canvas.getByRole('combobox', { name: '날짜 선택' });
     await userEvent.click(trigger);
     await expect(body.getByRole('button', { name: '2024년 2월 28일' })).toHaveFocus();
     await userEvent.keyboard('{ArrowRight}');
@@ -69,7 +71,9 @@ export const KeyboardNavigation: Story = {
     await userEvent.keyboard('{ArrowRight}');
     await expect(body.getByRole('button', { name: '2024년 3월 1일' })).toHaveFocus();
     await userEvent.keyboard('{Enter}');
-    await expect(canvas.getByRole('textbox', { name: '날짜 선택 값' })).toHaveValue('2024-03-01');
+    await expect(canvas.getByRole('combobox', { name: '날짜 선택' })).toHaveTextContent(
+      '2024-03-01',
+    );
     await expect(trigger).toHaveFocus();
     await userEvent.click(trigger);
     await userEvent.keyboard('{Escape}');
@@ -83,11 +87,11 @@ export const KeyboardMonth: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
-    await userEvent.click(canvas.getByRole('button', { name: '날짜 선택' }));
+    await userEvent.click(canvas.getByRole('combobox', { name: '날짜 선택' }));
     await userEvent.keyboard('{ArrowRight}');
     await expect(body.getByRole('button', { name: '2027년 1월' })).toHaveFocus();
     await userEvent.keyboard('{Enter}');
-    await expect(canvas.getByRole('textbox', { name: '날짜 선택 값' })).toHaveValue('2027-01');
+    await expect(canvas.getByRole('combobox', { name: '날짜 선택' })).toHaveTextContent('2027-01');
   },
 };
 export const LowerBoundary: Story = {
@@ -96,7 +100,7 @@ export const LowerBoundary: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
-    await userEvent.click(canvas.getByRole('button', { name: '날짜 선택' }));
+    await userEvent.click(canvas.getByRole('combobox', { name: '날짜 선택' }));
     await userEvent.keyboard('{ArrowLeft}');
     await expect(body.getByRole('button', { name: '2020년 1월 1일' })).toHaveFocus();
     await expect(body.getByRole('button', { name: '이전 달' })).toBeDisabled();
@@ -107,7 +111,7 @@ export const LowerBoundary: Story = {
 export const OpenCalendar: Story = {
   ...Date,
   play: async ({ canvasElement }) => {
-    await userEvent.click(within(canvasElement).getByRole('button', { name: '날짜 선택' }));
+    await userEvent.click(within(canvasElement).getByRole('combobox', { name: '날짜 선택' }));
     await expect(
       within(canvasElement.ownerDocument.body).getByRole('dialog', { name: '날짜 선택 달력' }),
     ).toBeVisible();
@@ -122,7 +126,7 @@ export const PageNavigation: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
-    await userEvent.click(canvas.getByRole('button', { name: '날짜 선택' }));
+    await userEvent.click(canvas.getByRole('combobox', { name: '날짜 선택' }));
     await userEvent.keyboard('{PageDown}');
     await expect(body.getByRole('button', { name: '2026년 2월 28일' })).toHaveFocus();
     await userEvent.keyboard('{Shift>}{PageUp}{/Shift}');
