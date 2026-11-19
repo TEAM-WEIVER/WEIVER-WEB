@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within } from 'storybook/test';
 
+import { withPreparationHeader } from '../../../../.storybook/decorators/preparation-header';
+
 import { CoverLetterEditor } from './cover-letter-editor';
 
 const existingQuestion = {
@@ -16,16 +18,23 @@ const anotherQuestion = {
 };
 
 const meta = {
-  title: 'Preparation/CoverLetterEditor',
+  title: 'Pages/Documents/CoverLetter',
   component: CoverLetterEditor,
   parameters: { layout: 'fullscreen' },
+  decorators: [withPreparationHeader],
   args: { onSaveDraft: fn() },
 } satisfies Meta<typeof CoverLetterEditor>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+export const WithEntries: Story = {
+  name: '작성 예시',
+  args: { initialQuestions: [existingQuestion, anotherQuestion] },
+};
+
 export const Empty: Story = {
+  name: '빈 화면',
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('heading', { name: '자기소개서', level: 1 })).toBeVisible();
     await expect(canvas.getByText('등록된 문항이 없습니다.')).toBeVisible();
@@ -42,6 +51,7 @@ export const Empty: Story = {
 };
 
 export const AddingQuestion: Story = {
+  name: '문항 추가',
   args: { initialQuestions: [existingQuestion, anotherQuestion], onSaveDraft: fn() },
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: '문항 추가' }));
@@ -81,6 +91,7 @@ export const AddingQuestion: Story = {
 };
 
 export const EditingQuestion: Story = {
+  name: '문항 편집',
   args: { initialQuestions: [existingQuestion, anotherQuestion], onSaveDraft: fn() },
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(
@@ -115,6 +126,7 @@ export const EditingQuestion: Story = {
 };
 
 export const QuestionActions: Story = {
+  name: '문항 추가·수정·삭제',
   args: { onSaveDraft: fn() },
   play: async ({ args, canvas, userEvent }) => {
     const add = canvas.getByRole('button', { name: '문항 추가' });
