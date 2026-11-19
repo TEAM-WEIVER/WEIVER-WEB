@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 
 import { SectionHeading } from '@/components/common/section-heading';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import {
@@ -115,6 +116,21 @@ function ResumeEntryForm<Name extends string>({
                         ))}
                       </SelectContent>
                     </Select>
+                  );
+                }
+
+                if (field.format === 'month' || field.format === 'date') {
+                  return (
+                    <DatePicker
+                      {...accessibleProps}
+                      {...fieldProps}
+                      aria-label={field.label}
+                      mode={field.format}
+                      separator="."
+                      value={values[field.name].replaceAll('.', '-')}
+                      onChange={(value) => onChange(field.name, value.replaceAll('-', '.'))}
+                      triggerClassName={controlClassName}
+                    />
                   );
                 }
 

@@ -92,7 +92,7 @@ export const SelectKeyboard: Story = {
     const trigger = form.getByRole('combobox', { name: '학력구분' });
     const body = within(canvasElement.ownerDocument.body);
 
-    await expect(canvas.getAllByRole('combobox')).toHaveLength(5);
+    await expect(canvas.getAllByRole('combobox')).toHaveLength(11);
     await expect(trigger).toHaveTextContent('학력구분 선택');
     await expect(trigger).toBeRequired();
     await userEvent.click(form.getByRole('button', { name: '저장' }));
@@ -125,12 +125,19 @@ export const SelectKeyboard: Story = {
 
 export const AddEditAndDelete: Story = {
   args: { initialDraft: { ...sampleDraft, certifications: [] } },
-  play: async ({ canvas, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     const section = within(canvas.getByRole('region', { name: '자격증' }));
     await userEvent.click(section.getByRole('button', { name: '자격증 추가' }));
     const form = within(section.getByRole('form', { name: '자격증 정보 입력' }));
     await userEvent.type(form.getByRole('textbox', { name: '자격증명' }), '정보처리기사');
-    await userEvent.type(form.getByRole('textbox', { name: '취득일' }), '2025.06.20');
+    await userEvent.click(form.getByRole('combobox', { name: '취득일' }));
+    const body = within(canvasElement.ownerDocument.body);
+    const calendar = within(await body.findByRole('dialog', { name: '취득일 달력' }));
+    await userEvent.click(calendar.getByRole('combobox', { name: '연도 선택' }));
+    await userEvent.click(body.getByRole('option', { name: '2025년' }));
+    await userEvent.click(calendar.getByRole('combobox', { name: '월 선택' }));
+    await userEvent.click(body.getByRole('option', { name: '6월' }));
+    await userEvent.click(calendar.getByRole('button', { name: '2025년 6월 20일' }));
     await userEvent.click(form.getByRole('button', { name: '저장' }));
     await expect(section.getByRole('heading', { name: '정보처리기사' })).toBeVisible();
 
@@ -171,18 +178,19 @@ export const EmploymentStatus: Story = {
     const [firstForm, secondForm] = section.getAllByRole('form', { name: '경력사항 정보 수정' });
     const first = within(firstForm);
     const second = within(secondForm);
-    const endMonth = first.getByRole('textbox', { name: '퇴사년월' });
-    const otherEndMonth = second.getByRole('textbox', { name: '퇴사년월' });
+    const endMonth = first.getByRole('combobox', { name: '퇴사년월' });
+    const otherEndMonth = second.getByRole('combobox', { name: '퇴사년월' });
     const status = first.getByRole('combobox', { name: '재직상태' });
 
-    await expect(endMonth).toHaveValue('2024.08');
+    await expect(endMonth).toHaveTextContent('2024.08');
     await selectStatus(status, '재직중');
     await expect(endMonth).toBeDisabled();
     await expect(endMonth).not.toBeRequired();
-    await expect(endMonth).toHaveValue('');
+    await expect(endMonth).toHaveTextContent('YYYY.MM');
+    await expect(body.queryByRole('dialog')).not.toBeInTheDocument();
     await expect(otherEndMonth).toBeEnabled();
-    await expect(otherEndMonth).toHaveValue('2022.08');
-    await userEvent.click(first.getByRole('textbox', { name: '입사년월' }));
+    await expect(otherEndMonth).toHaveTextContent('2022.08');
+    first.getByRole('combobox', { name: '입사년월' }).focus();
     await userEvent.tab();
     await expect(first.getByRole('textbox', { name: '담당업무' })).toHaveFocus();
 
@@ -204,10 +212,14 @@ export const EmploymentStatus: Story = {
     const [reopened] = section.getAllByRole('form', { name: '경력사항 정보 수정' });
     const reopenedForm = within(reopened);
     await selectStatus(reopenedForm.getByRole('combobox', { name: '재직상태' }), '퇴사');
-    await userEvent.type(reopenedForm.getByRole('textbox', { name: '퇴사년월' }), '2025.01');
+    await userEvent.click(reopenedForm.getByRole('combobox', { name: '퇴사년월' }));
+    const calendar = within(await body.findByRole('dialog', { name: '퇴사년월 달력' }));
+    await userEvent.click(calendar.getByRole('combobox', { name: '연도 선택' }));
+    await userEvent.click(body.getByRole('option', { name: '2025년' }));
+    await userEvent.click(calendar.getByRole('button', { name: '2025년 1월' }));
     await userEvent.click(reopenedForm.getByRole('button', { name: '저장' }));
     await expect(section.getByText('2023.03 ~ 2025.01')).toBeVisible();
-    await expect(otherEndMonth).toHaveValue('2022.08');
+    await expect(otherEndMonth).toHaveTextContent('2022.08');
   },
 };
 
@@ -252,5 +264,59 @@ export const SaveDraftWithEdits: Story = {
       'aria-invalid',
       'false',
     );
+  },
+};
+
+export const CalendarSelection: Story = {
+  play: async ({ canvas, canvasElement, args, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const education = within(canvas.getByRole('form', { name: '학력 정보 입력' }));
+    const startMonth = education.getByRole('combobox', { name: '입학년월' });
+
+    await expect(education.queryByRole('textbox', { name: '입학년월' })).not.toBeInTheDocument();
+    startMonth.focus();
+    await userEvent.keyboard('2020.09');
+    await expect(startMonth).toHaveTextContent('YYYY.MM');
+    await userEvent.keyboard('{Enter}');
+    const monthPicker = within(await body.findByRole('dialog', { name: '입학년월 달력' }));
+    await userEvent.click(monthPicker.getByRole('combobox', { name: '연도 선택' }));
+    await userEvent.click(body.getByRole('option', { name: '2020년' }));
+    await userEvent.click(monthPicker.getByRole('button', { name: '2020년 9월' }));
+    await expect(startMonth).toHaveTextContent('2020.09');
+    await waitFor(() => expect(startMonth).toHaveFocus());
+
+    const award = within(canvas.getByRole('form', { name: '수상이력 정보 입력' }));
+    const awardDate = award.getByRole('combobox', { name: '수상일' });
+    await userEvent.click(awardDate);
+    const dayPicker = within(await body.findByRole('dialog', { name: '수상일 달력' }));
+    await userEvent.click(dayPicker.getByRole('combobox', { name: '연도 선택' }));
+    await userEvent.click(body.getByRole('option', { name: '2024년' }));
+    await userEvent.click(dayPicker.getByRole('combobox', { name: '월 선택' }));
+    await userEvent.click(body.getByRole('option', { name: '2월' }));
+    await userEvent.click(dayPicker.getByRole('button', { name: '2024년 2월 29일' }));
+    await expect(awardDate).toHaveTextContent('2024.02.29');
+    await waitFor(() => expect(awardDate).toHaveFocus());
+
+    await userEvent.click(awardDate);
+    await userEvent.keyboard('{Escape}');
+    await expect(awardDate).toHaveTextContent('2024.02.29');
+    await userEvent.click(canvas.getByRole('button', { name: '임시 저장' }));
+    await expect(args.onSaveDraft).toHaveBeenCalledWith({
+      education: [
+        {
+          level: '',
+          school: '',
+          major: '',
+          grade: '',
+          gradeScale: '',
+          startMonth: '2020.09',
+          endMonth: '',
+          status: '',
+        },
+      ],
+      career: [],
+      certifications: [],
+      awards: [{ name: '', organization: '', awardedDate: '2024.02.29', description: '' }],
+    });
   },
 };
