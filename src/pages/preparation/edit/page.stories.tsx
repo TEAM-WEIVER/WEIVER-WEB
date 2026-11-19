@@ -9,7 +9,7 @@ import { exampleDetail } from '../_storybook/fixtures';
 import PreparationEditPage from './page';
 
 const meta = {
-  title: 'Pages/Preparation/Edit',
+  title: 'Pages/JobPostings/Edit',
   component: PreparationEditPage,
   parameters: {
     layout: 'fullscreen',

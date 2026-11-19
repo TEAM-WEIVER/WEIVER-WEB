@@ -4,7 +4,7 @@ import { expect, fn, userEvent, within } from 'storybook/test';
 import { JobPostingCard } from './job-posting-card';
 
 const meta = {
-  title: 'Preparation/JobPostingCard',
+  title: 'Features/JobPostings/JobPostingCard',
   component: JobPostingCard,
   tags: ['autodocs'],
   args: {
