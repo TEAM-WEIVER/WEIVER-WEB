@@ -6,7 +6,7 @@ import { withPreparationHeader } from '../../../../.storybook/decorators/prepara
 import PreparationNewPage from './page';
 
 const meta = {
-  title: 'Pages/Preparation/New',
+  title: 'Pages/JobPostings/New',
   component: PreparationNewPage,
   args: { onBack: fn(), onSubmit: fn(async () => {}) },
   parameters: {

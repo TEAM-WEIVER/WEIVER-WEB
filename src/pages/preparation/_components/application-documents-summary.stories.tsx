@@ -5,7 +5,7 @@ import { exampleDetail } from '../_storybook/fixtures';
 import { ApplicationDocumentsSummary } from './application-documents-summary';
 
 const meta = {
-  title: 'Preparation/ApplicationDocumentsSummary',
+  title: 'Features/Documents/ApplicationDocumentsSummary',
   component: ApplicationDocumentsSummary,
   tags: ['autodocs'],
   args: { documents: exampleDetail.documents, onOpenDocument: fn() },
