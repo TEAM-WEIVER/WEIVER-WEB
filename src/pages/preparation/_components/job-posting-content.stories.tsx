@@ -5,7 +5,7 @@ import { exampleDetail } from '../_storybook/fixtures';
 import { JobPostingContent } from './job-posting-content';
 
 const meta = {
-  title: 'Preparation/JobPostingContent',
+  title: 'Features/JobPostings/JobPostingContent',
   component: JobPostingContent,
   tags: ['autodocs'],
   args: { content: exampleDetail.posting.content, sourceUrl: exampleDetail.posting.sourceUrl },

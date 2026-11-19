@@ -9,6 +9,19 @@ sb.mock(import('../src/lib/auth-api.ts'));
 
 const preview: Preview = {
   parameters: {
+    options: {
+      storySort: {
+        order: [
+          'Pages',
+          ['Documents', 'JobPostings'],
+          'Features',
+          ['Documents', 'JobPostings', 'Interviews'],
+          'Common',
+          'UI',
+          'Auth',
+        ],
+      },
+    },
     controls: {
       matchers: {
         color: /(background|color)$/i,

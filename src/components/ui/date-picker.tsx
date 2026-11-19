@@ -1,27 +1,38 @@
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
+import { ko } from 'date-fns/locale/ko';
 import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Popover } from 'radix-ui';
 
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 type DatePickerProps = {
   id?: string;
+  name?: string;
   value?: string | null;
   onChange: (value: string) => void;
   mode?: 'date' | 'month';
   minYear?: number;
   maxYear?: number;
   disabled?: boolean;
+  required?: boolean;
+  separator?: '-' | '.';
   'aria-invalid'?: boolean;
   'aria-label'?: string;
   'aria-describedby'?: string;
   className?: string;
+  triggerClassName?: string;
 };
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const pad = (value: number) => String(value).padStart(2, '0');
-const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
 
 function parseDate(value: string | null | undefined, mode: 'date' | 'month') {
   if (!value || !(mode === 'month' ? /^\d{4}-\d{2}$/ : /^\d{4}-\d{2}-\d{2}$/).test(value))
@@ -33,21 +44,19 @@ function parseDate(value: string | null | undefined, mode: 'date' | 'month') {
     : null;
 }
 
-function moveMonth(date: Date, offset: number) {
-  const target = new Date(date.getFullYear(), date.getMonth() + offset, 1);
-  target.setDate(Math.min(date.getDate(), daysInMonth(target.getFullYear(), target.getMonth())));
-  return target;
-}
-
 export function DatePicker({
   id,
+  name,
   value,
   onChange,
   mode = 'date',
   minYear = 1950,
   maxYear = new Date().getFullYear() + 10,
   disabled = false,
+  required = false,
+  separator = '-',
   className,
+  triggerClassName,
   'aria-invalid': ariaInvalid = false,
   'aria-label': ariaLabel = '날짜 선택',
   'aria-describedby': describedBy,
@@ -64,15 +73,15 @@ export function DatePicker({
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
   const years = Array.from({ length: upperYear - minYear + 1 }, (_, index) => upperYear - index);
+  const visibleValue = selectedValue.replaceAll('-', separator);
+  const placeholder = mode === 'month' ? `YYYY${separator}MM` : `YYYY${separator}MM${separator}DD`;
 
-  function clamp(date: Date) {
-    if (date.getFullYear() < minYear) return new Date(minYear, 0, 1);
-    if (date.getFullYear() > upperYear) return new Date(upperYear, 11, 31);
-    return date;
+  function clampMonth(date: Date) {
+    return new Date(Math.min(upperYear, Math.max(minYear, date.getFullYear())), date.getMonth(), 1);
   }
 
   function changeOpen(next: boolean) {
-    if (next) setCursor(clamp(parseDate(value, mode) ?? new Date()));
+    if (next) setCursor(clampMonth(parseDate(value, mode) ?? new Date()));
     setOpen(next);
   }
 
@@ -83,32 +92,25 @@ export function DatePicker({
     }
   }, [cursor]);
 
-  function navigate(event: KeyboardEvent<HTMLButtonElement>) {
-    let next = new Date(cursor);
-    const step = mode === 'month' ? 3 : 7;
+  function navigateMonths(event: KeyboardEvent<HTMLButtonElement>) {
     const offsets: Record<string, number> = {
       ArrowLeft: -1,
       ArrowRight: 1,
-      ArrowUp: -step,
-      ArrowDown: step,
+      ArrowUp: -3,
+      ArrowDown: 3,
+      Home: -(month % 3),
+      End: 2 - (month % 3),
+      PageUp: -12,
+      PageDown: 12,
     };
-    if (event.key in offsets) {
-      if (mode === 'month') next = moveMonth(cursor, offsets[event.key]);
-      else next.setDate(next.getDate() + offsets[event.key]);
-    } else if (event.key === 'Home' || event.key === 'End') {
-      const position = mode === 'month' ? month % 3 : cursor.getDay();
-      const offset = event.key === 'Home' ? -position : step - 1 - position;
-      if (mode === 'month') next = moveMonth(cursor, offset);
-      else next.setDate(next.getDate() + offset);
-    } else if (event.key === 'PageUp' || event.key === 'PageDown') {
-      next = moveMonth(
-        cursor,
-        (event.key === 'PageUp' ? -1 : 1) * (mode === 'month' || event.shiftKey ? 12 : 1),
-      );
-    } else return;
+    if (!(event.key in offsets)) return;
+
     event.preventDefault();
+    const target = new Date(year, month + offsets[event.key], 1);
+    const earliest = new Date(minYear, 0, 1);
+    const latest = new Date(upperYear, 11, 1);
     shouldFocus.current = true;
-    setCursor(clamp(next));
+    setCursor(new Date(Math.min(latest.getTime(), Math.max(earliest.getTime(), target.getTime()))));
   }
 
   function choose(date: Date) {
@@ -117,111 +119,102 @@ export function DatePicker({
     setOpen(false);
   }
 
-  const dayCount = daysInMonth(year, month);
-  const leading = new Date(year, month, 1).getDay();
-  const columns = mode === 'month' ? 3 : 7;
-  const cellCount = mode === 'month' ? 12 : Math.ceil((leading + dayCount) / 7) * 7;
-  const cells = Array.from({ length: cellCount }, (_, index) => {
-    if (mode === 'month') return new Date(year, index, 1);
-    const day = index - leading + 1;
-    return day > 0 && day <= dayCount ? new Date(year, month, day) : null;
-  });
-  const atStart = year === minYear && (mode === 'month' || month === 0);
-  const atEnd = year === upperYear && (mode === 'month' || month === 11);
-  const selectClass =
-    'border-border-default bg-bg-primary text-body2 text-text-primary focus-visible:ring-ring h-9 min-w-0 flex-1 rounded-md border px-2 outline-none focus-visible:ring-2';
-
   return (
     <div className={cn('w-full', className)}>
-      <input
-        type="text"
-        readOnly
-        tabIndex={-1}
-        aria-label={`${ariaLabel} 값`}
-        value={selectedValue}
-        className="sr-only"
-      />
+      <input type="hidden" name={name} value={selectedValue} disabled={disabled} />
       <span id={valueId} className="sr-only">
-        {selectedValue || '선택한 날짜 없음'}
+        {visibleValue || '선택한 날짜 없음'}
       </span>
       <Popover.Root open={open && !disabled} onOpenChange={changeOpen} modal>
         <Popover.Trigger asChild>
           <Button
             id={id}
             type="button"
+            role="combobox"
+            aria-haspopup="dialog"
+            aria-required={required}
+            aria-readonly="true"
             variant="outline"
             disabled={disabled}
             aria-invalid={ariaInvalid}
             aria-label={ariaLabel}
             aria-describedby={[describedBy, valueId].filter(Boolean).join(' ')}
             className={cn(
-              'border-border-default bg-bg-primary text-body2 text-text-primary hover:bg-bg-tertiary h-12 w-full justify-start rounded-lg px-4 shadow-none',
+              'border-border-default bg-card text-body2 text-text-primary hover:bg-bg-secondary h-12 w-full justify-start rounded-lg px-4 shadow-none',
               !selectedValue && 'text-text-tertiary',
               ariaInvalid && 'border-error focus-visible:ring-error/20',
+              triggerClassName,
             )}
           >
-            <CalendarIcon aria-hidden="true" className="text-text-tertiary size-4" />
-            <span>{selectedValue || (mode === 'month' ? 'YYYY-MM' : 'YYYY-MM-DD')}</span>
+            <span className="min-w-0 flex-1 truncate text-left">{visibleValue || placeholder}</span>
+            <CalendarIcon aria-hidden="true" className="text-text-tertiary size-4 shrink-0" />
           </Button>
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content
             aria-label={`${ariaLabel} 달력`}
             align="start"
-            sideOffset={6}
+            sideOffset={8}
             collisionPadding={16}
             onOpenAutoFocus={(event) => {
               event.preventDefault();
               gridRef.current?.querySelector<HTMLButtonElement>('[tabindex="0"]')?.focus();
             }}
-            className="border-border-light bg-bg-primary z-50 w-[304px] max-w-[calc(100vw-2rem)] rounded-lg border p-3 shadow-lg"
+            className="border-border-light bg-card z-50 w-[304px] max-w-[calc(100vw-2rem)] rounded-lg border p-3 shadow-md"
           >
             <div className="mb-3 flex items-center gap-2">
               <Button
                 size="icon-xs"
                 variant="ghost"
-                disabled={atStart}
+                className="size-8"
+                disabled={year === minYear && (mode === 'month' || month === 0)}
                 aria-label={mode === 'month' ? '이전 연도' : '이전 달'}
-                onClick={() => setCursor(clamp(moveMonth(cursor, mode === 'month' ? -12 : -1)))}
+                onClick={() => setCursor(new Date(year, month - (mode === 'month' ? 12 : 1), 1))}
               >
                 <ChevronLeft />
               </Button>
-              <select
-                aria-label="연도 선택"
-                value={year}
-                className={selectClass}
-                onChange={(event) =>
-                  setCursor(clamp(moveMonth(cursor, (Number(event.target.value) - year) * 12)))
-                }
+              <Select
+                value={String(year)}
+                onValueChange={(nextYear) => setCursor(new Date(Number(nextYear), month, 1))}
               >
-                {years.map((item) => (
-                  <option key={item} value={item}>
-                    {item}년
-                  </option>
-                ))}
-              </select>
-              {mode === 'date' ? (
-                <select
-                  aria-label="월 선택"
-                  value={month}
-                  className={selectClass}
-                  onChange={(event) =>
-                    setCursor(moveMonth(cursor, Number(event.target.value) - month))
-                  }
+                <SelectTrigger
+                  aria-label="연도 선택"
+                  className={mode === 'date' ? 'w-25 shrink-0 px-2.5' : 'flex-1'}
                 >
-                  {Array.from({ length: 12 }, (_, index) => (
-                    <option key={index} value={index}>
-                      {index + 1}월
-                    </option>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent aria-label="연도 선택">
+                  {years.map((item) => (
+                    <SelectItem key={item} value={String(item)}>
+                      {item}년
+                    </SelectItem>
                   ))}
-                </select>
+                </SelectContent>
+              </Select>
+              {mode === 'date' ? (
+                <Select
+                  value={String(month)}
+                  onValueChange={(nextMonth) => setCursor(new Date(year, Number(nextMonth), 1))}
+                >
+                  <SelectTrigger aria-label="월 선택" className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent aria-label="월 선택">
+                    {Array.from({ length: 12 }, (_, item) => (
+                      <SelectItem key={item} value={String(item)}>
+                        {item + 1}월
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               ) : null}
               <Button
                 size="icon-xs"
                 variant="ghost"
-                disabled={atEnd}
+                className="size-8"
+                disabled={year === upperYear && (mode === 'month' || month === 11)}
                 aria-label={mode === 'month' ? '다음 연도' : '다음 달'}
-                onClick={() => setCursor(clamp(moveMonth(cursor, mode === 'month' ? 12 : 1)))}
+                onClick={() => setCursor(new Date(year, month + (mode === 'month' ? 12 : 1), 1))}
               >
                 <ChevronRight />
               </Button>
@@ -229,85 +222,74 @@ export function DatePicker({
             <p aria-live="polite" className="sr-only">
               {year}년 {mode === 'date' ? `${month + 1}월` : ''}
             </p>
-            <div
-              ref={gridRef}
-              role="grid"
-              aria-label={
-                mode === 'month' ? `${year}년 월 선택` : `${year}년 ${month + 1}월 날짜 선택`
-              }
-              aria-describedby={helpId}
-            >
-              {mode === 'date' ? (
-                <div role="row" className="grid grid-cols-7 gap-1">
-                  {WEEKDAYS.map((day) => (
-                    <div
-                      key={day}
-                      role="columnheader"
-                      aria-label={`${day}요일`}
-                      className="text-caption text-text-tertiary flex h-7 items-center justify-center"
-                    >
-                      {day}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              {Array.from({ length: cellCount / columns }, (_, row) => (
-                <div
-                  role="row"
-                  key={row}
-                  className={cn('grid gap-1', mode === 'month' ? 'grid-cols-3' : 'grid-cols-7')}
-                >
-                  {cells.slice(row * columns, (row + 1) * columns).map((date, col) => {
-                    const active =
-                      date &&
-                      (mode === 'month'
-                        ? date.getMonth() === month
-                        : date.getDate() === cursor.getDate());
-                    const isSelected =
-                      !!date &&
-                      !!selected &&
-                      date.getFullYear() === selected.getFullYear() &&
-                      date.getMonth() === selected.getMonth() &&
-                      (mode === 'month' || date.getDate() === selected.getDate());
-                    return (
-                      <div role="gridcell" aria-selected={date ? isSelected : undefined} key={col}>
-                        {date ? (
+            {mode === 'month' ? (
+              <div
+                ref={gridRef}
+                role="grid"
+                aria-label={`${year}년 월 선택`}
+                aria-describedby={helpId}
+              >
+                {Array.from({ length: 4 }, (_, row) => (
+                  <div role="row" key={row} className="grid grid-cols-3 gap-1">
+                    {Array.from({ length: 3 }, (_, col) => {
+                      const itemMonth = row * 3 + col;
+                      const isSelected =
+                        selected?.getFullYear() === year && selected.getMonth() === itemMonth;
+                      return (
+                        <div role="gridcell" aria-selected={isSelected} key={col}>
                           <button
                             type="button"
-                            tabIndex={active ? 0 : -1}
-                            aria-label={
-                              mode === 'month'
-                                ? `${year}년 ${date.getMonth() + 1}월`
-                                : `${year}년 ${month + 1}월 ${date.getDate()}일`
-                            }
+                            tabIndex={month === itemMonth ? 0 : -1}
+                            aria-label={`${year}년 ${itemMonth + 1}월`}
                             onFocus={() => {
-                              if (!active) setCursor(date);
+                              if (month !== itemMonth) setCursor(new Date(year, itemMonth, 1));
                             }}
-                            onKeyDown={navigate}
-                            onClick={() => choose(date)}
+                            onKeyDown={navigateMonths}
+                            onClick={() => choose(new Date(year, itemMonth, 1))}
                             className={cn(
-                              'text-body2 hover:bg-primary-100 focus-visible:ring-ring flex h-9 w-full items-center justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-inset',
+                              'text-body2 hover:bg-bg-tertiary focus-visible:ring-ring flex h-10 w-full items-center justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-inset',
                               isSelected
                                 ? 'bg-primary-700 text-text-inverse hover:bg-primary-700'
                                 : 'text-text-primary',
                             )}
                           >
-                            {mode === 'month' ? `${date.getMonth() + 1}월` : date.getDate()}
+                            {itemMonth + 1}월
                           </button>
-                        ) : (
-                          <div className="h-9" />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div ref={gridRef}>
+                <Calendar
+                  mode="single"
+                  required
+                  selected={selected ?? undefined}
+                  onSelect={choose}
+                  month={cursor}
+                  onMonthChange={setCursor}
+                  startMonth={new Date(minYear, 0, 1)}
+                  endMonth={new Date(upperYear, 11, 1)}
+                  disabled={{ before: new Date(minYear, 0, 1), after: new Date(upperYear, 11, 31) }}
+                  locale={ko}
+                  hideNavigation
+                  classNames={{ month_caption: 'sr-only' }}
+                  labels={{
+                    labelDayButton: (date) =>
+                      `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`,
+                    labelPrevious: () => '이전 달',
+                    labelNext: () => '다음 달',
+                  }}
+                />
+              </div>
+            )}
             <p id={helpId} className="text-caption text-text-tertiary mt-3">
               방향키로 이동 · Enter로 선택 · Esc로 닫기
             </p>
             <Popover.Close asChild>
-              <Button variant="ghost" className="mt-2 w-full">
+              <Button variant="ghost" className="mt-2 h-9 w-full">
                 닫기
               </Button>
             </Popover.Close>
