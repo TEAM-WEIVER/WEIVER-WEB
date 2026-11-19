@@ -5,7 +5,7 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { DeleteJobPostingDialog } from './delete-job-posting-dialog';
 
 const meta = {
-  title: 'Preparation/DeleteJobPostingDialog',
+  title: 'Features/JobPostings/DeleteJobPostingDialog',
   component: DeleteJobPostingDialog,
   tags: ['autodocs'],
   args: { postingName: '카카오뱅크 AI 서비스 기획', onDelete: fn(async () => {}) },

@@ -5,7 +5,7 @@ import { exampleDetail } from '../_storybook/fixtures';
 import { InterviewSummary } from './interview-summary';
 
 const meta = {
-  title: 'Preparation/InterviewSummary',
+  title: 'Features/Interviews/InterviewSummary',
   component: InterviewSummary,
   tags: ['autodocs'],
   args: { interviews: exampleDetail.interviews, canStart: true, onStart: fn(), onOpenReport: fn() },
