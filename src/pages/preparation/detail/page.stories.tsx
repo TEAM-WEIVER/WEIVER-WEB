@@ -7,7 +7,7 @@ import { exampleDetail, examplePostings } from '../_storybook/fixtures';
 import PreparationDetailPage from './page';
 
 const meta = {
-  title: 'Pages/Preparation/Detail',
+  title: 'Pages/JobPostings/Detail',
   component: PreparationDetailPage,
   parameters: {
     layout: 'fullscreen',

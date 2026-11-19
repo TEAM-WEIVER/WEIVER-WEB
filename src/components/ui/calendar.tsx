@@ -35,7 +35,7 @@ function Calendar({
           'text-body2 hover:bg-bg-tertiary focus-visible:ring-ring flex h-9 w-full items-center justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-inset',
         today: 'text-primary-700 font-semibold [&_button]:ring-1 [&_button]:ring-border-default',
         selected: '[&_button]:bg-primary-700 [&_button]:text-text-inverse',
-        outside: 'text-text-disabled',
+        outside: 'text-text-tertiary',
         disabled: 'text-text-disabled [&_button]:pointer-events-none [&_button]:opacity-50',
         hidden: 'invisible',
         ...classNames,

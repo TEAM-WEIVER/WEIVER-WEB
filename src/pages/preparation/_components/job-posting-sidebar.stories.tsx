@@ -6,7 +6,7 @@ import { examplePostings } from '../_storybook/fixtures';
 import { JobPostingSidebar } from './job-posting-sidebar';
 
 const meta = {
-  title: 'Preparation/JobPostingSidebar',
+  title: 'Features/JobPostings/JobPostingSidebar',
   component: JobPostingSidebar,
   tags: ['autodocs'],
   args: { postings: examplePostings, selectedId: 'kakao', onSelect: fn() },

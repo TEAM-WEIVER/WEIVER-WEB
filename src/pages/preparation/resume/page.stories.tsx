@@ -52,7 +52,7 @@ const sampleDraft = {
 } satisfies ResumeDraft;
 
 const meta = {
-  title: 'Pages/Preparation/Resume',
+  title: 'Pages/Documents/Resume',
   component: ResumeEditor,
   parameters: { layout: 'fullscreen' },
   decorators: [withPreparationHeader],
@@ -62,7 +62,13 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+export const WithEntries: Story = {
+  name: '작성 예시',
+  args: { progress: 100, initialDraft: sampleDraft },
+};
+
 export const Empty: Story = {
+  name: '빈 화면',
   play: async ({ canvas, args, userEvent }) => {
     await expect(canvas.getByRole('form', { name: '학력 정보 입력' })).toBeVisible();
     await expect(canvas.getByRole('form', { name: '경력사항 정보 입력' })).toBeVisible();
@@ -82,11 +88,45 @@ export const Empty: Story = {
   },
 };
 
-export const WithEntries: Story = {
-  args: { progress: 100, initialDraft: sampleDraft },
+export const Editing: Story = {
+  name: '편집 중',
+  args: { progress: 40, initialDraft: sampleDraft },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(
+      canvas.getByRole('button', { name: '대학교 (4년제) · 위버대학교 · 컴퓨터공학과 수정' }),
+    );
+    await userEvent.click(canvas.getByRole('button', { name: '위버 수정' }));
+  },
+};
+
+export const OpenMonthPicker: Story = {
+  name: '월 선택 열림',
+  args: { progress: 40, initialDraft: sampleDraft },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(
+      canvas.getByRole('button', { name: '대학교 (4년제) · 위버대학교 · 컴퓨터공학과 수정' }),
+    );
+    await userEvent.click(canvas.getByRole('combobox', { name: '입학년월' }));
+    await expect(
+      within(canvasElement.ownerDocument.body).getByRole('dialog', { name: '입학년월 달력' }),
+    ).toBeVisible();
+  },
+};
+
+export const OpenDatePicker: Story = {
+  name: '날짜 선택 열림',
+  args: { progress: 40, initialDraft: sampleDraft },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'TOEIC Speaking 수정' }));
+    await userEvent.click(canvas.getByRole('combobox', { name: '취득일' }));
+    await expect(
+      within(canvasElement.ownerDocument.body).getByRole('dialog', { name: '취득일 달력' }),
+    ).toBeVisible();
+  },
 };
 
 export const SelectKeyboard: Story = {
+  name: '드롭다운 키보드 조작',
   play: async ({ canvas, canvasElement, userEvent }) => {
     const form = within(canvas.getByRole('form', { name: '학력 정보 입력' }));
     const trigger = form.getByRole('combobox', { name: '학력구분' });
@@ -124,6 +164,7 @@ export const SelectKeyboard: Story = {
 };
 
 export const AddEditAndDelete: Story = {
+  name: '항목 추가·수정·삭제',
   args: { initialDraft: { ...sampleDraft, certifications: [] } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const section = within(canvas.getByRole('region', { name: '자격증' }));
@@ -161,6 +202,7 @@ export const AddEditAndDelete: Story = {
 };
 
 export const EmploymentStatus: Story = {
+  name: '재직중·퇴사 전환',
   args: { progress: 40, initialDraft: sampleDraft },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body);
@@ -224,6 +266,7 @@ export const EmploymentStatus: Story = {
 };
 
 export const SaveDraftWithEdits: Story = {
+  name: '편집 중 임시 저장',
   args: {
     progress: 40,
     initialDraft: {
@@ -268,6 +311,7 @@ export const SaveDraftWithEdits: Story = {
 };
 
 export const CalendarSelection: Story = {
+  name: '달력 선택과 임시 저장',
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body);
     const education = within(canvas.getByRole('form', { name: '학력 정보 입력' }));
