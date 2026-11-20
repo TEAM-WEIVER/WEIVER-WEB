@@ -13,6 +13,14 @@
       "destination": "https://landing-origin.weiverai.com/landing-assets/:path*"
     },
     {
+      "source": "/robots.txt",
+      "destination": "https://landing-origin.weiverai.com/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://landing-origin.weiverai.com/sitemap.xml"
+    },
+    {
       "source": "/login",
       "destination": "/app.html"
     },
@@ -31,6 +39,43 @@
     {
       "source": "/home",
       "destination": "/app.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/reservation_v2",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/reservation_v2.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/landing-assets/reservation_v2",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/landing-assets/reservation_v2.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/landing-assets/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/landing-assets",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
     }
   ]
 }
