@@ -26,6 +26,8 @@ const oracle = new URL(landing.destination).origin;
 const landingProxy = {
   '^/(?:\\?|$)': { target: oracle, changeOrigin: true },
   '^/landing-assets(?:/|\\?|$)': { target: oracle, changeOrigin: true },
+  '^/robots\\.txt(?:\\?|$)': { target: oracle, changeOrigin: true },
+  '^/sitemap\\.xml(?:\\?|$)': { target: oracle, changeOrigin: true },
 };
 
 function localRoutes(): Plugin {
