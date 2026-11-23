@@ -19,7 +19,7 @@ export async function mockLandingApis(
       return;
     }
 
-    if (url.pathname === '/api/v1/reservations') {
+    if (url.pathname === '/api/v1/reservations/launch') {
       reservations.push({ url: request.url(), body: request.postDataJSON() });
       if (reservationStatus === 'network-error') {
         await route.abort('failed');
@@ -29,11 +29,14 @@ export async function mockLandingApis(
         status: reservationStatus,
         json:
           reservationStatus === 201
-            ? { id: 'test-reservation', surveyAccessToken: 'test-survey-token' }
+            ? { id: '00000000-0000-4000-8000-000000000136' }
             : { message: 'Mock reservation failure' },
       });
     } else if (url.pathname === '/api/v1/visitors/bootstrap') {
-      await route.fulfill({ status: 200, json: { visitorId: 'test-visitor' } });
+      await route.fulfill({
+        status: 200,
+        json: { visitorId: '00000000-0000-4000-8000-000000000137' },
+      });
     } else if (url.pathname === '/api/v1/events') {
       await route.fulfill({ status: 202, json: {} });
     } else {
