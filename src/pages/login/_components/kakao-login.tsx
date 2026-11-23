@@ -3,7 +3,14 @@ import { MessageCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
-export function KakaoLogin() {
+interface KakaoLoginProps {
+  onStart: () => void | Promise<void>;
+  isStarting: boolean;
+  error: string | null;
+  disabled?: boolean;
+}
+
+export function KakaoLogin({ onStart, isStarting, error, disabled }: KakaoLoginProps) {
   const descriptionId = useId();
 
   return (
@@ -13,16 +20,20 @@ export function KakaoLogin() {
       </div>
       <Button
         type="button"
-        className="w-full disabled:bg-[#fee500] disabled:text-black"
-        aria-describedby={descriptionId}
-        disabled
+        className="w-full bg-[#fee500] text-black hover:bg-[#fada0a] disabled:bg-[#fee500] disabled:text-black"
+        aria-describedby={error ? descriptionId : undefined}
+        disabled={disabled || isStarting}
+        isLoading={isStarting}
+        onClick={() => void onStart()}
       >
         <MessageCircle aria-hidden="true" className="fill-current" />
-        카카오로 시작하기
+        {isStarting ? '카카오로 이동 중' : '카카오로 시작하기'}
       </Button>
-      <span id={descriptionId} className="sr-only">
-        카카오 로그인 연동 준비 중입니다.
-      </span>
+      {error ? (
+        <p id={descriptionId} role="alert" className="text-caption text-error mt-3">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
