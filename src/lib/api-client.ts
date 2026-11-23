@@ -109,6 +109,7 @@ function getXsrfCookieToken() {
 async function fetchCsrfToken() {
   const response = await fetch(`${API_BASE_URL}/api/auth/csrf`, {
     method: 'GET',
+    cache: 'no-store',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',

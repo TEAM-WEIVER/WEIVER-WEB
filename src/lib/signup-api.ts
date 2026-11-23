@@ -79,14 +79,18 @@ function buildCompleteApplicantSignupRequest(
 
   return {
     signupToken,
-    agreements: {
-      termsOfService: terms.serviceTerms,
-      privacyPolicy: terms.privacyPolicy,
-      individualMemberTerms: terms.individualTerms,
-      aiAnalysisConsent: terms.aiAnalysisConsent,
-      sensitiveDataConsent: terms.sensitiveDataConsent,
-      marketingConsent: terms.marketingConsent,
-    },
+    agreements: buildApplicantAgreements(terms),
+  };
+}
+
+export function buildApplicantAgreements(terms: Record<string, boolean>) {
+  return {
+    termsOfService: terms.serviceTerms,
+    privacyPolicy: terms.privacyPolicy,
+    individualMemberTerms: terms.individualTerms,
+    aiAnalysisConsent: terms.aiAnalysisConsent,
+    sensitiveDataConsent: terms.sensitiveDataConsent,
+    marketingConsent: terms.marketingConsent,
   };
 }
 

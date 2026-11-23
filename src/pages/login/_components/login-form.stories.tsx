@@ -21,6 +21,7 @@ const meta = {
     password: '',
     loginError: null,
     isSubmitting: false,
+    kakao: { onStart: fn(), isStarting: false, error: null },
     setEmail: fn(),
     setPassword: fn(),
     setRememberEmail: fn(),
@@ -65,7 +66,7 @@ export const Default: Story = {
       'href',
       PASSWORD_RESET_PATH,
     );
-    await expect(canvas.getByRole('button', { name: '카카오로 시작하기' })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: '카카오로 시작하기' })).toBeEnabled();
   },
 };
 
@@ -96,4 +97,18 @@ export const Submitting: Story = {
 
 export const Failed: Story = {
   args: { ...PasswordVisible.args, loginError: 'credentials' },
+};
+
+export const KakaoStarting: Story = {
+  args: { kakao: { onStart: fn(), isStarting: true, error: null } },
+};
+
+export const KakaoFailed: Story = {
+  args: {
+    kakao: {
+      onStart: fn(),
+      isStarting: false,
+      error: '카카오 인증을 완료하지 못했습니다. 잠시 후 다시 시작해주세요.',
+    },
+  },
 };
