@@ -82,7 +82,7 @@ test('카카오 버튼 → 외부 이동 → 복귀 → 필수 약관 → 홈', 
   ])
     await page.getByRole('checkbox', { name, exact: true }).check();
   await page.getByRole('button', { name: '회원가입 완료' }).click();
-  await expect(page.getByRole('heading', { name: '회원 홈' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /오늘도 면접을 준비해볼까요/ })).toBeVisible();
   expect(captured.start).toBe(1);
   expect(captured.exchange).toBe(1);
   expect(captured.signup).toEqual([
@@ -106,7 +106,7 @@ test('기존 카카오 회원은 약관·가입 요청 없이 홈으로 이동�
   const captured = await mockKakaoFlow(page, baseURL!, true);
   await page.goto('/login');
   await page.getByRole('button', { name: '카카오로 시작하기' }).click();
-  await expect(page.getByRole('heading', { name: '회원 홈' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /오늘도 면접을 준비해볼까요/ })).toBeVisible();
   expect(captured.exchange).toBe(1);
   expect(captured.signup).toHaveLength(0);
 });

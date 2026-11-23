@@ -10,11 +10,14 @@ type ApplicantHeaderProfileProps = {
   /** Storybook 등에서도 실제 API 없이 동일한 상태 흐름을 확인할 수 있다. */
   loadName?: () => Promise<string>;
   onClick?: () => void;
+  /** 조회한 이름을 본문에서도 사용할 때 중복 요청을 피한다. */
+  onNameLoaded?: (name: string) => void;
 };
 
 export function ApplicantHeaderProfile({
   loadName = getHeaderProfileName,
   onClick,
+  onNameLoaded,
 }: ApplicantHeaderProfileProps) {
   const [state, setState] = useState<
     { status: 'loading' } | { status: 'error' } | { status: 'ready'; name: string }
@@ -25,7 +28,10 @@ export function ApplicantHeaderProfile({
     let cancelled = false;
     void loadName().then(
       (name) => {
-        if (!cancelled) setState({ status: 'ready', name });
+        if (!cancelled) {
+          setState({ status: 'ready', name });
+          onNameLoaded?.(name);
+        }
       },
       () => {
         if (!cancelled) setState({ status: 'error' });
@@ -34,7 +40,7 @@ export function ApplicantHeaderProfile({
     return () => {
       cancelled = true;
     };
-  }, [loadName, attempt]);
+  }, [loadName, attempt, onNameLoaded]);
 
   if (state.status === 'loading') {
     return (
