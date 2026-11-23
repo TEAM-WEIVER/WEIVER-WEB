@@ -37,6 +37,14 @@
       "destination": "/app.html"
     },
     {
+      "source": "/auth/kakao/return",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/signup/kakao",
+      "destination": "/app.html"
+    },
+    {
       "source": "/home",
       "destination": "/app.html"
     }
