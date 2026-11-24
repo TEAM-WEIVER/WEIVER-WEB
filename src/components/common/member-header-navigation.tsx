@@ -12,7 +12,10 @@ export function MemberHeaderNavigation() {
     (pathname === MASTER_RESUME_PATH && Boolean(new URLSearchParams(search).get('postingId')));
   return (
     <>
-      <HeaderNavItem asChild active={!isPreparation}>
+      <HeaderNavItem
+        asChild
+        active={pathname === '/home' || (pathname === MASTER_RESUME_PATH && !isPreparation)}
+      >
         <Link to="/home">홈</Link>
       </HeaderNavItem>
       <HeaderNavItem asChild active={isPreparation}>
