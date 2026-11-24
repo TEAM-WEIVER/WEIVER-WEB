@@ -11,10 +11,11 @@ export function initializeRows<Name extends string>(
   fields: readonly ResumeField<Name>[],
   initialValues?: ResumeValues<Name>[],
 ): ResumeRow<Name>[] {
-  if (!initialValues) return [{ id: 'initial-0', state: 'editing', input: emptyValues(fields) }];
+  if (!initialValues)
+    return [{ id: crypto.randomUUID(), state: 'editing', input: emptyValues(fields) }];
 
-  return initialValues.map<ResumeRow<Name>>((values, index) => {
-    const id = `initial-${index}`;
+  return initialValues.map<ResumeRow<Name>>((values) => {
+    const id = values.entryId ?? crypto.randomUUID();
     const input = clearDisabledFields(fields, values);
 
     return Object.keys(validateEntry(fields, input)).length
@@ -23,11 +24,15 @@ export function initializeRows<Name extends string>(
   });
 }
 
-export function collectDraftValues<Name extends string>(rows: ResumeRow<Name>[]) {
+export function collectDraftValues<Name extends string>(
+  rows: ResumeRow<Name>[],
+  trackEntryIds = false,
+) {
   return rows.flatMap((row) => {
     const values = row.state === 'editing' ? row.input : row.saved;
-    return row.saved || Object.values<string>(values).some((value) => value.trim())
-      ? [{ ...values }]
+    return row.saved ||
+      Object.entries(values).some(([name, value]) => name !== 'entryId' && value?.trim())
+      ? [{ ...values, ...(trackEntryIds ? { entryId: row.id } : {}) }]
       : [];
   });
 }

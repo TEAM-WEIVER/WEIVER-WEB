@@ -57,6 +57,133 @@ async function registerPosting(page: Page, companyName = '새 공고') {
   return new URL(page.url()).pathname;
 }
 
+async function seedIndependentDocuments(page: Page) {
+  await page.goto('/preparation');
+  await page.evaluate(
+    ({ master, posting }) => {
+      const data = JSON.parse(sessionStorage.getItem('weiver.preparation.drafts')!);
+      data.state.postings.push({ ...posting, id: 'posting-2', companyName: '다른 기업' });
+      data.state.resumes = {
+        'posting-1': { ...master, education: [{ ...master.education[0], school: '공고 A 학교' }] },
+        'posting-2': { ...master, education: [{ ...master.education[0], school: '공고 B 학교' }] },
+      };
+      data.state.coverLetters = {
+        'posting-1': {
+          questions: [{ id: 'question-a', question: '공고 A 지원동기', answer: 'A의 답변' }],
+        },
+        'posting-2': {
+          questions: [{ id: 'question-b', question: '공고 B 지원동기', answer: 'B의 답변' }],
+        },
+      };
+      sessionStorage.setItem('weiver.preparation.drafts', JSON.stringify(data));
+    },
+    { master: masterResume, posting },
+  );
+}
+
+test('공고 저장본을 우선 표시하고 마스터본 덮어쓰기는 확인·저장 후에만 반영한다', async ({
+  page,
+}) => {
+  await mockMember(page, true);
+  await seedIndependentDocuments(page);
+  await page.goto('/preparation/posting-1/resume');
+  await expect(page.getByRole('heading', { name: /공고 A 학교/ })).toBeVisible();
+  await page
+    .getByRole('button', { name: '대학교 (4년제) · 공고 A 학교 · 컴퓨터공학 수정' })
+    .click();
+  await page.getByRole('textbox', { name: '학교명', exact: true }).fill('저장 전 A 편집');
+  const load = page.getByRole('button', { name: '마스터본 불러오기', exact: true });
+  await load.click();
+  await page.getByRole('alertdialog').getByRole('button', { name: '취소', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: '학교명', exact: true })).toHaveValue(
+    '저장 전 A 편집',
+  );
+  await expect(load).toBeFocused();
+  await load.click();
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: '불러오기', exact: true })
+    .click();
+  await expect(page.getByRole('heading', { name: /위버대학교/ })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: /공고 A 학교/ })).toBeVisible();
+  await load.click();
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: '불러오기', exact: true })
+    .click();
+  await page.getByRole('button', { name: '임시 저장', exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: /위버대학교/ })).toBeVisible();
+  await page.goto('/preparation/posting-2/resume');
+  await expect(page.getByRole('heading', { name: /공고 B 학교/ })).toBeVisible();
+});
+
+test('마스터본이 없어져도 독립 저장한 공고 이력서는 계속 편집할 수 있다', async ({ page }) => {
+  await mockMember(page);
+  await seedIndependentDocuments(page);
+  await page.goto('/preparation/posting-1/resume');
+  await expect(page).toHaveURL('/preparation/posting-1/resume');
+  await expect(page.getByRole('heading', { name: /공고 A 학교/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: '마스터본 불러오기', exact: true })).toBeDisabled();
+});
+
+test('자기소개서와 포트폴리오도 공고별로 편집·저장하며 서류 이동에서 공고 ID를 유지한다', async ({
+  page,
+}) => {
+  await mockMember(page, true);
+  await seedIndependentDocuments(page);
+  await page.goto('/preparation/posting-1/cover-letter');
+  await expect(page.getByRole('heading', { name: '공고 A 지원동기', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '공고 A 지원동기 수정', exact: true }).click();
+  await page
+    .getByRole('textbox', { name: '자기소개서 본문 내용 *', exact: true })
+    .fill('A의 수정 답변');
+  await page.getByRole('button', { name: '임시 저장', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: '작성 필요 서류' })
+    .getByRole('button', { name: /포트폴리오/ })
+    .click();
+  await expect(page).toHaveURL('/preparation/posting-1/portfolio');
+  await page.getByLabel('포트폴리오 PDF 파일').setInputFiles({
+    name: '공고-A.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4 mock'),
+  });
+  await page
+    .getByRole('form', { name: '포트폴리오 등록', exact: true })
+    .getByRole('button', { name: '저장', exact: true })
+    .click();
+  await page.getByRole('button', { name: '임시 저장', exact: true }).click();
+  await page.getByRole('button', { name: /공고 상세/ }).click();
+  await page
+    .getByRole('navigation', { name: '지원 공고 빠르게 보기' })
+    .getByRole('button', { name: /다른 기업/ })
+    .click();
+  await page.getByRole('button', { name: '자기소개서 수정하기' }).click();
+  await expect(page).toHaveURL('/preparation/posting-2/cover-letter');
+  await expect(page.getByText('B의 답변', { exact: true })).toBeVisible();
+  await expect(page.getByText('A의 수정 답변', { exact: true })).toHaveCount(0);
+  await page
+    .getByRole('navigation', { name: '작성 필요 서류' })
+    .getByRole('button', { name: /포트폴리오/ })
+    .click();
+  await expect(page).toHaveURL('/preparation/posting-2/portfolio');
+  await expect(page.getByRole('heading', { name: '공고-A.pdf', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: /공고 상세/ }).click();
+  await page
+    .getByRole('navigation', { name: '지원 공고 빠르게 보기' })
+    .getByRole('button', { name: /위버/ })
+    .click();
+  await page.getByRole('button', { name: '포트폴리오 수정하기' }).click();
+  await expect(page.getByRole('heading', { name: '공고-A.pdf', exact: true })).toBeVisible();
+  await page
+    .getByRole('navigation', { name: '작성 필요 서류' })
+    .getByRole('button', { name: /자기소개서/ })
+    .click();
+  await expect(page.getByText('A의 수정 답변', { exact: true })).toBeVisible();
+});
+
 test('홈 → 지원 준비 → 공고 등록 → 마스터본 선행 작성 분기와 복귀 경로를 유지한다', async ({
   page,
 }) => {
@@ -112,6 +239,8 @@ test('홈 → 지원 준비 → 공고 등록 → 마스터본 선행 작성 분
   await form.getByRole('button', { name: '저장', exact: true }).click();
   await page.getByRole('button', { name: '저장하고 공고 이력서 작성' }).click();
   await expect(page).toHaveURL(`${path}/resume`);
+  await expect(page.getByRole('heading', { name: /위버대학교/ })).toHaveCount(0);
+  await page.getByRole('button', { name: '마스터본 불러오기', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '대학교 (4년제) · 위버대학교 · 컴퓨터공학', exact: true }),
   ).toBeVisible();
@@ -127,6 +256,8 @@ test('마스터본이 있으면 바로 진입하고 공고별 변경은 마스�
   await mockMember(page, true);
   await page.goto('/preparation/posting-1/resume');
   await expect(page).toHaveURL('/preparation/posting-1/resume');
+  await expect(page.getByRole('heading', { name: /위버대학교/ })).toHaveCount(0);
+  await page.getByRole('button', { name: '마스터본 불러오기', exact: true }).click();
   await page
     .getByRole('button', { name: '대학교 (4년제) · 위버대학교 · 컴퓨터공학 수정', exact: true })
     .click();
@@ -152,6 +283,7 @@ test('마스터본이 있으면 바로 진입하고 공고별 변경은 마스�
   const nextPath = await registerPosting(page, '다른 공고');
   await page.getByRole('button', { name: '이력서 작성하기' }).click();
   await expect(page).toHaveURL(`${nextPath}/resume`);
+  await page.getByRole('button', { name: '마스터본 불러오기', exact: true }).click();
   await expect(page.getByRole('heading', { name: /위버대학교/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: /공고별 학교/ })).toHaveCount(0);
   await page.goto('/resume/master');
