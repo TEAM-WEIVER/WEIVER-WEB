@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 
 import { withPreparationHeader } from '../../../../.storybook/decorators/preparation-header';
-import type { ResumeDraft } from './_model/resume-editor';
+import { resumeProgressSections } from './_model/resume-progress';
+import type { ResumeDraft } from './_model/resume-sections';
 import ResumeEditor from './page';
 
 const sampleCareer = {
@@ -56,7 +57,7 @@ const meta = {
   component: ResumeEditor,
   parameters: { layout: 'fullscreen' },
   decorators: [withPreparationHeader],
-  args: { progress: 0, onSaveDraft: fn() },
+  args: { onSaveDraft: fn() },
 } satisfies Meta<typeof ResumeEditor>;
 
 export default meta;
@@ -64,7 +65,7 @@ type Story = StoryObj<typeof meta>;
 
 export const WithEntries: Story = {
   name: '작성 예시',
-  args: { progress: 100, initialDraft: sampleDraft },
+  args: { initialDraft: sampleDraft },
 };
 
 export const Empty: Story = {
@@ -90,7 +91,7 @@ export const Empty: Story = {
 
 export const Editing: Story = {
   name: '편집 중',
-  args: { progress: 40, initialDraft: sampleDraft },
+  args: { initialDraft: sampleDraft },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(
       canvas.getByRole('button', { name: '대학교 (4년제) · 위버대학교 · 컴퓨터공학과 수정' }),
@@ -101,7 +102,7 @@ export const Editing: Story = {
 
 export const OpenMonthPicker: Story = {
   name: '월 선택 열림',
-  args: { progress: 40, initialDraft: sampleDraft },
+  args: { initialDraft: sampleDraft },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(
       canvas.getByRole('button', { name: '대학교 (4년제) · 위버대학교 · 컴퓨터공학과 수정' }),
@@ -115,7 +116,7 @@ export const OpenMonthPicker: Story = {
 
 export const OpenDatePicker: Story = {
   name: '날짜 선택 열림',
-  args: { progress: 40, initialDraft: sampleDraft },
+  args: { initialDraft: sampleDraft },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'TOEIC Speaking 수정' }));
     await userEvent.click(canvas.getByRole('combobox', { name: '취득일' }));
@@ -167,10 +168,14 @@ export const AddEditAndDelete: Story = {
   name: '항목 추가·수정·삭제',
   args: { initialDraft: { ...sampleDraft, certifications: [] } },
   play: async ({ canvas, canvasElement, userEvent }) => {
+    const progress = canvas.getByRole('progressbar', { name: '작성 진행률' });
     const section = within(canvas.getByRole('region', { name: '자격증' }));
+    await expect(progress).toHaveAttribute('value', '75');
     await userEvent.click(section.getByRole('button', { name: '자격증 추가' }));
     const form = within(section.getByRole('form', { name: '자격증 정보 입력' }));
     await userEvent.type(form.getByRole('textbox', { name: '자격증명' }), '정보처리기사');
+    await userEvent.click(form.getByRole('button', { name: '저장' }));
+    await expect(progress).toHaveAttribute('value', '75');
     await userEvent.click(form.getByRole('combobox', { name: '취득일' }));
     const body = within(canvasElement.ownerDocument.body);
     const calendar = within(await body.findByRole('dialog', { name: '취득일 달력' }));
@@ -181,6 +186,7 @@ export const AddEditAndDelete: Story = {
     await userEvent.click(calendar.getByRole('button', { name: '2025년 6월 20일' }));
     await userEvent.click(form.getByRole('button', { name: '저장' }));
     await expect(section.getByRole('heading', { name: '정보처리기사' })).toBeVisible();
+    await expect(progress).toHaveAttribute('value', '100');
 
     await userEvent.click(section.getByRole('button', { name: '정보처리기사 수정' }));
     const editForm = within(section.getByRole('form', { name: '자격증 정보 수정' }));
@@ -188,6 +194,7 @@ export const AddEditAndDelete: Story = {
     await userEvent.type(editForm.getByRole('textbox', { name: '발행처' }), '한국산업인력공단');
     await userEvent.click(editForm.getByRole('button', { name: '저장' }));
     await expect(section.getByText('한국산업인력공단')).toBeVisible();
+    await expect(progress).toHaveAttribute('value', '100');
 
     await userEvent.click(section.getByRole('button', { name: '정보처리기사 수정' }));
     const editAgain = within(section.getByRole('form', { name: '자격증 정보 수정' }));
@@ -197,13 +204,14 @@ export const AddEditAndDelete: Story = {
 
     await userEvent.click(section.getByRole('button', { name: '정보처리기사 삭제' }));
     await expect(section.queryByRole('heading', { name: '정보처리기사' })).not.toBeInTheDocument();
+    await expect(progress).toHaveAttribute('value', '75');
     await expect(canvas.getByRole('heading', { name: '캡스톤 디자인 우수상' })).toBeVisible();
   },
 };
 
 export const EmploymentStatus: Story = {
   name: '재직중·퇴사 전환',
-  args: { progress: 40, initialDraft: sampleDraft },
+  args: { initialDraft: sampleDraft },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body);
 
@@ -268,7 +276,6 @@ export const EmploymentStatus: Story = {
 export const SaveDraftWithEdits: Story = {
   name: '편집 중 임시 저장',
   args: {
-    progress: 40,
     initialDraft: {
       ...sampleDraft,
       career: [{ ...sampleCareer, employmentStatus: '재직중' }, sampleDraft.career[1]],
@@ -362,5 +369,43 @@ export const CalendarSelection: Story = {
       certifications: [],
       awards: [{ name: '', organization: '', awardedDate: '2024.02.29', description: '' }],
     });
+  },
+};
+
+export const PartialProgress: Story = {
+  name: '섹션별 진행률',
+  args: { initialDraft: { ...sampleDraft, career: [], certifications: [], awards: [] } },
+  play: async ({ canvas, userEvent }) => {
+    const progress = canvas.getByRole('progressbar');
+    await expect(progress).toHaveAttribute('value', '25');
+    await userEvent.click(
+      canvas.getByRole('button', { name: '대학교 (4년제) · 위버대학교 · 컴퓨터공학과 수정' }),
+    );
+    const form = within(canvas.getByRole('form', { name: '학력 정보 수정' }));
+    await userEvent.clear(form.getByRole('textbox', { name: '학교명' }));
+    await userEvent.click(form.getByRole('button', { name: '저장' }));
+    await expect(progress).toHaveAttribute('value', '25');
+    await userEvent.click(form.getByRole('button', { name: '취소' }));
+    await expect(progress).toHaveAttribute('value', '25');
+    await userEvent.click(
+      canvas.getByRole('button', { name: '대학교 (4년제) · 위버대학교 · 컴퓨터공학과 삭제' }),
+    );
+    await expect(progress).toHaveAttribute('value', '0');
+    const documents = within(canvas.getByRole('navigation', { name: '작성 필요 서류' }));
+    await expect(documents.getByText('이력서')).toHaveTextContent('미작성');
+  },
+};
+
+export const ConfiguredSections: Story = {
+  name: '진행률 대상 섹션 설정',
+  args: {
+    initialDraft: { ...sampleDraft, awards: [] },
+    progressSections: resumeProgressSections.map((section) => ({
+      ...section,
+      included: section.id !== 'awards',
+    })),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
   },
 };

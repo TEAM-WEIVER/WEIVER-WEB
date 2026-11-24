@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 
+import { isPortfolioPdf, isValidPortfolioFile, MAX_PDF_SIZE } from './portfolio-file';
+
 type PortfolioItemFormProps = {
   title: string;
   titleInputRef: Ref<HTMLInputElement>;
@@ -16,7 +18,6 @@ type PortfolioItemFormProps = {
   onCancel: () => void;
 };
 
-const MAX_PDF_SIZE = 20 * 1024 * 1024;
 const PDF_FILE_TYPES = '.pdf,application/pdf';
 
 export function PortfolioItemForm({
@@ -39,13 +40,9 @@ export function PortfolioItemForm({
     if (!files.length) return;
 
     const selectedFile = files[0];
-    const isPdf =
-      selectedFile.type === 'application/pdf' ||
-      (!selectedFile.type && /\.pdf$/i.test(selectedFile.name));
-
     if (files.length > 1) {
       setFileError('한 항목에 PDF 파일 하나만 첨부할 수 있어요.');
-    } else if (!isPdf) {
+    } else if (!isPortfolioPdf(selectedFile)) {
       setFileError('PDF 파일을 선택해주세요.');
     } else if (selectedFile.size > MAX_PDF_SIZE) {
       setFileError('20MB 이하의 PDF 파일을 선택해주세요.');
@@ -85,7 +82,7 @@ export function PortfolioItemForm({
       onSubmit={(event) => {
         event.preventDefault();
 
-        if (file) {
+        if (file && isValidPortfolioFile(file)) {
           onSave(file);
         } else {
           setFileError('PDF 파일을 선택해주세요.');
