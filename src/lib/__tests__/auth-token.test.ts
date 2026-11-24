@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { clearAccessToken, getAccessToken, getAuthRole, setAuthSession } from '../auth-token';
+import { usePreparationStore } from '@/store/preparation-store';
 
 describe('auth-token', () => {
   afterEach(() => {
@@ -28,5 +29,18 @@ describe('auth-token', () => {
 
     expect(getAccessToken()).toBeNull();
     expect(getAuthRole()).toBeNull();
+  });
+
+  it('로그아웃하거나 새로 로그인하면 이전 계정의 임시 공고를 제거한다', () => {
+    const values = { companyName: '위버', positionName: '개발자', sourceUrl: '', content: '공고' };
+    usePreparationStore.getState().registerPosting(values);
+    clearAccessToken();
+    expect(usePreparationStore.getState().postings).toEqual([]);
+    expect(sessionStorage.getItem('weiver.preparation.drafts')).toBeNull();
+
+    usePreparationStore.getState().registerPosting(values);
+    setAuthSession('new-account-token', 'APPLICANT');
+    expect(usePreparationStore.getState().postings).toEqual([]);
+    expect(sessionStorage.getItem('weiver.preparation.drafts')).toBeNull();
   });
 });

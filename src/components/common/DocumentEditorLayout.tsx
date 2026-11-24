@@ -26,6 +26,7 @@ export type DocumentEditorLayoutProps = {
   progress: number;
   onSaveDraft: () => void;
   children: ReactNode;
+  footerActions?: ReactNode;
   onDocumentChange?: (document: EditorDocument) => void;
   statuses?: Partial<Record<EditorDocument, DocumentStatus>>;
 };
@@ -36,6 +37,7 @@ export function DocumentEditorLayout({
   progress,
   onSaveDraft,
   children,
+  footerActions,
   onDocumentChange,
   statuses,
 }: DocumentEditorLayoutProps) {
@@ -108,10 +110,11 @@ export function DocumentEditorLayout({
 
         <main className="min-w-0">
           {children}
-          <footer className="border-border-light mt-10 flex justify-end border-t pt-5">
+          <footer className="border-border-light mt-10 flex flex-wrap justify-end gap-3 border-t pt-5">
             <Button type="button" size="xs" onClick={() => onSaveDraft()}>
               임시 저장
             </Button>
+            {footerActions}
           </footer>
         </main>
       </div>

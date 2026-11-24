@@ -33,6 +33,7 @@ export type PortfolioDraft = {
 
 type PortfolioEditorProps = Pick<DocumentEditorLayoutProps, 'onDocumentChange' | 'statuses'> & {
   initialItems?: readonly PortfolioItem[];
+  initialEditingItem?: PortfolioItemDraft | null;
   progressSections?: readonly DocumentProgressSection<readonly PortfolioItem[]>[];
   onSaveDraft: (draft: PortfolioDraft) => void;
 };
@@ -55,6 +56,7 @@ function formatFileSize(bytes: number) {
 
 export function PortfolioEditor({
   initialItems = EMPTY_ITEMS,
+  initialEditingItem,
   progressSections = portfolioProgressSections,
   onSaveDraft,
   onDocumentChange,
@@ -62,7 +64,11 @@ export function PortfolioEditor({
 }: PortfolioEditorProps) {
   const [items, setItems] = useState(initialItems);
   const [editingItem, setEditingItem] = useState<PortfolioItemDraft | null>(() =>
-    initialItems.length ? null : EMPTY_ITEM,
+    initialEditingItem === undefined
+      ? initialItems.length
+        ? null
+        : EMPTY_ITEM
+      : initialEditingItem,
   );
   const titleInputRef = useRef<HTMLInputElement>(null);
   const progress = calculateDocumentProgress(items, progressSections);

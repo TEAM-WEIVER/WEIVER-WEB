@@ -117,7 +117,7 @@ test('회원 홈은 새로고침 후 이름을 한 번 조회하고 푸터·로�
   await expect(page.getByRole('button', { name: '김민수 프로필' })).toBeVisible();
   expect(profileRequests).toBe(1);
   await expect(page.getByRole('contentinfo')).toContainText('개인정보처리방침');
-  await expect(page.getByText('이력서 관리 기능을 준비 중이에요.')).toBeVisible();
+  await expect(page.getByRole('button', { name: '이력서 작성하기' })).toBeEnabled();
   await expect(page.getByRole('button', { name: '포인트 충전하기' })).toBeDisabled();
   await expect(page.getByRole('link', { name: '위버 홈' })).toHaveAttribute('href', '/home');
 
