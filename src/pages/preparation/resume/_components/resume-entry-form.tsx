@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,9 @@ type ResumeEntryFormProps<Name extends string> = {
   onChange: (name: Name, value: string) => void;
   onSave: () => void;
   onCancel: () => void;
+  noHistory?: boolean;
+  onSaveNoHistory?: () => void;
+  onNoHistoryChange?: (noHistory: boolean) => void;
 };
 
 export function ResumeEntryForm<Name extends string>({
@@ -35,14 +39,21 @@ export function ResumeEntryForm<Name extends string>({
   onChange,
   onSave,
   onCancel,
+  noHistory = false,
+  onSaveNoHistory,
+  onNoHistoryChange,
 }: ResumeEntryFormProps<Name>) {
   const formId = useId();
   const headingId = `${formId}-heading`;
   const [submitted, setSubmitted] = useState(false);
-  const errors = submitted ? validateEntry(config.fields, values) : null;
+  const errors = submitted && !noHistory ? validateEntry(config.fields, values) : null;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (noHistory && onSaveNoHistory) {
+      onSaveNoHistory();
+      return;
+    }
     const nextErrors = validateEntry(config.fields, values);
     const firstInvalid = config.fields.find(({ name }) => nextErrors[name]);
     if (firstInvalid) {
@@ -70,7 +81,7 @@ export function ResumeEntryForm<Name extends string>({
 
       <div className="grid items-start gap-x-3.5 gap-y-4 sm:grid-cols-2 xl:grid-cols-[repeat(24,minmax(0,1fr))]">
         {config.fields.map((field) => {
-          const disabled = isFieldDisabled(field, values);
+          const disabled = noHistory || isFieldDisabled(field, values);
           const required = Boolean(field.required) && !disabled;
           const fieldProps = {
             name: field.name,
@@ -150,13 +161,28 @@ export function ResumeEntryForm<Name extends string>({
         })}
       </div>
 
-      <div className="border-border-light flex justify-end gap-2.5 border-t pt-4">
-        <Button type="button" variant="outline" className="h-9 bg-white" onClick={onCancel}>
-          취소
-        </Button>
-        <Button type="submit" className="h-9">
-          저장
-        </Button>
+      <div className="border-border-light flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+        {config.noHistoryLabel && onSaveNoHistory ? (
+          <label
+            htmlFor={`${formId}-no-history`}
+            className="text-body2 text-text-secondary flex cursor-pointer items-center gap-2"
+          >
+            <Checkbox
+              id={`${formId}-no-history`}
+              checked={noHistory}
+              onCheckedChange={(checked) => onNoHistoryChange?.(checked === true)}
+            />
+            {config.noHistoryLabel}
+          </label>
+        ) : null}
+        <div className="ml-auto flex gap-2.5">
+          <Button type="button" variant="outline" className="h-9 bg-white" onClick={onCancel}>
+            취소
+          </Button>
+          <Button type="submit" className="h-9">
+            저장
+          </Button>
+        </div>
       </div>
     </form>
   );

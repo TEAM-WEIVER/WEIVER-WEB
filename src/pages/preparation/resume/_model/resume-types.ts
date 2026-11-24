@@ -21,11 +21,12 @@ export type EntrySummary = {
 export type ResumeSectionConfig<Name extends string> = {
   title: string;
   description: string;
+  noHistoryLabel?: string;
   fields: readonly ResumeField<Name>[];
   summarize: (values: ResumeValues<Name>) => EntrySummary;
 };
 
 export type ResumeRow<Name extends string> = { id: string } & (
   | { state: 'saved'; saved: ResumeValues<Name> }
-  | { state: 'editing'; input: ResumeValues<Name>; saved?: ResumeValues<Name> }
+  | { state: 'editing'; input: ResumeValues<Name>; saved?: ResumeValues<Name>; noHistory?: boolean }
 );

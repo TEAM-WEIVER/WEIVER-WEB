@@ -13,6 +13,7 @@ export function getResumeProgress(draft?: ResumeDraft) {
       draft?.certifications ?? [],
     ),
     awards: initializeRows(resumeSections.awards.fields, draft?.awards ?? []),
+    noHistory: draft?.noHistory,
   };
   return calculateDocumentProgress(rows, resumeProgressSections);
 }

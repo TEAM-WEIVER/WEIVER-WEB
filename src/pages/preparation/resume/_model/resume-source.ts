@@ -1,4 +1,4 @@
-import type { ResumeDraft } from './resume-sections';
+import { resumeSections, type ResumeDraft, type ResumeSectionName } from './resume-sections';
 import type { ResumeValues } from './resume-types';
 
 /** 마지막 불러오기/저장 시점을 기준으로 다음 변경분을 계산한다. */
@@ -12,6 +12,7 @@ export function withResumeEntryIds(draft: ResumeDraft): ResumeDraft {
     return entries.map((entry) => ({ ...entry, entryId: entry.entryId ?? crypto.randomUUID() }));
   }
   return {
+    ...(draft.noHistory ? { noHistory: [...draft.noHistory] } : {}),
     education: identify(draft.education),
     career: identify(draft.career),
     certifications: identify(draft.certifications),
@@ -22,8 +23,8 @@ export function withResumeEntryIds(draft: ResumeDraft): ResumeDraft {
 export function createResumeSource(draft: ResumeDraft): ResumeSource {
   return {
     baseline: structuredClone(draft),
-    masterEntryIds: Object.values(draft).flatMap((entries) =>
-      entries.flatMap(({ entryId }) => (entryId ? [entryId] : [])),
+    masterEntryIds: (Object.keys(resumeSections) as ResumeSectionName[]).flatMap((section) =>
+      draft[section].flatMap(({ entryId }) => (entryId ? [entryId] : [])),
     ),
   };
 }

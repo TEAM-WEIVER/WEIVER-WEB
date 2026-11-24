@@ -15,6 +15,7 @@ import {
   type ResumeDraft,
   type ResumeRows,
   type ResumeSectionName,
+  type OptionalResumeSectionName,
 } from './_model/resume-sections';
 
 type ResumeEditorProps = Pick<
@@ -54,12 +55,16 @@ export default function ResumeEditor({
 }: ResumeEditorProps) {
   const [rows, setRows] = useState<ResumeRows>(() => ({
     education: initializeRows(resumeSections.education.fields, initialDraft?.education),
-    career: initializeRows(resumeSections.career.fields, initialDraft?.career),
-    certifications: initializeRows(
-      resumeSections.certifications.fields,
-      initialDraft?.certifications,
-    ),
-    awards: initializeRows(resumeSections.awards.fields, initialDraft?.awards),
+    career: initialDraft?.noHistory?.includes('career')
+      ? []
+      : initializeRows(resumeSections.career.fields, initialDraft?.career),
+    certifications: initialDraft?.noHistory?.includes('certifications')
+      ? []
+      : initializeRows(resumeSections.certifications.fields, initialDraft?.certifications),
+    awards: initialDraft?.noHistory?.includes('awards')
+      ? []
+      : initializeRows(resumeSections.awards.fields, initialDraft?.awards),
+    noHistory: initialDraft?.noHistory,
   }));
   const progress = calculateDocumentProgress(rows, progressSections);
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -75,12 +80,29 @@ export default function ResumeEditor({
   }
 
   function getDraft(): ResumeDraft {
-    return {
+    const draft: ResumeDraft = {
       education: collectDraftValues(rows.education, trackEntryIds),
       career: collectDraftValues(rows.career, trackEntryIds),
       certifications: collectDraftValues(rows.certifications, trackEntryIds),
       awards: collectDraftValues(rows.awards, trackEntryIds),
     };
+    const noHistory = (['career', 'certifications', 'awards'] as const).filter((section) => {
+      const pending = rows[section].find(
+        (row) => row.state === 'editing' && row.noHistory !== undefined,
+      );
+      if (pending?.state === 'editing') return pending.noHistory;
+      return rows.noHistory?.includes(section) && !draft[section].length;
+    });
+    return { ...draft, ...(noHistory?.length ? { noHistory } : {}) };
+  }
+
+  function updateNoHistory(section: OptionalResumeSectionName, noHistory: boolean) {
+    setRows((current) => ({
+      ...current,
+      noHistory: noHistory
+        ? [...(current.noHistory ?? []).filter((name) => name !== section), section]
+        : current.noHistory?.filter((name) => name !== section),
+    }));
   }
 
   return (
@@ -135,16 +157,22 @@ export default function ResumeEditor({
         <ResumeSection
           config={resumeSections.career}
           rows={rows.career}
+          noHistory={rows.noHistory?.includes('career')}
+          onNoHistoryChange={(value) => updateNoHistory('career', value)}
           setRows={(update) => updateSection('career', update)}
         />
         <ResumeSection
           config={resumeSections.certifications}
           rows={rows.certifications}
+          noHistory={rows.noHistory?.includes('certifications')}
+          onNoHistoryChange={(value) => updateNoHistory('certifications', value)}
           setRows={(update) => updateSection('certifications', update)}
         />
         <ResumeSection
           config={resumeSections.awards}
           rows={rows.awards}
+          noHistory={rows.noHistory?.includes('awards')}
+          onNoHistoryChange={(value) => updateNoHistory('awards', value)}
           setRows={(update) => updateSection('awards', update)}
         />
       </fieldset>
