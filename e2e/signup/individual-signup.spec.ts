@@ -29,11 +29,11 @@ test('개인 가입 후 직접 로그인하면 새로고침 뒤에도 회원 홈
   await page.getByLabel('비밀번호', { exact: true }).fill(account.password);
   await page.getByRole('button', { name: '로그인', exact: true }).click();
   await expect(page).toHaveURL('/home');
-  await expect(page.getByRole('heading', { name: '회원 홈' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /오늘도 면접을 준비해볼까요/ })).toBeVisible();
 
   await page.reload();
   await expect(page).toHaveURL('/home');
-  await expect(page.getByRole('heading', { name: '회원 홈' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /오늘도 면접을 준비해볼까요/ })).toBeVisible();
 });
 
 test('가입 완료 API가 실패하면 오류를 보여주고 약관 단계에 머무른다', async ({ page }) => {

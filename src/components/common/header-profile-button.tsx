@@ -33,7 +33,9 @@ export function HeaderProfileButton({
       >
         {avatarName || <UserRound className="size-4" />}
       </span>
-      <span>{name || '내 계정'}</span>
+      <span className="max-w-28 truncate sm:max-w-40" title={name || undefined}>
+        {name || '내 계정'}
+      </span>
       <ChevronDown aria-hidden="true" className="text-text-tertiary size-4" />
     </Button>
   );

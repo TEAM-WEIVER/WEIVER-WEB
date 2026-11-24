@@ -42,3 +42,12 @@ export const Retry: Story = {
     await expect(await canvas.findByRole('button', { name: '이지수 프로필' })).toBeVisible();
   },
 };
+
+export const SharedName: Story = {
+  args: { onNameLoaded: fn() },
+  play: async ({ canvas, args }) => {
+    await expect(await canvas.findByRole('button', { name: '김민채 프로필' })).toBeVisible();
+    await expect(args.onNameLoaded).toHaveBeenCalledOnce();
+    await expect(args.onNameLoaded).toHaveBeenCalledWith('김민채');
+  },
+};
