@@ -62,6 +62,7 @@ export const PdfSelected: Story = {
 
     await expect(canvas.getByText(examplePdf.name, { exact: true })).toBeVisible();
     await expect(canvas.getByRole('button', { name: '파일 변경' })).toBeVisible();
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '0');
     await userEvent.click(canvas.getByRole('button', { name: '임시 저장' }));
 
     await expect(args.onSaveDraft).toHaveBeenCalledWith({
@@ -91,6 +92,7 @@ export const Editing: Story = {
       await within(dropZone).findByText(replacementPdf.name, { exact: true }),
     ).toBeVisible();
     await expect(canvas.queryByRole('alert')).toBeNull();
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
 
     await userEvent.clear(titleInput);
     await userEvent.type(titleInput, '수정한 포트폴리오');
@@ -114,6 +116,7 @@ export const ManageItems: Story = {
 
     await userEvent.click(canvas.getByRole('button', { name: '포트폴리오 추가' }));
     await expect(canvas.getByRole('form', { name: '포트폴리오 등록' })).toBeVisible();
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
     await userEvent.click(canvas.getByRole('button', { name: '취소' }));
 
     await userEvent.click(items.getByRole('button', { name: `${examplePdf.name} 수정` }));
@@ -121,6 +124,7 @@ export const ManageItems: Story = {
     await userEvent.click(canvas.getByRole('button', { name: '저장' }));
     const updatedTitle = `${examplePdf.name} 수정`;
     await expect(items.getByRole('heading', { name: updatedTitle })).toBeVisible();
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
 
     await userEvent.click(canvas.getByRole('button', { name: '임시 저장' }));
     await expect(args.onSaveDraft).toHaveBeenCalledWith({
@@ -130,6 +134,20 @@ export const ManageItems: Story = {
 
     await userEvent.click(items.getByRole('button', { name: `${updatedTitle} 삭제` }));
     await expect(canvas.queryByRole('list', { name: '등록한 포트폴리오' })).toBeNull();
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '0');
+  },
+};
+
+export const MultipleSavedItems: Story = {
+  name: '여러 파일도 한 섹션으로 집계',
+  args: {
+    initialItems: [exampleItem, { ...exampleItem, id: 'portfolio-2', title: '추가 포트폴리오' }],
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
+    await userEvent.click(canvas.getByRole('button', { name: `${exampleItem.title} 삭제` }));
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
+    await userEvent.click(canvas.getByRole('button', { name: '추가 포트폴리오 삭제' }));
     await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '0');
   },
 };
