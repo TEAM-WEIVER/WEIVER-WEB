@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { createInquiry } from '@/lib/inquiry-api';
+import { createInquiry, type CreateInquiryPayload } from '@/lib/inquiry-api';
 
 const schema = z.object({
   title: z.string().trim().min(1, '제목을 입력해주세요.').max(100, '100자 이내로 입력해주세요.'),
@@ -19,7 +19,11 @@ const schema = z.object({
     .max(5000, '5,000자 이내로 입력해주세요.'),
 });
 
-export default function SupportPage() {
+export default function SupportPage({
+  onSubmit = createInquiry,
+}: {
+  onSubmit?: (values: CreateInquiryPayload) => Promise<unknown>;
+}) {
   const [sent, setSent] = useState(false);
   const {
     register,
@@ -34,7 +38,7 @@ export default function SupportPage() {
   const submit = handleSubmit(async (values) => {
     setSent(false);
     try {
-      await createInquiry(values);
+      await onSubmit(values);
       reset();
       setSent(true);
     } catch {
