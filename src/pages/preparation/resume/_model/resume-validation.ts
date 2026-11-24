@@ -17,7 +17,7 @@ export function clearDisabledFields<Name extends string>(
 ) {
   const nextValues = { ...values };
   for (const field of fields) {
-    if (isFieldDisabled(field, values)) nextValues[field.name] = '';
+    if (isFieldDisabled(field, values)) Object.assign(nextValues, { [field.name]: '' });
   }
   return nextValues;
 }

@@ -10,7 +10,7 @@ export type ResumeField<Name extends string> = {
   disabledWhen?: { name: Name; value: string };
 };
 
-export type ResumeValues<Name extends string> = Record<Name, string>;
+export type ResumeValues<Name extends string> = Record<Name, string> & { entryId?: string };
 
 export type EntrySummary = {
   title: string;
