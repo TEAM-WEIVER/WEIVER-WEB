@@ -39,6 +39,38 @@
     {
       "source": "/home",
       "destination": "/app.html"
+    },
+    {
+      "source": "/resume/master",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/preparation",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/preparation/new",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/preparation/:postingId",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/preparation/:postingId/edit",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/preparation/:postingId/resume",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/preparation/:postingId/cover-letter",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/preparation/:postingId/portfolio",
+      "destination": "/app.html"
     }
   ]
 }
