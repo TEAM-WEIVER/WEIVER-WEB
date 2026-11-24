@@ -20,7 +20,7 @@ import PreparationListPage from './list/page';
 import PreparationNewPage from './new/page';
 import { PortfolioEditor } from './portfolio/portfolio-editor';
 import { hasMasterResume } from './resume/_model/master-resume';
-import ResumeEditor from './resume/page';
+import { PostingResumeEditor } from './resume/posting-resume-editor';
 
 const documentId = {
   resume: 'resume',
@@ -139,6 +139,7 @@ export function PreparationDocumentRoute({ document }: { document: EditorDocumen
   const posting = usePreparationStore((state) => state.postings.find(({ id }) => id === postingId));
   const masterResume = usePreparationStore((state) => state.masterResume);
   const resume = usePreparationStore((state) => state.resumes[postingId]);
+  const resumeSource = usePreparationStore((state) => state.resumeSources[postingId]);
   const coverLetter = usePreparationStore((state) => state.coverLetters[postingId]);
   const portfolio = usePreparationStore((state) => state.portfolios[postingId]);
   const documents = usePostingDocuments(postingId);
@@ -147,7 +148,7 @@ export function PreparationDocumentRoute({ document }: { document: EditorDocumen
     documents.map(({ kind, status }) => [documentId[kind], status]),
   );
   if (!posting) return <MissingPosting />;
-  if (document === 'resume' && !hasMasterResume(masterResume))
+  if (document === 'resume' && !resume && !hasMasterResume(masterResume))
     return <Navigate to={masterResumePath(postingId)} replace />;
 
   const onDocumentChange = (next: EditorDocument) => navigate(postingDocumentPath(postingId, next));
@@ -174,14 +175,18 @@ export function PreparationDocumentRoute({ document }: { document: EditorDocumen
         ) : null}
       </div>
       {document === 'resume' ? (
-        <ResumeEditor
+        <PostingResumeEditor
           key={postingId}
-          initialDraft={resume ?? masterResume}
+          initialDraft={resume}
+          masterResume={masterResume}
+          source={resumeSource}
           statuses={statuses}
           onDocumentChange={onDocumentChange}
-          onSaveDraft={(draft) =>
-            save(() => usePreparationStore.getState().saveResume(postingId, draft))
-          }
+          onSave={(draft, options) => {
+            const source = usePreparationStore.getState().saveResume(postingId, draft, options);
+            draftSaved();
+            return source;
+          }}
         />
       ) : document === 'cover-letter' ? (
         <CoverLetterEditor

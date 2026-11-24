@@ -81,6 +81,7 @@ export function MasterResumeRoute() {
         <ResumeEditor
           key={postingId ?? 'master'}
           initialDraft={resource.state.data ?? undefined}
+          trackEntryIds
           visibleDocuments={['resume']}
           title="이력서 마스터본 작성"
           description="공고에 공통으로 사용할 기본 이력서를 입력해주세요. 학력은 1개 이상 입력하고, 나머지 항목은 해당하는 경우에 추가해주세요."

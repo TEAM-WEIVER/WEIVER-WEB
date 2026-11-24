@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { Plus } from 'lucide-react';
 
 import { SectionHeading } from '@/components/common/section-heading';
@@ -21,11 +20,9 @@ export function ResumeSection<Name extends string>({
   rows,
   setRows,
 }: ResumeSectionProps<Name>) {
-  const nextId = useRef(0);
-
   function addRow() {
     const row: ResumeRow<Name> = {
-      id: `added-${nextId.current++}`,
+      id: crypto.randomUUID(),
       state: 'editing',
       input: emptyValues(config.fields),
     };

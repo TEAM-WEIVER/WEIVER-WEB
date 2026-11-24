@@ -30,6 +30,9 @@ type ResumeEditorProps = Pick<
   description?: string;
   error?: string;
   isSaving?: boolean;
+  trackEntryIds?: boolean;
+  onLoadMaster?: (currentDraft: ResumeDraft) => void;
+  canLoadMaster?: boolean;
 };
 
 export default function ResumeEditor({
@@ -45,6 +48,9 @@ export default function ResumeEditor({
   description,
   error,
   isSaving = false,
+  trackEntryIds = false,
+  onLoadMaster,
+  canLoadMaster = true,
 }: ResumeEditorProps) {
   const [rows, setRows] = useState<ResumeRows>(() => ({
     education: initializeRows(resumeSections.education.fields, initialDraft?.education),
@@ -70,10 +76,10 @@ export default function ResumeEditor({
 
   function getDraft(): ResumeDraft {
     return {
-      education: collectDraftValues(rows.education),
-      career: collectDraftValues(rows.career),
-      certifications: collectDraftValues(rows.certifications),
-      awards: collectDraftValues(rows.awards),
+      education: collectDraftValues(rows.education, trackEntryIds),
+      career: collectDraftValues(rows.career, trackEntryIds),
+      certifications: collectDraftValues(rows.certifications, trackEntryIds),
+      awards: collectDraftValues(rows.awards, trackEntryIds),
     };
   }
 
@@ -101,6 +107,20 @@ export default function ResumeEditor({
     >
       <h1 className={description ? 'text-h2 text-text-primary mb-3' : 'sr-only'}>{title}</h1>
       {description ? <p className="text-body2 text-text-secondary mb-8">{description}</p> : null}
+      {onLoadMaster ? (
+        <div className="mb-6 flex justify-end">
+          <Button
+            data-load-master
+            type="button"
+            variant="outline"
+            disabled={!canLoadMaster || isSaving}
+            title={!canLoadMaster ? '작성된 마스터본이 없어요.' : undefined}
+            onClick={() => onLoadMaster(getDraft())}
+          >
+            마스터본 불러오기
+          </Button>
+        </div>
+      ) : null}
       {error ? (
         <p ref={errorRef} tabIndex={-1} role="alert" className="text-error mb-6">
           {error}

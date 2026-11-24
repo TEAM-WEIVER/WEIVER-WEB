@@ -23,6 +23,7 @@ function isDraft(value: unknown): value is ResumeDraft {
         (row) =>
           row &&
           typeof row === 'object' &&
+          (row.entryId === undefined || typeof row.entryId === 'string') &&
           config.fields.every(({ name }) => typeof row[name] === 'string'),
       )
     );

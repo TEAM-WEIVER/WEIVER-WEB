@@ -21,7 +21,9 @@ export function summarizeMasterResume(draft: ResumeDraft | null): ResumeSummary 
   const hasInput =
     draft &&
     Object.values(draft).some((rows) =>
-      rows.some((row) => Object.values(row).some((value) => value.trim())),
+      rows.some((row) =>
+        Object.entries(row).some(([name, value]) => name !== 'entryId' && value?.trim()),
+      ),
     );
   const progress = getResumeProgress(draft ?? undefined);
   return { status: progress.status === 'notStarted' && hasInput ? 'inProgress' : progress.status };

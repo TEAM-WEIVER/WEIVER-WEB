@@ -59,9 +59,11 @@ test('저장 실패 시 입력을 유지하고 재시도 성공 시 홈 상태�
 }) => {
   await mockMember(page, true);
   let saves = 0;
+  const savedEntryIds: string[] = [];
   await page.route('**/api/resumes/master', async (route) => {
     if (route.request().method() !== 'PUT') return route.fallback();
     saves += 1;
+    savedEntryIds.push(route.request().postDataJSON().draft.education[0].entryId);
     if (saves === 1) return route.fulfill({ status: 500, json: { message: '실패' } });
     return route.fallback();
   });
@@ -76,6 +78,8 @@ test('저장 실패 시 입력을 유지하고 재시도 성공 시 홈 상태�
   await page.getByRole('button', { name: '저장하고 홈으로' }).click();
   await expect(page).toHaveURL('/home');
   expect(saves).toBe(2);
+  expect(savedEntryIds[0]).toMatch(/^[0-9a-f-]{36}$/);
+  expect(savedEntryIds[1]).toBe(savedEntryIds[0]);
   await expect(
     page.getByRole('region', { name: '공통 이력서' }).getByText('작성 중'),
   ).toBeVisible();
