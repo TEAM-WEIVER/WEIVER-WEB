@@ -1,3 +1,4 @@
+import { mockHomeApis } from './mocks/home-api';
 import { expect, test, type Page } from '@playwright/test';
 
 const posting = {
@@ -20,6 +21,7 @@ const education = {
 const masterResume = { education: [education], career: [], certifications: [], awards: [] };
 
 async function mockMember(page: Page, withMaster = false, withPosting = true) {
+  await mockHomeApis(page, withMaster ? masterResume : null);
   await page.addInitScript(
     ({ master, postings }) => {
       sessionStorage.setItem('weiver.auth.role', 'APPLICANT');

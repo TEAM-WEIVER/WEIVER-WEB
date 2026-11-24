@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
+import { Link, Navigate, useNavigate, useParams } from 'react-router';
 
 import { BackButton } from '@/components/common/back-button';
 import type { EditorDocument } from '@/components/common/DocumentEditorLayout';
@@ -20,7 +20,6 @@ import PreparationListPage from './list/page';
 import PreparationNewPage from './new/page';
 import { PortfolioEditor } from './portfolio/portfolio-editor';
 import { hasMasterResume } from './resume/_model/master-resume';
-import type { ResumeDraft } from './resume/_model/resume-sections';
 import ResumeEditor from './resume/page';
 
 const documentId = {
@@ -132,52 +131,7 @@ export function PreparationEditRoute() {
   );
 }
 
-export function MasterResumeRoute() {
-  const [params] = useSearchParams();
-  const postingId = params.get('postingId') ?? undefined;
-  const navigate = useNavigate();
-  const masterResume = usePreparationStore((state) => state.masterResume);
-  const postings = usePreparationStore((state) => state.postings);
-  const saveMasterResume = usePreparationStore((state) => state.saveMasterResume);
-  const [error, setError] = useState('');
-  if (postingId && !postings.some(({ id }) => id === postingId)) return <MissingPosting />;
-
-  function save(draft: ResumeDraft, complete = false) {
-    setError('');
-    if (complete && !hasMasterResume(draft)) {
-      setError(
-        '학력을 1개 이상 입력하고, 추가한 항목의 필수 정보를 모두 입력해주세요. 경력·자격증·수상은 해당하는 항목만 추가하면 돼요.',
-      );
-      return;
-    }
-    try {
-      saveMasterResume(draft);
-      if (complete)
-        navigate(postingId ? postingDocumentPath(postingId) : '/home', { replace: true });
-      else draftSaved();
-    } catch {
-      setError('임시 저장하지 못했어요. 입력 내용을 유지한 채 다시 시도해주세요.');
-    }
-  }
-
-  return (
-    <ResumeEditor
-      key={postingId ?? 'master'}
-      initialDraft={masterResume}
-      visibleDocuments={['resume']}
-      title="이력서 마스터본 작성"
-      description={
-        postingId
-          ? '공고별 이력서를 작성하기 전에 마스터본을 먼저 입력해주세요. 학력은 1개 이상 입력하고, 나머지 항목은 해당하는 경우에 추가해주세요. 저장 후 이 공고의 이력서 작성으로 이어져요.'
-          : '공고에 공통으로 사용할 기본 이력서를 입력해주세요. 학력은 1개 이상 입력하고, 나머지 항목은 해당하는 경우에 추가해주세요.'
-      }
-      error={error}
-      onSaveDraft={(draft) => save(draft)}
-      onComplete={(draft) => save(draft, true)}
-      completeLabel={postingId ? '저장하고 공고 이력서 작성' : '저장하고 홈으로'}
-    />
-  );
-}
+export { MasterResumeRoute } from './resume/master-resume-route';
 
 export function PreparationDocumentRoute({ document }: { document: EditorDocument }) {
   const { postingId = '' } = useParams();

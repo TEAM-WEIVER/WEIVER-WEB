@@ -29,6 +29,7 @@ type ResumeEditorProps = Pick<
   title?: string;
   description?: string;
   error?: string;
+  isSaving?: boolean;
 };
 
 export default function ResumeEditor({
@@ -43,6 +44,7 @@ export default function ResumeEditor({
   title = '이력서 작성',
   description,
   error,
+  isSaving = false,
 }: ResumeEditorProps) {
   const [rows, setRows] = useState<ResumeRows>(() => ({
     education: initializeRows(resumeSections.education.fields, initialDraft?.education),
@@ -78,13 +80,19 @@ export default function ResumeEditor({
   return (
     <DocumentEditorLayout
       activeDocument="resume"
+      isSaving={isSaving}
       visibleDocuments={visibleDocuments}
       progress={progress.percentage}
       statuses={{ ...statuses, resume: progress.status }}
       onSaveDraft={() => onSaveDraft(getDraft())}
       footerActions={
         onComplete ? (
-          <Button type="button" size="xs" onClick={() => onComplete(getDraft())}>
+          <Button
+            type="button"
+            size="xs"
+            isLoading={isSaving}
+            onClick={() => onComplete(getDraft())}
+          >
             {completeLabel}
           </Button>
         ) : undefined
@@ -98,7 +106,7 @@ export default function ResumeEditor({
           {error}
         </p>
       ) : null}
-      <div className="space-y-10">
+      <fieldset disabled={isSaving} className="min-w-0 space-y-10">
         <ResumeSection
           config={resumeSections.education}
           rows={rows.education}
@@ -119,7 +127,7 @@ export default function ResumeEditor({
           rows={rows.awards}
           setRows={(update) => updateSection('awards', update)}
         />
-      </div>
+      </fieldset>
     </DocumentEditorLayout>
   );
 }
