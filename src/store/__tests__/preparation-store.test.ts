@@ -31,6 +31,42 @@ afterEach(() => {
 });
 
 describe('공고별 서류와 마스터본 분리', () => {
+  it('이력 없음 선택도 원본과 분리하여 저장하고 새로고침 후 복원한다', async () => {
+    const state = usePreparationStore.getState();
+    const id = state.registerPosting(posting);
+    const draft: ResumeDraft = {
+      ...master,
+      noHistory: ['career', 'certifications', 'awards'],
+    };
+    state.saveMasterResume(draft);
+    state.saveResume(id, draft, { source: createResumeSource(draft) });
+    draft.noHistory!.pop();
+    expect(usePreparationStore.getState().resumes[id].noHistory).toEqual([
+      'career',
+      'certifications',
+      'awards',
+    ]);
+    expect(usePreparationStore.getState().masterResume?.noHistory).toEqual([
+      'career',
+      'certifications',
+      'awards',
+    ]);
+    const serialized = sessionStorage.getItem('weiver.preparation.drafts')!;
+    usePreparationStore.setState({ masterResume: undefined, resumes: {}, resumeSources: {} });
+    sessionStorage.setItem('weiver.preparation.drafts', serialized);
+    await usePreparationStore.persist.rehydrate();
+    expect(usePreparationStore.getState().resumes[id].noHistory).toEqual([
+      'career',
+      'certifications',
+      'awards',
+    ]);
+    expect(usePreparationStore.getState().resumeSources[id].baseline.noHistory).toEqual([
+      'career',
+      'certifications',
+      'awards',
+    ]);
+  });
+
   it('불러온 이력서를 편집·저장해도 마스터본과 다른 공고의 이력서는 유지한다', () => {
     const state = usePreparationStore.getState();
     const a = state.registerPosting(posting);
