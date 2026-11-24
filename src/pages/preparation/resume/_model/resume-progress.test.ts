@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { calculateDocumentProgress } from '@/lib/document-progress';
 
-import { initializeRows } from './resume-editor';
+import { emptyValues, initializeRows } from './resume-editor';
 import { resumeProgressSections } from './resume-progress';
-import { resumeSections, type ResumeRows } from './resume-sections';
+import { resumeSections, type ResumeDraft, type ResumeRows } from './resume-sections';
+import { getResumeProgress } from './master-resume';
+import { createResumeSource, withResumeEntryIds } from './resume-source';
 
 const certificate = { name: '정보처리기사', issuer: '', issuedDate: '2025.06.20', score: '' };
 
@@ -18,6 +20,34 @@ function initialRows(): ResumeRows {
 }
 
 describe('이력서 진행률', () => {
+  it('이력 없음 수정 중에는 저장된 완료 상태를 유지한다', () => {
+    const rows = initialRows();
+    rows.noHistory = ['career'];
+    rows.career[0] = {
+      ...rows.career[0],
+      state: 'editing',
+      input: { ...emptyValues(resumeSections.career.fields), company: '수정 중인 회사' },
+      noHistory: false,
+    };
+    expect(calculateDocumentProgress(rows, resumeProgressSections).percentage).toBe(50);
+  });
+
+  it('이력 없음으로 저장한 선택 항목을 재진입·마스터본 불러오기 후에도 완료로 집계한다', () => {
+    const draft: ResumeDraft = {
+      education: [],
+      career: [],
+      certifications: [],
+      awards: [],
+      noHistory: ['career', 'certifications', 'awards'],
+    };
+    expect(getResumeProgress(draft).percentage).toBe(75);
+    const imported = withResumeEntryIds(draft);
+    expect(imported.noHistory).toEqual(draft.noHistory);
+    expect(getResumeProgress(imported).percentage).toBe(75);
+    expect(createResumeSource(imported).masterEntryIds).toEqual([]);
+    expect(getResumeProgress({ ...draft, noHistory: [] }).percentage).toBe(0);
+  });
+
   it('필수값을 검증한 저장 데이터만 완료로 집계한다', () => {
     const rows = initialRows();
     expect(calculateDocumentProgress(rows, resumeProgressSections).percentage).toBe(25);

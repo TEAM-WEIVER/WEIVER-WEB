@@ -29,6 +29,7 @@ export function collectDraftValues<Name extends string>(
   trackEntryIds = false,
 ) {
   return rows.flatMap((row) => {
+    if (row.state === 'editing' && row.noHistory) return [];
     const values = row.state === 'editing' ? row.input : row.saved;
     return row.saved ||
       Object.entries(values).some(([name, value]) => name !== 'entryId' && value?.trim())

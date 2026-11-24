@@ -89,6 +89,121 @@ export const Empty: Story = {
   },
 };
 
+export const NoHistory: Story = {
+  name: '선택 항목 이력 없음 취소',
+  args: { initialDraft: { ...sampleDraft, career: [], certifications: [], awards: [] } },
+  play: async ({ canvas, userEvent }) => {
+    const career = within(canvas.getByRole('region', { name: '경력사항' }));
+    const form = within(career.getByRole('form', { name: '경력사항 정보 입력' }));
+    const checkbox = form.getByRole('checkbox', { name: '경력 없음' });
+
+    await expect(canvas.getAllByRole('checkbox')).toHaveLength(3);
+    await userEvent.click(checkbox);
+    await userEvent.click(form.getByRole('button', { name: '취소' }));
+    const freshForm = within(career.getByRole('form', { name: '경력사항 정보 입력' }));
+    await expect(freshForm.getByRole('checkbox', { name: '경력 없음' })).not.toBeChecked();
+    await expect(freshForm.getByRole('textbox', { name: '회사명' })).toBeEnabled();
+  },
+};
+
+export const SaveNoHistory: Story = {
+  name: '이력 없음 검증 생략·진행률 반영',
+  args: { initialDraft: { ...sampleDraft, career: [], certifications: [], awards: [] } },
+  play: async ({ canvas, args, userEvent }) => {
+    const progress = canvas.getByRole('progressbar');
+    const career = within(canvas.getByRole('region', { name: '경력사항' }));
+    const form = within(career.getByRole('form', { name: '경력사항 정보 입력' }));
+    const company = form.getByRole('textbox', { name: '회사명' });
+    const checkbox = form.getByRole('checkbox', { name: '경력 없음' });
+
+    await userEvent.type(company, '작성 중인 회사');
+    await userEvent.click(form.getByRole('button', { name: '저장' }));
+    await expect(form.getAllByText('필수 입력 항목입니다.').length).toBeGreaterThan(0);
+    await userEvent.click(checkbox);
+    await expect(company).toBeDisabled();
+    await expect(form.getByRole('combobox', { name: '경력형태' })).toBeDisabled();
+    await expect(form.getByRole('combobox', { name: '입사년월' })).toBeDisabled();
+    await expect(form.getByRole('textbox', { name: '담당업무' })).toBeDisabled();
+    await expect(form.queryByText('필수 입력 항목입니다.')).not.toBeInTheDocument();
+    await expect(progress).toHaveAttribute('value', '25');
+    await userEvent.click(canvas.getByRole('button', { name: '임시 저장' }));
+    await expect(args.onSaveDraft).toHaveBeenCalledWith({
+      education: sampleDraft.education,
+      career: [],
+      certifications: [],
+      awards: [],
+      noHistory: ['career'],
+    });
+
+    await userEvent.click(checkbox);
+    await expect(company).toBeEnabled();
+    await expect(company).toHaveValue('작성 중인 회사');
+    await userEvent.click(checkbox);
+    await userEvent.click(form.getByRole('button', { name: '저장' }));
+    await expect(career.getByRole('heading', { name: '경력 없음' })).toBeVisible();
+    await expect(progress).toHaveAttribute('value', '50');
+
+    for (const [sectionName, label] of [
+      ['자격증', '보유 자격증 없음'],
+      ['수상이력', '수상 이력 없음'],
+    ]) {
+      const section = within(canvas.getByRole('region', { name: sectionName }));
+      await userEvent.click(section.getByRole('checkbox', { name: label }));
+      await userEvent.click(section.getByRole('button', { name: '저장' }));
+      await expect(section.getByRole('heading', { name: label })).toBeVisible();
+    }
+    await expect(progress).toHaveAttribute('value', '100');
+    await userEvent.click(canvas.getByRole('button', { name: '임시 저장' }));
+    await expect(args.onSaveDraft).toHaveBeenCalledWith({
+      education: sampleDraft.education,
+      career: [],
+      certifications: [],
+      awards: [],
+      noHistory: ['career', 'certifications', 'awards'],
+    });
+  },
+};
+
+export const SavedNoHistory: Story = {
+  name: '저장된 이력 없음 복원·수정·취소',
+  args: {
+    initialDraft: {
+      ...sampleDraft,
+      career: [],
+      certifications: [],
+      awards: [],
+      noHistory: ['career', 'certifications', 'awards'],
+    },
+  },
+  play: async ({ canvas, args, userEvent }) => {
+    const career = within(canvas.getByRole('region', { name: '경력사항' }));
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
+    await userEvent.click(career.getByRole('button', { name: '경력 없음 수정' }));
+    const form = within(career.getByRole('form', { name: '경력사항 정보 입력' }));
+    await expect(form.getByRole('checkbox', { name: '경력 없음' })).toBeChecked();
+    await userEvent.click(form.getByRole('checkbox', { name: '경력 없음' }));
+    await userEvent.type(form.getByRole('textbox', { name: '회사명' }), '취소할 회사');
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
+    await userEvent.click(canvas.getByRole('button', { name: '임시 저장' }));
+    await expect(args.onSaveDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        career: [expect.objectContaining({ company: '취소할 회사' })],
+        noHistory: ['certifications', 'awards'],
+      }),
+    );
+    await userEvent.click(form.getByRole('button', { name: '취소' }));
+    await expect(career.getByRole('heading', { name: '경력 없음' })).toBeVisible();
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
+    await userEvent.click(canvas.getByRole('button', { name: '임시 저장' }));
+    await expect(args.onSaveDraft).toHaveBeenCalledWith(args.initialDraft);
+
+    await userEvent.click(career.getByRole('button', { name: '경력사항 추가' }));
+    await expect(career.getByRole('checkbox', { name: '경력 없음' })).not.toBeChecked();
+    await expect(career.getByRole('textbox', { name: '회사명' })).toBeEnabled();
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '75');
+  },
+};
+
 export const Editing: Story = {
   name: '편집 중',
   args: { initialDraft: sampleDraft },
