@@ -31,7 +31,7 @@ const documentId = {
 } as const;
 
 function draftSaved() {
-  toast.add({ type: 'success', title: '현재 탭에 임시 저장했어요.' });
+  toast.add({ type: 'success', title: '임시 저장했어요.' });
 }
 
 function usePostingDocuments(postingId: string) {
@@ -45,9 +45,7 @@ function MissingPosting() {
   return (
     <main className="mx-auto max-w-[1440px] space-y-4 px-6 py-10">
       <h1 className="text-h2">공고를 찾을 수 없어요.</h1>
-      <p className="text-body2 text-text-secondary">
-        삭제되었거나 현재 탭에 저장되지 않은 공고예요.
-      </p>
+      <p className="text-body2 text-text-secondary">삭제되었거나 접근할 수 없는 공고예요.</p>
       <Link to={PREPARATION_PATH} className="underline">
         지원 공고 목록으로 돌아가기
       </Link>
@@ -144,7 +142,6 @@ export function MasterResumeRoute() {
   const saveMasterResume = usePreparationStore((state) => state.saveMasterResume);
   const [error, setError] = useState('');
   if (postingId && !postings.some(({ id }) => id === postingId)) return <MissingPosting />;
-  const backPath = postingId ? postingPath(postingId) : '/home';
 
   function save(draft: ResumeDraft, complete = false) {
     setError('');
@@ -165,27 +162,22 @@ export function MasterResumeRoute() {
   }
 
   return (
-    <>
-      <div className="mx-auto max-w-[1440px] px-4 pt-6 sm:px-6 lg:px-15">
-        <BackButton onClick={() => navigate(backPath)}>{postingId ? '공고 상세' : '홈'}</BackButton>
-      </div>
-      <ResumeEditor
-        key={postingId ?? 'master'}
-        initialDraft={masterResume}
-        trackEntryIds
-        visibleDocuments={['resume']}
-        title="이력서 마스터본 작성"
-        description={
-          postingId
-            ? '공고별 이력서를 작성하기 전에 마스터본을 먼저 입력해주세요. 학력은 1개 이상 입력하고, 나머지 항목은 해당하는 경우에 추가해주세요. 저장 후 이 공고의 이력서 작성으로 이어져요.'
-            : '공고에 공통으로 사용할 기본 이력서를 입력해주세요. 학력은 1개 이상 입력하고, 나머지 항목은 해당하는 경우에 추가해주세요.'
-        }
-        error={error}
-        onSaveDraft={(draft) => save(draft)}
-        onComplete={(draft) => save(draft, true)}
-        completeLabel={postingId ? '저장하고 공고 이력서 작성' : '저장하고 홈으로'}
-      />
-    </>
+    <ResumeEditor
+      key={postingId ?? 'master'}
+      initialDraft={masterResume}
+      trackEntryIds
+      visibleDocuments={['resume']}
+      title="이력서 마스터본 작성"
+      description={
+        postingId
+          ? '공고별 이력서를 작성하기 전에 마스터본을 먼저 입력해주세요. 학력은 1개 이상 입력하고, 나머지 항목은 해당하는 경우에 추가해주세요. 저장 후 이 공고의 이력서 작성으로 이어져요.'
+          : '공고에 공통으로 사용할 기본 이력서를 입력해주세요. 학력은 1개 이상 입력하고, 나머지 항목은 해당하는 경우에 추가해주세요.'
+      }
+      error={error}
+      onSaveDraft={(draft) => save(draft)}
+      onComplete={(draft) => save(draft, true)}
+      completeLabel={postingId ? '저장하고 공고 이력서 작성' : '저장하고 홈으로'}
+    />
   );
 }
 
@@ -224,11 +216,6 @@ export function PreparationDocumentRoute({ document }: { document: EditorDocumen
         <p className="text-body2 text-text-secondary">
           {posting.companyName} · {posting.positionName}
         </p>
-        {document === 'portfolio' ? (
-          <p className="text-caption text-text-tertiary">
-            첨부한 파일은 화면을 새로고침하거나 탭을 닫으면 지워져요.
-          </p>
-        ) : null}
         {error ? (
           <p role="alert" className="text-error">
             {error}
