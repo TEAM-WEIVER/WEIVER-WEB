@@ -538,3 +538,12 @@ export const MasterResume: Story = {
     await expect(navigation.queryByText('포트폴리오')).not.toBeInTheDocument();
   },
 };
+
+export const Saving: Story = {
+  args: { isSaving: true, onComplete: fn(), completeLabel: '저장하고 홈으로' },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('button', { name: '임시 저장' })).toBeDisabled();
+    await expect(canvas.getByRole('textbox', { name: '학교명' })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: /저장하고 홈으로/ })).toBeDisabled();
+  },
+};

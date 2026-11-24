@@ -30,6 +30,7 @@ type ResumeEditorProps = Pick<
   title?: string;
   description?: string;
   error?: string;
+  isSaving?: boolean;
   trackEntryIds?: boolean;
   onLoadMaster?: (currentDraft: ResumeDraft) => void;
   canLoadMaster?: boolean;
@@ -47,6 +48,7 @@ export default function ResumeEditor({
   title = '이력서 작성',
   description,
   error,
+  isSaving = false,
   trackEntryIds = false,
   onLoadMaster,
   canLoadMaster = true,
@@ -106,13 +108,19 @@ export default function ResumeEditor({
   return (
     <DocumentEditorLayout
       activeDocument="resume"
+      isSaving={isSaving}
       visibleDocuments={visibleDocuments}
       progress={progress.percentage}
       statuses={{ ...statuses, resume: progress.status }}
       onSaveDraft={() => onSaveDraft(getDraft())}
       footerActions={
         onComplete ? (
-          <Button type="button" size="xs" onClick={() => onComplete(getDraft())}>
+          <Button
+            type="button"
+            size="xs"
+            isLoading={isSaving}
+            onClick={() => onComplete(getDraft())}
+          >
             {completeLabel}
           </Button>
         ) : undefined
@@ -127,7 +135,7 @@ export default function ResumeEditor({
             data-load-master
             type="button"
             variant="outline"
-            disabled={!canLoadMaster}
+            disabled={!canLoadMaster || isSaving}
             title={!canLoadMaster ? '작성된 마스터본이 없어요.' : undefined}
             onClick={() => onLoadMaster(getDraft())}
           >
@@ -140,7 +148,7 @@ export default function ResumeEditor({
           {error}
         </p>
       ) : null}
-      <div className="space-y-10">
+      <fieldset disabled={isSaving} className="min-w-0 space-y-10">
         <ResumeSection
           config={resumeSections.education}
           rows={rows.education}
@@ -167,7 +175,7 @@ export default function ResumeEditor({
           onNoHistoryChange={(value) => updateNoHistory('awards', value)}
           setRows={(update) => updateSection('awards', update)}
         />
-      </div>
+      </fieldset>
     </DocumentEditorLayout>
   );
 }

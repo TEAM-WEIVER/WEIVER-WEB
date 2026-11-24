@@ -2,50 +2,31 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { ApplicantHeaderProfile } from '@/components/common/applicant-header-profile';
-import { LogoutButton } from '@/components/common/logout-button';
 import { ProtectedRouteGuard } from '@/components/common/protected-route-guard';
+import { useApiResource } from '@/hooks/use-api-resource';
+import { loadHomePoints, loadHomePostings, loadResumeSummary } from '@/lib/home-api';
 import { PREPARATION_PATH, MASTER_RESUME_PATH, postingPath } from '@/lib/preparation-paths';
-import { getResumeProgress } from '@/pages/preparation/resume/_model/master-resume';
-import { usePreparationStore } from '@/store/preparation-store';
-import { getPostingDocuments } from '@/lib/preparation-documents';
 
 import { MemberHomeView } from './home-view';
 
 function MemberHomeContent() {
   const [fullName, setFullName] = useState('');
   const navigate = useNavigate();
-  const preparation = usePreparationStore();
+  const resume = useApiResource(loadResumeSummary);
+  const points = useApiResource(loadHomePoints);
+  const postings = useApiResource(loadHomePostings);
 
   return (
     <MemberHomeView
       fullName={fullName}
-      profile={
-        <div className="flex items-center gap-2">
-          <ApplicantHeaderProfile onNameLoaded={setFullName} />
-          <LogoutButton
-            showLabel={false}
-            className="text-text-tertiary hover:text-text-primary focus-visible:outline-primary-600 rounded-md p-2 focus-visible:outline-2"
-            iconSize={18}
-          />
-        </div>
-      }
-      resume={{
-        status: 'ready',
-        data: { status: getResumeProgress(preparation.masterResume).status },
-      }}
+      profile={<ApplicantHeaderProfile onNameLoaded={setFullName} />}
+      resume={resume.state}
+      points={points.state}
+      postings={postings.state}
+      onRetryResume={resume.retry}
+      onRetryPoints={points.retry}
+      onRetryPostings={postings.retry}
       onEditResume={() => navigate(MASTER_RESUME_PATH)}
-      points={{ status: 'unavailable' }}
-      postings={{
-        status: 'ready',
-        data: {
-          total: preparation.postings.length,
-          postings: preparation.postings.slice(0, 3).map((posting) => ({
-            ...posting,
-            documents: getPostingDocuments(preparation, posting.id),
-            interviewCount: 0,
-          })),
-        },
-      }}
       onViewAllPostings={() => navigate(PREPARATION_PATH)}
       onRegisterPosting={() => navigate(`${PREPARATION_PATH}/new`)}
       onContinuePosting={(id) => navigate(postingPath(id))}

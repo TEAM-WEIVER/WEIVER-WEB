@@ -6,7 +6,7 @@ const baseURL = `http://127.0.0.1:${e2ePort}`;
 
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: '**/*.live.spec.ts',
+  testIgnore: ['**/*.live.spec.ts', '**/*.mock.spec.ts'],
   fullyParallel: true,
   forbidOnly: isCI,
   retries: 0,
