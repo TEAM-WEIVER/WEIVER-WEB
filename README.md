@@ -41,3 +41,24 @@ pnpm build-storybook  # 정적 빌드 확인
 ```
 
 Storybook의 예시 데이터·콜백은 실제 저장/API 연동과 구분된다. 팀 접근 권한은 Chromatic의 Manage → Collaborate에서 관리한다.
+
+## 홈·이력서 개발용 mock API (#202)
+
+```bash
+pnpm dev:mock
+```
+
+`/login`에서 테스트용 이메일·비밀번호를 입력하면 개발 세션으로 홈에 진입합니다. `mock@example.test`와 `MockPassword1!`을 사용할 수 있습니다. mock 모드는 `VITE_ENABLE_MOCK_API=true`와 Vite 개발 모드가 모두 켜졌을 때만 MSW를 시작합니다. 화면 상단에 mock 표시가 있으며, 운영 빌드와 일반 `pnpm dev`에는 자동 적용되지 않습니다.
+
+- 홈은 이력서·포인트·공고를 HTTP 요청으로 조회합니다. `GET/PUT /api/resumes/master`, `GET /api/home/points`, `GET /api/home/postings`는 백엔드 계약 확정 전의 프론트엔드 개발용 계약입니다. 확정 후 `src/lib/home-api.ts`에서 맞춥니다.
+- 이력서와 공고는 #203의 탭 단위 보관소를 mock DB로 공유합니다. 같은 탭의 새로고침에는 복원되며 탭을 닫거나 로그인 세션을 초기화하면 지워집니다. 실제 서버에 저장하지 않습니다.
+- 포인트 `300P`, 면접 비용 `100P`, 면접 기록 `0회`는 mock 값입니다. 결제·충전·실제 면접을 수행하지 않습니다.
+- 이력서: `/home` → `/resume/master` → 임시 저장 또는 저장하고 홈으로. 조회 실패는 재시도하고 저장 실패는 입력을 유지합니다.
+- 푸터: 이용약관 `/terms`, 개인정보처리방침 `/privacy`, 고객지원 `/support`. 약관·개인정보 내용은 기존 회원가입 문구를 재사용합니다. 고객지원 문의도 mock 모드에서는 실제로 전송되지 않습니다.
+- 미구현 API는 mock 모드에서 501로 응답하며 실제 서버로 전달하지 않습니다. mock 모드에서 운영 계정·실제 개인정보를 사용하지 않습니다.
+
+```bash
+pnpm test:e2e:mock --reporter=line
+```
+
+위 테스트는 Playwright의 API 응답 가로채기 없이 실제 MSW를 통해 로그인·이력서 저장·새로고침 복원·홈 공고 갱신을 검증합니다.

@@ -21,7 +21,9 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "prepare": "husky",
-    "chromatic": "npx chromatic"
+    "chromatic": "npx chromatic",
+    "dev:mock": "VITE_ENABLE_MOCK_API=true vite --port 3000",
+    "test:e2e:mock": "playwright test --config=playwright.mock.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -1,4 +1,9 @@
+import { mockHomeApis } from '../mocks/home-api';
 import { expect, test } from '@playwright/test';
+
+test.beforeEach(async ({ page }) => {
+  await mockHomeApis(page);
+});
 
 import { mockSignupApis } from '../mocks/signup-handlers';
 import { acceptRequiredAgreements, fillSignupAccount } from './signup-flow';
