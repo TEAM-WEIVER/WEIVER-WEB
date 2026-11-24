@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import type { DocumentStatus } from '@/lib/document-progress';
 import { cn } from '@/lib/utils';
 
 const documents = [
@@ -12,10 +13,8 @@ const documents = [
 
 export type EditorDocument = (typeof documents)[number]['id'];
 
-type DocumentStatus = 'notStarted' | 'inProgress' | 'complete';
-
 const documentStatuses = {
-  notStarted: { label: '미작성', className: 'bg-transparent text-text-tertiary' },
+  notStarted: { label: '미작성', className: 'bg-transparent text-text-secondary' },
   inProgress: { label: '작성 중', className: 'border-amber-200 bg-amber-50 text-amber-800' },
   complete: { label: '작성 완료', className: 'bg-primary-100 text-text-secondary' },
 } satisfies Record<DocumentStatus, { label: string; className: string }>;
@@ -48,7 +47,11 @@ export function DocumentEditorLayout({
                 const isActive = id === activeDocument;
                 const status =
                   statuses?.[id] ??
-                  (isActive ? (progress === 100 ? 'complete' : 'inProgress') : 'notStarted');
+                  (isActive && progress > 0
+                    ? progress === 100
+                      ? 'complete'
+                      : 'inProgress'
+                    : 'notStarted');
                 const { label: statusLabel, className: statusClassName } = documentStatuses[status];
                 const rowClassName = cn(
                   'text-body2 text-text-secondary flex w-full items-center justify-between gap-2 rounded-lg px-3 py-3',
