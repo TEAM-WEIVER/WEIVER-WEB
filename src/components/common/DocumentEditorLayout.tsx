@@ -21,6 +21,8 @@ const documentStatuses = {
 
 export type DocumentEditorLayoutProps = {
   activeDocument: EditorDocument;
+  /** 생략하면 기존 공고별 서류 3종을 표시한다. */
+  visibleDocuments?: readonly EditorDocument[];
   progress: number;
   onSaveDraft: () => void;
   children: ReactNode;
@@ -30,12 +32,17 @@ export type DocumentEditorLayoutProps = {
 
 export function DocumentEditorLayout({
   activeDocument,
+  visibleDocuments,
   progress,
   onSaveDraft,
   children,
   onDocumentChange,
   statuses,
 }: DocumentEditorLayoutProps) {
+  const displayedDocuments = visibleDocuments
+    ? documents.filter(({ id }) => visibleDocuments.includes(id))
+    : documents;
+
   return (
     <div className="bg-bg-secondary min-h-dvh">
       <div className="mx-auto grid max-w-[1440px] items-start gap-6 px-4 pt-10 pb-20 sm:px-6 md:grid-cols-[minmax(0,216px)_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12 lg:px-15">
@@ -43,7 +50,7 @@ export function DocumentEditorLayout({
           <nav aria-label="작성 필요 서류">
             <p className="text-body3 text-text-secondary mb-2">작성 필요 서류</p>
             <ul className="space-y-1">
-              {documents.map(({ id, label }) => {
+              {displayedDocuments.map(({ id, label }) => {
                 const isActive = id === activeDocument;
                 const status =
                   statuses?.[id] ??

@@ -79,3 +79,12 @@ export const OverallProgress: Story = {
     await expect(canvas.getByRole('button', { name: /포트폴리오/ })).toHaveTextContent('미작성');
   },
 };
+
+export const MasterResume: Story = {
+  args: { visibleDocuments: ['resume'] },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('이력서')).toBeVisible();
+    await expect(canvas.queryByText('자기소개서')).not.toBeInTheDocument();
+    await expect(canvas.queryByText('포트폴리오')).not.toBeInTheDocument();
+  },
+};
