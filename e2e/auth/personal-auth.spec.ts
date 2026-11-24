@@ -97,7 +97,7 @@ for (const status of [401, 500]) {
   });
 }
 
-test('회원 홈은 새로고침 후 이름을 한 번 조회하고 푸터를 제공하고 로그아웃 버튼을 표시하지 않는다', async ({
+test('회원 홈은 새로고침 후 이름을 한 번 조회하고 프로필 메뉴에서 로그아웃한다', async ({
   page,
 }) => {
   let profileRequests = 0;
@@ -113,6 +113,7 @@ test('회원 홈은 새로고침 후 이름을 한 번 조회하고 푸터를 �
     profileRequests += 1;
     return route.fulfill({ json: { data: { ApplicantDTO: { name: '김민수' } } } });
   });
+  await page.route('**/api/auth/logout', (route) => route.fulfill({ status: 204 }));
 
   await page.goto('/home');
   const heading = page.getByRole('heading', {
@@ -131,4 +132,32 @@ test('회원 홈은 새로고침 후 이름을 한 번 조회하고 푸터를 �
   await expect(heading).toBeVisible();
   expect(profileRequests).toBe(2);
   await expect(page.getByRole('button', { name: '로그아웃' })).toHaveCount(0);
+  await page.getByRole('button', { name: '김민수 프로필' }).click();
+  await page.getByRole('menuitem', { name: '로그아웃' }).click();
+  await expect(page).toHaveURL('/login');
+  expect(await page.evaluate(() => sessionStorage.getItem('weiver.auth.role'))).toBeNull();
+  await page.goto('/home');
+  await expect(page).toHaveURL('/login');
+});
+
+test('프로필 조회가 실패해도 계정 메뉴에서 로그아웃할 수 있다', async ({ page }) => {
+  await page.goto('/login');
+  await page.evaluate(() => sessionStorage.setItem('weiver.auth.role', 'APPLICANT'));
+  await page.route('**/api/auth/csrf', (route) =>
+    route.fulfill({ json: { data: { csrfToken: 'mock-csrf-token' } } }),
+  );
+  await page.route('**/api/auth/reissue', (route) =>
+    route.fulfill({ json: { data: { accessToken: 'mock-token' } } }),
+  );
+  await page.route('**/api/applicants', (route) => route.fulfill({ status: 500 }));
+  await page.route('**/api/auth/logout', (route) => route.fulfill({ status: 204 }));
+
+  await page.goto('/home');
+  const profile = page.getByRole('button', { name: '내 계정' });
+  await expect(profile).not.toHaveAttribute('aria-busy', 'true');
+  await profile.click();
+  await expect(page.getByRole('menuitem', { name: '프로필 다시 불러오기' })).toBeVisible();
+  await page.getByRole('menuitem', { name: '로그아웃' }).click();
+  await expect(page).toHaveURL('/login');
+  expect(await page.evaluate(() => sessionStorage.getItem('weiver.auth.role'))).toBeNull();
 });

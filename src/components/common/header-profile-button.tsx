@@ -25,7 +25,10 @@ export function HeaderProfileButton({
       {...props}
       variant="ghost"
       aria-label={ariaLabel ?? (name ? `${name} 프로필` : '내 계정')}
-      className={cn('text-body2 text-text-secondary h-11 gap-2 px-1.5', className)}
+      className={cn(
+        'group/header-profile text-body2 text-text-secondary data-[state=open]:bg-bg-secondary h-11 gap-2 px-1.5',
+        className,
+      )}
     >
       <span
         aria-hidden="true"
@@ -36,7 +39,10 @@ export function HeaderProfileButton({
       <span className="max-w-28 truncate sm:max-w-40" title={name || undefined}>
         {name || '내 계정'}
       </span>
-      <ChevronDown aria-hidden="true" className="text-text-tertiary size-4" />
+      <ChevronDown
+        aria-hidden="true"
+        className="text-text-tertiary size-4 transition-transform group-data-[state=open]/header-profile:rotate-180 motion-reduce:transition-none"
+      />
     </Button>
   );
 }

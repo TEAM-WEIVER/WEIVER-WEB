@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router';
 import { expect, within } from 'storybook/test';
 
 import { GlobalHeader } from './global-header';
-import { HeaderProfileButton } from './header-profile-button';
+import { HeaderProfileMenu } from './header-profile-menu';
 import { MemberHeaderNavigation } from './member-header-navigation';
 
 const meta = {
@@ -14,7 +14,7 @@ const meta = {
   decorators: [
     (Story, context) => (
       <MemoryRouter initialEntries={[context.parameters.initialPath ?? '/home']}>
-        <GlobalHeader navigation={<Story />} profile={<HeaderProfileButton fullName="김민채" />} />
+        <GlobalHeader navigation={<Story />} profile={<HeaderProfileMenu fullName="김민채" />} />
       </MemoryRouter>
     ),
   ],
