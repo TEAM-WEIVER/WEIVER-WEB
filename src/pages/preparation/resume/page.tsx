@@ -16,7 +16,10 @@ import {
   type ResumeSectionName,
 } from './_model/resume-sections';
 
-type ResumeEditorProps = Pick<DocumentEditorLayoutProps, 'onDocumentChange' | 'statuses'> & {
+type ResumeEditorProps = Pick<
+  DocumentEditorLayoutProps,
+  'onDocumentChange' | 'statuses' | 'visibleDocuments'
+> & {
   initialDraft?: ResumeDraft;
   progressSections?: readonly DocumentProgressSection<ResumeRows>[];
   onSaveDraft: (draft: ResumeDraft) => void;
@@ -24,6 +27,7 @@ type ResumeEditorProps = Pick<DocumentEditorLayoutProps, 'onDocumentChange' | 's
 
 export default function ResumeEditor({
   initialDraft,
+  visibleDocuments,
   progressSections = resumeProgressSections,
   onSaveDraft,
   onDocumentChange,
@@ -59,6 +63,7 @@ export default function ResumeEditor({
   return (
     <DocumentEditorLayout
       activeDocument="resume"
+      visibleDocuments={visibleDocuments}
       progress={progress.percentage}
       statuses={{ ...statuses, resume: progress.status }}
       onSaveDraft={handleSaveDraft}

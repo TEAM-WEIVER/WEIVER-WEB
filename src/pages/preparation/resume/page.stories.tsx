@@ -409,3 +409,17 @@ export const ConfiguredSections: Story = {
     await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
   },
 };
+
+export const MasterResume: Story = {
+  name: '공통 이력서 단독 편집',
+  args: { visibleDocuments: ['resume'] },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByRole('heading', { level: 1, name: '이력서 작성' }),
+    ).toBeInTheDocument();
+    const navigation = within(canvas.getByRole('navigation', { name: '작성 필요 서류' }));
+    await expect(navigation.getByText('이력서')).toBeVisible();
+    await expect(navigation.queryByText('자기소개서')).not.toBeInTheDocument();
+    await expect(navigation.queryByText('포트폴리오')).not.toBeInTheDocument();
+  },
+};
