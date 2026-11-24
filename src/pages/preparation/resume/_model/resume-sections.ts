@@ -88,6 +88,7 @@ export const resumeSections = {
   }),
   career: defineSection({
     title: '경력사항',
+    noHistoryLabel: '경력 없음',
     description: '최근 경력부터 순서대로 입력해주세요.',
     fields: [
       {
@@ -157,6 +158,7 @@ export const resumeSections = {
   }),
   certifications: defineSection({
     title: '자격증',
+    noHistoryLabel: '보유 자격증 없음',
     description: '보유한 자격증 및 공인 시험 정보를 입력해주세요.',
     fields: [
       {
@@ -197,6 +199,7 @@ export const resumeSections = {
   }),
   awards: defineSection({
     title: '수상이력',
+    noHistoryLabel: '수상 이력 없음',
     description: '주요 수상 및 공모전 경험을 입력해주세요.',
     fields: [
       {
@@ -239,13 +242,15 @@ export const resumeSections = {
 };
 
 export type ResumeSectionName = keyof typeof resumeSections;
+export type OptionalResumeSectionName = Exclude<ResumeSectionName, 'education'>;
+type ResumeNoHistory = { noHistory?: OptionalResumeSectionName[] };
 type FieldName<Section extends ResumeSectionName> =
   (typeof resumeSections)[Section]['fields'][number]['name'];
 
-export type ResumeDraft = {
+export type ResumeDraft = ResumeNoHistory & {
   [Section in ResumeSectionName]: ResumeValues<FieldName<Section>>[];
 };
 
-export type ResumeRows = {
+export type ResumeRows = ResumeNoHistory & {
   [Section in ResumeSectionName]: ResumeRow<FieldName<Section>>[];
 };

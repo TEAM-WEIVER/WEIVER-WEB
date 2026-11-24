@@ -65,7 +65,6 @@ export function DatePicker({
   const [cursor, setCursor] = useState(() => parseDate(value, mode) ?? new Date());
   const gridRef = useRef<HTMLDivElement>(null);
   const shouldFocus = useRef(false);
-  const helpId = useId();
   const valueId = useId();
   const selected = parseDate(value, mode);
   const selectedValue = selected ? (value ?? '') : '';
@@ -223,12 +222,7 @@ export function DatePicker({
               {year}년 {mode === 'date' ? `${month + 1}월` : ''}
             </p>
             {mode === 'month' ? (
-              <div
-                ref={gridRef}
-                role="grid"
-                aria-label={`${year}년 월 선택`}
-                aria-describedby={helpId}
-              >
+              <div ref={gridRef} role="grid" aria-label={`${year}년 월 선택`}>
                 {Array.from({ length: 4 }, (_, row) => (
                   <div role="row" key={row} className="grid grid-cols-3 gap-1">
                     {Array.from({ length: 3 }, (_, col) => {
@@ -285,9 +279,6 @@ export function DatePicker({
                 />
               </div>
             )}
-            <p id={helpId} className="text-caption text-text-tertiary mt-3">
-              방향키로 이동 · Enter로 선택 · Esc로 닫기
-            </p>
             <Popover.Close asChild>
               <Button variant="ghost" className="mt-2 h-9 w-full">
                 닫기

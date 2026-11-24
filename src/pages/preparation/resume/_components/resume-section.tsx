@@ -1,4 +1,5 @@
 import { Plus } from 'lucide-react';
+import { useState } from 'react';
 
 import { SectionHeading } from '@/components/common/section-heading';
 import { Button } from '@/components/ui/button';
@@ -13,24 +14,47 @@ type ResumeSectionProps<Name extends string> = {
   config: ResumeSectionConfig<Name>;
   rows: ResumeRow<Name>[];
   setRows: (update: (rows: ResumeRow<Name>[]) => ResumeRow<Name>[]) => void;
+  noHistory?: boolean;
+  onNoHistoryChange?: (noHistory: boolean) => void;
 };
 
 export function ResumeSection<Name extends string>({
   config,
   rows,
   setRows,
+  noHistory = false,
+  onNoHistoryChange,
 }: ResumeSectionProps<Name>) {
+  const [editingNoHistory, setEditingNoHistory] = useState(false);
+  const [emptyRowId, setEmptyRowId] = useState(() => crypto.randomUUID());
+  const emptyRow: ResumeRow<Name> = {
+    id: emptyRowId,
+    state: 'editing',
+    input: emptyValues(config.fields),
+  };
+  const showNoHistory = noHistory && !editingNoHistory;
+  const visibleRows = !rows.length && config.noHistoryLabel && !showNoHistory ? [emptyRow] : rows;
+
   function addRow() {
     const row: ResumeRow<Name> = {
       id: crypto.randomUUID(),
       state: 'editing',
       input: emptyValues(config.fields),
     };
-    setRows((current) => [...current, row]);
+    onNoHistoryChange?.(false);
+    setEditingNoHistory(false);
+    setRows((current) => [
+      ...current.map((entry) =>
+        entry.state === 'editing' ? { ...entry, noHistory: false } : entry,
+      ),
+      row,
+    ]);
   }
 
   function updateRow(id: string, update: (row: ResumeRow<Name>) => ResumeRow<Name>) {
-    setRows((current) => current.map((row) => (row.id === id ? update(row) : row)));
+    setRows((current) =>
+      (current.length ? current : [emptyRow]).map((row) => (row.id === id ? update(row) : row)),
+    );
   }
 
   function removeRow(id: string) {
@@ -47,7 +71,15 @@ export function ResumeSection<Name extends string>({
         </Button>
       </div>
 
-      {rows.map((row) => {
+      {showNoHistory && config.noHistoryLabel ? (
+        <ResumeEntryCard
+          summary={{ title: config.noHistoryLabel, details: [] }}
+          onEdit={() => setEditingNoHistory(true)}
+          onDelete={() => onNoHistoryChange?.(false)}
+        />
+      ) : null}
+
+      {visibleRows.map((row) => {
         if (row.state === 'editing') {
           return (
             <ResumeEntryForm
@@ -55,6 +87,21 @@ export function ResumeSection<Name extends string>({
               config={config}
               values={row.input}
               isEditing={Boolean(row.saved)}
+              noHistory={row.noHistory ?? noHistory}
+              onNoHistoryChange={(checked) =>
+                updateRow(row.id, (current) =>
+                  current.state === 'editing' ? { ...current, noHistory: checked } : current,
+                )
+              }
+              onSaveNoHistory={
+                config.noHistoryLabel && visibleRows.length === 1 && onNoHistoryChange
+                  ? () => {
+                      setRows(() => []);
+                      onNoHistoryChange(true);
+                      setEditingNoHistory(false);
+                    }
+                  : undefined
+              }
               onChange={(name, value) =>
                 updateRow(row.id, (current) => {
                   if (current.state !== 'editing') return current;
@@ -65,14 +112,17 @@ export function ResumeSection<Name extends string>({
                   return { ...current, input };
                 })
               }
-              onSave={() =>
+              onSave={() => {
                 updateRow(row.id, (current) =>
                   current.state === 'editing'
                     ? { id: current.id, state: 'saved', saved: current.input }
                     : current,
-                )
-              }
+                );
+                onNoHistoryChange?.(false);
+                setEditingNoHistory(false);
+              }}
               onCancel={() => {
+                setEditingNoHistory(false);
                 if (row.saved) {
                   updateRow(row.id, (current) =>
                     current.saved
@@ -81,6 +131,7 @@ export function ResumeSection<Name extends string>({
                   );
                 } else {
                   removeRow(row.id);
+                  setEmptyRowId(crypto.randomUUID());
                 }
               }}
             />

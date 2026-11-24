@@ -20,14 +20,20 @@ export const resumeProgressSections: readonly DocumentProgressSection<ResumeRows
   },
   {
     id: 'career',
-    isComplete: (rows) => hasSavedEntry(resumeSections.career.fields, rows.career),
+    isComplete: (rows) =>
+      rows.noHistory?.includes('career') ||
+      hasSavedEntry(resumeSections.career.fields, rows.career),
   },
   {
     id: 'certifications',
-    isComplete: (rows) => hasSavedEntry(resumeSections.certifications.fields, rows.certifications),
+    isComplete: (rows) =>
+      rows.noHistory?.includes('certifications') ||
+      hasSavedEntry(resumeSections.certifications.fields, rows.certifications),
   },
   {
     id: 'awards',
-    isComplete: (rows) => hasSavedEntry(resumeSections.awards.fields, rows.awards),
+    isComplete: (rows) =>
+      rows.noHistory?.includes('awards') ||
+      hasSavedEntry(resumeSections.awards.fields, rows.awards),
   },
 ];
