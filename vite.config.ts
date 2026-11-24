@@ -15,11 +15,19 @@ import {
 import deployment from './vercel.json';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
-const productPaths = new Set(
-  deployment.rewrites
-    .filter(({ destination }) => destination === '/app.html')
-    .map(({ source }) => source),
-);
+const productPaths = deployment.rewrites
+  .filter(({ destination }) => destination === '/app.html')
+  .map(
+    ({ source }) =>
+      new RegExp(
+        `^${source
+          .split('/')
+          .map((segment) =>
+            segment.startsWith(':') ? '[^/]+' : segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+          )
+          .join('/')}$`,
+      ),
+  );
 const landing = deployment.rewrites.find(({ source }) => source === '/');
 if (!landing) throw new Error('Oracle landing rewrite is missing from vercel.json');
 const oracle = new URL(landing.destination).origin;
@@ -34,7 +42,7 @@ function localRoutes(): Plugin {
   const install = (server: ViteDevServer | PreviewServer, loadNotFound: () => Promise<string>) => {
     server.middlewares.use((request, _response, next) => {
       const path = request.url?.split('?')[0]?.replace(/\/$/, '') ?? '';
-      if (productPaths.has(path)) request.url = '/app.html';
+      if (productPaths.some((pattern) => pattern.test(path))) request.url = '/app.html';
       next();
     });
 

@@ -1,3 +1,5 @@
+import { usePreparationStore } from '@/store/preparation-store';
+
 export type UserRole = 'APPLICANT' | 'COMPANY';
 
 const AUTH_ROLE_STORAGE_KEY = 'weiver.auth.role';
@@ -44,6 +46,7 @@ export function setAuthRole(role: UserRole) {
 }
 
 export function setAuthSession(token: string, role: UserRole) {
+  clearPreparationSession();
   setAccessToken(token);
   setStoredAuthRole(role);
 }
@@ -51,4 +54,18 @@ export function setAuthSession(token: string, role: UserRole) {
 export function clearAccessToken() {
   accessToken = null;
   clearStoredAuthRole();
+  clearPreparationSession();
+}
+
+function clearPreparationSession() {
+  try {
+    usePreparationStore.getState().reset();
+  } catch {
+    // persist의 저장 실패와 무관하게 메모리의 임시 데이터는 이미 초기화된다.
+  }
+  try {
+    usePreparationStore.persist.clearStorage();
+  } catch {
+    // 브라우저가 저장소 접근을 차단해도 인증 해제를 완료한다.
+  }
 }
