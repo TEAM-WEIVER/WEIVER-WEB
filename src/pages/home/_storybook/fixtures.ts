@@ -14,7 +14,6 @@ export const exampleHome = {
           id: 'kakaopay',
           companyName: '카카오페이',
           positionName: 'AI 서비스 기획',
-          recruitmentLabel: '수시채용',
           documents: [
             { kind: 'resume', status: 'complete', required: true },
             { kind: 'coverLetter', status: 'complete', required: true },
@@ -26,7 +25,6 @@ export const exampleHome = {
           id: 'krafton',
           companyName: '크래프톤',
           positionName: '사업 PM',
-          recruitmentLabel: '수시채용',
           documents: [{ kind: 'resume', status: 'complete', required: true }],
           interviewCount: 0,
         },
@@ -34,7 +32,6 @@ export const exampleHome = {
           id: 'cjenm',
           companyName: 'CJ ENM',
           positionName: '서비스 기획',
-          recruitmentLabel: '신입·경력',
           documents: [],
           interviewCount: 1,
         },

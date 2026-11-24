@@ -22,7 +22,6 @@ export type HomePoints = {
 };
 
 export type HomeJobPosting = JobPostingSummary & {
-  recruitmentLabel?: string;
   documents: ApplicationDocument[];
   interviewCount: number;
 };

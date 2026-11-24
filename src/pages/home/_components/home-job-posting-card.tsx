@@ -1,6 +1,5 @@
 import { ArrowRight } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 import type { HomeJobPosting } from '../_types/home';
@@ -18,11 +17,6 @@ export function HomeJobPostingCard({ posting, onContinue }: HomeJobPostingCardPr
       aria-label={`${posting.companyName} ${posting.positionName}`}
       className="border-border-light flex h-full min-w-0 flex-col rounded-xl border bg-white p-5"
     >
-      {posting.recruitmentLabel ? (
-        <Badge className="bg-bg-tertiary text-text-secondary mb-3 self-start rounded-sm px-2 py-0.5">
-          {posting.recruitmentLabel}
-        </Badge>
-      ) : null}
       <p className="text-body3 text-text-secondary wrap-anywhere">{posting.companyName}</p>
       <h3 className="text-h4 text-text-primary mt-1 mb-4 wrap-anywhere">{posting.positionName}</h3>
       <dl className="bg-bg-tertiary text-body2 text-text-secondary mt-auto space-y-2 rounded-lg p-3.5">

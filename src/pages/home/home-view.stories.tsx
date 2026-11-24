@@ -224,7 +224,6 @@ export const LongContent: Story = {
             ...exampleHome.postings.data.postings[0],
             companyName: '사용자 경험을 연구하고 새로운 서비스를 만드는 아주 긴 회사 이름',
             positionName: '글로벌 AI 플랫폼 전략 및 신규 서비스 프로덕트 매니저',
-            recruitmentLabel: '신입·경력 상시 채용',
             interviewCount: 1234,
           },
         ],
