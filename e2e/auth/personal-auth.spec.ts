@@ -1,4 +1,9 @@
+import { mockHomeApis } from '../mocks/home-api';
 import { expect, test } from '@playwright/test';
+
+test.beforeEach(async ({ page }) => {
+  await mockHomeApis(page);
+});
 
 test('개인 로그인에서 같은 문서 안의 회원가입 화면으로 이동한다', async ({ page }) => {
   await page.goto('/login');
@@ -92,7 +97,9 @@ for (const status of [401, 500]) {
   });
 }
 
-test('회원 홈은 새로고침 후 이름을 한 번 조회하고 푸터·로그아웃을 제공한다', async ({ page }) => {
+test('회원 홈은 새로고침 후 이름을 한 번 조회하고 푸터를 제공하고 로그아웃 버튼을 표시하지 않는다', async ({
+  page,
+}) => {
   let profileRequests = 0;
   await page.goto('/login');
   await page.evaluate(() => sessionStorage.setItem('weiver.auth.role', 'APPLICANT'));
@@ -106,7 +113,6 @@ test('회원 홈은 새로고침 후 이름을 한 번 조회하고 푸터·로�
     profileRequests += 1;
     return route.fulfill({ json: { data: { ApplicantDTO: { name: '김민수' } } } });
   });
-  await page.route('**/api/auth/logout', (route) => route.fulfill({ status: 204 }));
 
   await page.goto('/home');
   const heading = page.getByRole('heading', {
@@ -124,9 +130,5 @@ test('회원 홈은 새로고침 후 이름을 한 번 조회하고 푸터·로�
   await page.reload();
   await expect(heading).toBeVisible();
   expect(profileRequests).toBe(2);
-  await page.getByRole('button', { name: '로그아웃' }).click();
-  await expect(page).toHaveURL('/login');
-  expect(await page.evaluate(() => sessionStorage.getItem('weiver.auth.role'))).toBeNull();
-  await page.goto('/home');
-  await expect(page).toHaveURL('/login');
+  await expect(page.getByRole('button', { name: '로그아웃' })).toHaveCount(0);
 });

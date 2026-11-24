@@ -19,3 +19,6 @@ storybook-static
 
 # Coverage
 coverage
+
+# MSW가 제공하는 생성 파일
+public/mockServiceWorker.js

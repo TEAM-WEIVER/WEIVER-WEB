@@ -41,7 +41,7 @@ export const exampleHome = {
 } satisfies MemberHomeViewProps;
 
 export const exampleFooterLinks = [
-  { label: '이용약관', href: '#terms-example' },
-  { label: '개인정보처리방침', href: '#privacy-example' },
-  { label: '고객지원', href: '#support-example' },
+  { label: '이용약관', to: '/terms' },
+  { label: '개인정보처리방침', to: '/privacy' },
+  { label: '고객지원', to: '/support' },
 ];

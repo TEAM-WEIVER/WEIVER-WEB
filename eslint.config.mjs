@@ -18,6 +18,7 @@ export default defineConfig([
     'coverage/**',
     'storybook-static/**',
     'next-env.d.ts',
+    'public/mockServiceWorker.js',
   ]),
   js.configs.recommended,
   tseslint.configs.recommended,

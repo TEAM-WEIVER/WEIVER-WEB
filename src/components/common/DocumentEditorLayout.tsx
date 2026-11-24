@@ -24,6 +24,7 @@ export type DocumentEditorLayoutProps = {
   /** 생략하면 기존 공고별 서류 3종을 표시한다. */
   visibleDocuments?: readonly EditorDocument[];
   progress: number;
+  isSaving?: boolean;
   onSaveDraft: () => void;
   children: ReactNode;
   footerActions?: ReactNode;
@@ -35,6 +36,7 @@ export function DocumentEditorLayout({
   activeDocument,
   visibleDocuments,
   progress,
+  isSaving = false,
   onSaveDraft,
   children,
   footerActions,
@@ -111,7 +113,7 @@ export function DocumentEditorLayout({
         <main className="min-w-0">
           {children}
           <footer className="border-border-light mt-10 flex flex-wrap justify-end gap-3 border-t pt-5">
-            <Button type="button" size="xs" onClick={() => onSaveDraft()}>
+            <Button type="button" size="xs" disabled={isSaving} onClick={() => onSaveDraft()}>
               임시 저장
             </Button>
             {footerActions}

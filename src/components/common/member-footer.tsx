@@ -1,44 +1,35 @@
 import type { ComponentProps } from 'react';
+import { useNavigate } from 'react-router';
 
+import { TERMS_PATH, PRIVACY_PATH, SUPPORT_PATH } from '@/lib/service-paths';
 import { cn } from '@/lib/utils';
 
-export type MemberFooterLink = {
-  label: string;
-  /** 목적지가 확정된 링크만 전달한다. */
-  href?: string;
-};
+export type MemberFooterLink = { label: string; to: string };
 
 const defaultLinks: readonly MemberFooterLink[] = [
-  { label: '이용약관' },
-  { label: '개인정보처리방침' },
-  { label: '고객지원' },
+  { label: '이용약관', to: TERMS_PATH },
+  { label: '개인정보처리방침', to: PRIVACY_PATH },
+  { label: '고객지원', to: SUPPORT_PATH },
 ];
 
-type MemberFooterProps = ComponentProps<'footer'> & {
-  links?: readonly MemberFooterLink[];
-};
+type MemberFooterProps = ComponentProps<'footer'> & { links?: readonly MemberFooterLink[] };
 
 export function MemberFooter({ links = defaultLinks, className, ...props }: MemberFooterProps) {
+  const navigate = useNavigate();
   return (
     <footer {...props} className={cn('bg-bg-secondary text-text-secondary', className)}>
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-15">
         <nav aria-label="서비스 안내">
           <ul className="text-caption flex flex-wrap items-center gap-x-6 gap-y-3">
-            {links.map(({ label, href }) => (
+            {links.map(({ label, to }) => (
               <li key={label} className="max-w-full min-w-0 wrap-anywhere">
-                {href ? (
-                  <a
-                    href={href}
-                    className="hover:text-text-primary focus-visible:outline-primary-600 rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
-                  >
-                    {label}
-                  </a>
-                ) : (
-                  <span aria-disabled="true" title="준비 중">
-                    {label}
-                    <span className="sr-only"> (준비 중)</span>
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={() => navigate(to)}
+                  className="hover:text-text-primary focus-visible:outline-primary-600 cursor-pointer rounded-sm text-left wrap-anywhere underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+                >
+                  {label}
+                </button>
               </li>
             ))}
           </ul>

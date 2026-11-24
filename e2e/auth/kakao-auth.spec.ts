@@ -1,4 +1,9 @@
+import { mockHomeApis } from '../mocks/home-api';
 import { expect, test, type Page } from '@playwright/test';
+
+test.beforeEach(async ({ page }) => {
+  await mockHomeApis(page);
+});
 
 const FLOW_ID = '00000000-0000-4000-8000-000000000193';
 
@@ -7,6 +12,7 @@ async function mockKakaoFlow(page: Page, baseURL: string, existing = false) {
   await page.route('https://api.weiverai.com/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
+    if (path.startsWith('/api/home/') || path === '/api/resumes/master') return route.fallback();
     if (request.method() === 'OPTIONS') {
       await route.fulfill({ status: 204 });
       return;
