@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   DocumentEditorLayout,
   type DocumentEditorLayoutProps,
 } from '@/components/common/DocumentEditorLayout';
 import { calculateDocumentProgress, type DocumentProgressSection } from '@/lib/document-progress';
+import { Button } from '@/components/ui/button';
 
 import { ResumeSection } from './_components/resume-section';
 import { collectDraftValues, initializeRows } from './_model/resume-editor';
@@ -23,6 +24,11 @@ type ResumeEditorProps = Pick<
   initialDraft?: ResumeDraft;
   progressSections?: readonly DocumentProgressSection<ResumeRows>[];
   onSaveDraft: (draft: ResumeDraft) => void;
+  onComplete?: (draft: ResumeDraft) => void;
+  completeLabel?: string;
+  title?: string;
+  description?: string;
+  error?: string;
 };
 
 export default function ResumeEditor({
@@ -32,6 +38,11 @@ export default function ResumeEditor({
   onSaveDraft,
   onDocumentChange,
   statuses,
+  onComplete,
+  completeLabel = '저장하고 돌아가기',
+  title = '이력서 작성',
+  description,
+  error,
 }: ResumeEditorProps) {
   const [rows, setRows] = useState<ResumeRows>(() => ({
     education: initializeRows(resumeSections.education.fields, initialDraft?.education),
@@ -43,6 +54,10 @@ export default function ResumeEditor({
     awards: initializeRows(resumeSections.awards.fields, initialDraft?.awards),
   }));
   const progress = calculateDocumentProgress(rows, progressSections);
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
 
   function updateSection<Section extends ResumeSectionName>(
     section: Section,
@@ -51,13 +66,13 @@ export default function ResumeEditor({
     setRows((current) => ({ ...current, [section]: update(current[section]) }));
   }
 
-  function handleSaveDraft() {
-    onSaveDraft({
+  function getDraft(): ResumeDraft {
+    return {
       education: collectDraftValues(rows.education),
       career: collectDraftValues(rows.career),
       certifications: collectDraftValues(rows.certifications),
       awards: collectDraftValues(rows.awards),
-    });
+    };
   }
 
   return (
@@ -66,10 +81,23 @@ export default function ResumeEditor({
       visibleDocuments={visibleDocuments}
       progress={progress.percentage}
       statuses={{ ...statuses, resume: progress.status }}
-      onSaveDraft={handleSaveDraft}
+      onSaveDraft={() => onSaveDraft(getDraft())}
+      footerActions={
+        onComplete ? (
+          <Button type="button" size="xs" onClick={() => onComplete(getDraft())}>
+            {completeLabel}
+          </Button>
+        ) : undefined
+      }
       onDocumentChange={onDocumentChange}
     >
-      <h1 className="sr-only">이력서 작성</h1>
+      <h1 className={description ? 'text-h2 text-text-primary mb-3' : 'sr-only'}>{title}</h1>
+      {description ? <p className="text-body2 text-text-secondary mb-8">{description}</p> : null}
+      {error ? (
+        <p ref={errorRef} tabIndex={-1} role="alert" className="text-error mb-6">
+          {error}
+        </p>
+      ) : null}
       <div className="space-y-10">
         <ResumeSection
           config={resumeSections.education}
