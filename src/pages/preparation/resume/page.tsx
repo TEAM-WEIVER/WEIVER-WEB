@@ -4,29 +4,30 @@ import {
   DocumentEditorLayout,
   type DocumentEditorLayoutProps,
 } from '@/components/common/DocumentEditorLayout';
+import { calculateDocumentProgress, type DocumentProgressSection } from '@/lib/document-progress';
 
 import { ResumeSection } from './_components/resume-section';
+import { collectDraftValues, initializeRows } from './_model/resume-editor';
+import { resumeProgressSections } from './_model/resume-progress';
 import {
-  collectDraftValues,
-  initializeRows,
   resumeSections,
   type ResumeDraft,
   type ResumeRows,
   type ResumeSectionName,
-} from './_model/resume-editor';
+} from './_model/resume-sections';
 
-type ResumeEditorProps = {
+type ResumeEditorProps = Pick<DocumentEditorLayoutProps, 'onDocumentChange' | 'statuses'> & {
   initialDraft?: ResumeDraft;
-  progress: number;
+  progressSections?: readonly DocumentProgressSection<ResumeRows>[];
   onSaveDraft: (draft: ResumeDraft) => void;
-  onDocumentChange?: DocumentEditorLayoutProps['onDocumentChange'];
 };
 
 export default function ResumeEditor({
   initialDraft,
-  progress,
+  progressSections = resumeProgressSections,
   onSaveDraft,
   onDocumentChange,
+  statuses,
 }: ResumeEditorProps) {
   const [rows, setRows] = useState<ResumeRows>(() => ({
     education: initializeRows(resumeSections.education.fields, initialDraft?.education),
@@ -37,6 +38,7 @@ export default function ResumeEditor({
     ),
     awards: initializeRows(resumeSections.awards.fields, initialDraft?.awards),
   }));
+  const progress = calculateDocumentProgress(rows, progressSections);
 
   function updateSection<Section extends ResumeSectionName>(
     section: Section,
@@ -57,7 +59,8 @@ export default function ResumeEditor({
   return (
     <DocumentEditorLayout
       activeDocument="resume"
-      progress={progress}
+      progress={progress.percentage}
+      statuses={{ ...statuses, resume: progress.status }}
       onSaveDraft={handleSaveDraft}
       onDocumentChange={onDocumentChange}
     >

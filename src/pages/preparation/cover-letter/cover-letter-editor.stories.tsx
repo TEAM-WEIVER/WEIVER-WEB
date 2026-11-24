@@ -138,6 +138,7 @@ export const QuestionActions: Story = {
     const answer = '사용자가 겪는 문제를 해결하고 싶습니다.';
     await userEvent.type(form.getByRole('textbox', { name: /문항 내용/ }), question);
     await userEvent.type(form.getByRole('textbox', { name: /자기소개서 본문 내용/ }), answer);
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '0');
     await userEvent.click(form.getByRole('button', { name: '저장' }));
     await expect(canvas.getByRole('heading', { name: question })).toBeVisible();
     await expect(canvas.getByRole('progressbar', { name: '작성 진행률' })).toHaveAttribute(
@@ -149,6 +150,7 @@ export const QuestionActions: Story = {
     await userEvent.click(canvas.getByRole('button', { name: `${question} 수정` }));
     form = within(canvas.getByRole('form', { name: '문항 정보 입력' }));
     await userEvent.clear(form.getByRole('textbox', { name: /자기소개서 본문 내용/ }));
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
     await userEvent.click(form.getByRole('button', { name: '취소' }));
     await expect(canvas.getByText(answer)).toBeVisible();
 
@@ -160,10 +162,38 @@ export const QuestionActions: Story = {
     await userEvent.type(answerField, revisedAnswer);
     await userEvent.click(form.getByRole('button', { name: '저장' }));
     await expect(canvas.getByText(revisedAnswer)).toBeVisible();
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '100');
 
     await userEvent.click(canvas.getByRole('button', { name: `${question} 삭제` }));
     await expect(canvas.getByText('등록된 문항이 없습니다.')).toBeVisible();
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '0');
     await userEvent.click(draft);
     await expect(args.onSaveDraft).toHaveBeenCalledWith({ questions: [] });
+  },
+};
+
+export const IncompleteSavedQuestion: Story = {
+  name: '미완성 문항 불러오기',
+  args: { initialQuestions: [existingQuestion, { ...anotherQuestion, answer: '   ' }] },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '50');
+  },
+};
+
+export const ConfiguredQuestions: Story = {
+  name: '문항별 완료 기준 설정',
+  args: {
+    initialQuestions: [existingQuestion],
+    progressSections: [
+      {
+        id: 'motivation',
+        isComplete: ({ questions }) =>
+          questions.some(({ id, answer }) => id === 'motivation' && answer.trim().length >= 100),
+      },
+      { id: 'experience', included: false, isComplete: () => false },
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('value', '0');
   },
 };

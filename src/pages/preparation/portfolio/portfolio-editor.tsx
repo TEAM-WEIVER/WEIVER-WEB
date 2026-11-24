@@ -1,13 +1,18 @@
 import { useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 
-import { DocumentEditorLayout } from '@/components/common/DocumentEditorLayout';
+import {
+  DocumentEditorLayout,
+  type DocumentEditorLayoutProps,
+} from '@/components/common/DocumentEditorLayout';
 import { SectionHeading } from '@/components/common/section-heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { calculateDocumentProgress, type DocumentProgressSection } from '@/lib/document-progress';
 
 import { DocumentItemActions } from '../_components/document-item-actions';
 import { PortfolioItemForm } from './portfolio-item-form';
+import { isValidPortfolioFile } from './portfolio-file';
 
 type PortfolioItem = {
   id: string;
@@ -26,13 +31,17 @@ export type PortfolioDraft = {
   editingItem: PortfolioItemDraft | null;
 };
 
-type PortfolioEditorProps = {
+type PortfolioEditorProps = Pick<DocumentEditorLayoutProps, 'onDocumentChange' | 'statuses'> & {
   initialItems?: readonly PortfolioItem[];
+  progressSections?: readonly DocumentProgressSection<readonly PortfolioItem[]>[];
   onSaveDraft: (draft: PortfolioDraft) => void;
 };
 
 const EMPTY_ITEM: PortfolioItemDraft = { id: null, title: '', file: null };
 const EMPTY_ITEMS: readonly PortfolioItem[] = [];
+const portfolioProgressSections: readonly DocumentProgressSection<readonly PortfolioItem[]>[] = [
+  { id: 'portfolio', isComplete: (items) => items.some(({ file }) => isValidPortfolioFile(file)) },
+];
 const fileSizeFormatter = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 1 });
 
 function formatFileSize(bytes: number) {
@@ -44,12 +53,19 @@ function formatFileSize(bytes: number) {
     : `${fileSizeFormatter.format(bytes / 1024)}KB`;
 }
 
-export function PortfolioEditor({ initialItems = EMPTY_ITEMS, onSaveDraft }: PortfolioEditorProps) {
+export function PortfolioEditor({
+  initialItems = EMPTY_ITEMS,
+  progressSections = portfolioProgressSections,
+  onSaveDraft,
+  onDocumentChange,
+  statuses,
+}: PortfolioEditorProps) {
   const [items, setItems] = useState(initialItems);
   const [editingItem, setEditingItem] = useState<PortfolioItemDraft | null>(() =>
     initialItems.length ? null : EMPTY_ITEM,
   );
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const progress = calculateDocumentProgress(items, progressSections);
 
   function handleAddItem() {
     if (editingItem) {
@@ -88,7 +104,9 @@ export function PortfolioEditor({ initialItems = EMPTY_ITEMS, onSaveDraft }: Por
   return (
     <DocumentEditorLayout
       activeDocument="portfolio"
-      progress={items.length ? 100 : 0}
+      progress={progress.percentage}
+      statuses={{ ...statuses, portfolio: progress.status }}
+      onDocumentChange={onDocumentChange}
       onSaveDraft={() => onSaveDraft({ items, editingItem })}
     >
       <div className="space-y-6">
