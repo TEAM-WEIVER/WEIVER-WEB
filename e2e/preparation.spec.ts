@@ -166,8 +166,9 @@ test('서류 사이드바의 이력서 이동도 마스터본 선행 조건을 �
     .getByRole('button', { name: /이력서/ })
     .click();
   await expect(page).toHaveURL('/resume/master?postingId=posting-1');
-  await page.getByRole('button', { name: /공고 상세/ }).click();
-  await expect(page).toHaveURL('/preparation/posting-1');
+  await expect(page.getByRole('button', { name: /공고 상세/ })).toHaveCount(0);
+  await page.goBack();
+  await expect(page).toHaveURL('/preparation/posting-1/cover-letter');
 });
 
 test('없는 공고는 편집기나 마스터본으로 진입하지 않는다', async ({ page }) => {
@@ -232,4 +233,20 @@ test('등록한 동적 경로만 앱을 제공하고 알 수 없는 하위 경�
     expect((await request.get(path)).status(), path).toBe(200);
   }
   expect((await request.get('/preparation/id/unknown')).status()).toBe(404);
+});
+
+test('홈에서 마스터본을 직접 편집하고 저장 후 홈으로 돌아온다', async ({ page }, testInfo) => {
+  await mockMember(page, true);
+  await page.goto('/home');
+  await page.getByRole('button', { name: '이력서 수정하기', exact: true }).click();
+  await expect(page).toHaveURL('/resume/master');
+  await page.reload();
+  await expect(
+    page.getByRole('heading', { name: '이력서 마스터본 작성', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: /공고 상세/ })).toHaveCount(0);
+  await expect(page.getByText(/서버에는 저장되지|현재 탭에 임시/)).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath('master-resume-home.png') });
+  await page.getByRole('button', { name: '저장하고 홈으로', exact: true }).click();
+  await expect(page).toHaveURL('/home');
 });

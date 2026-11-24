@@ -20,9 +20,6 @@ export default function PreparationLayout() {
           profile={<ApplicantHeaderProfile />}
         />
         <div className="flex-1">
-          <p className="text-caption text-text-tertiary mx-auto max-w-[1440px] px-4 pt-4 sm:px-6 lg:px-15">
-            입력한 공고와 이력서는 현재 탭에 임시 보관되며 서버에는 저장되지 않아요.
-          </p>
           <Outlet />
         </div>
         <MemberFooter />
