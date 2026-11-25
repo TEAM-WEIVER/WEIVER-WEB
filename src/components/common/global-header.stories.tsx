@@ -1,15 +1,23 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { MemoryRouter } from 'react-router';
 import { expect, fn, userEvent, within } from 'storybook/test';
 
 import { GlobalHeader, HeaderNavItem } from './global-header';
-import { HeaderProfileButton } from './header-profile-button';
+import { HeaderProfileMenu } from './header-profile-menu';
 
 const meta = {
   title: 'Common/GlobalHeader',
   component: GlobalHeader,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },
+  decorators: [
+    (Story) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
 } satisfies Meta<typeof GlobalHeader>;
 
 export default meta;
@@ -30,7 +38,7 @@ function HeaderExample({ fullName = '김민수' }: { fullName?: string | null })
           </button>
         </HeaderNavItem>
       ))}
-      profile={<HeaderProfileButton fullName={fullName} onClick={onProfileClick} />}
+      profile={<HeaderProfileMenu fullName={fullName} onClick={onProfileClick} />}
     />
   );
 }
