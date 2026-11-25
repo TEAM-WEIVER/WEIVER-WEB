@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import { GlobalHeader } from '@/components/common/global-header';
-import { HeaderProfileButton } from '@/components/common/header-profile-button';
+import { HeaderProfileMenu } from '@/components/common/header-profile-menu';
 import { MemberFooter, type MemberFooterLink } from '@/components/common/member-footer';
 import { MemberHeaderNavigation } from '@/components/common/member-header-navigation';
 
@@ -62,7 +62,7 @@ export function MemberHomeView({
             <span className="hidden sm:inline-flex">
               <HeaderPoints state={points} />
             </span>
-            {profile ?? <HeaderProfileButton fullName={name} />}
+            {profile ?? <HeaderProfileMenu fullName={name} />}
           </div>
         }
       />
