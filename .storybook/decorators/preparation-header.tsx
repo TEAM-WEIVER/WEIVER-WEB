@@ -1,7 +1,8 @@
 import type { Decorator } from '@storybook/react-vite';
+import { MemoryRouter } from 'react-router';
 
 import { GlobalHeader, HeaderNavItem } from '@/components/common/global-header';
-import { HeaderProfileButton } from '@/components/common/header-profile-button';
+import { HeaderProfileMenu } from '@/components/common/header-profile-menu';
 
 /** 실제 경로를 만들지 않는 지원 준비 페이지용 헤더 예시. */
 export const withPreparationHeader: Decorator = (Story) => (
@@ -12,7 +13,11 @@ export const withPreparationHeader: Decorator = (Story) => (
           <button type="button">{label}</button>
         </HeaderNavItem>
       ))}
-      profile={<HeaderProfileButton fullName="김민채" />}
+      profile={
+        <MemoryRouter>
+          <HeaderProfileMenu fullName="김민채" />
+        </MemoryRouter>
+      }
     />
     <Story />
   </>

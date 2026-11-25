@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 
 import { getHeaderProfileName } from '@/lib/header-profile-api';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 
-import { HeaderProfileButton } from './header-profile-button';
+import { HeaderProfileMenu } from './header-profile-menu';
 
 type ApplicantHeaderProfileProps = {
   /** Storybook 등에서도 실제 API 없이 동일한 상태 흐름을 확인할 수 있다. */
@@ -43,27 +41,20 @@ export function ApplicantHeaderProfile({
   }, [loadName, attempt, onNameLoaded]);
 
   if (state.status === 'loading') {
-    return (
-      <div role="status" aria-label="프로필 불러오는 중" className="flex h-11 items-center gap-2">
-        <Skeleton className="size-8 rounded-full" />
-        <Skeleton className="h-4 w-12" />
-      </div>
-    );
+    return <HeaderProfileMenu aria-busy onClick={onClick} />;
   }
 
   if (state.status === 'error') {
     return (
-      <Button
-        variant="ghost"
-        onClick={() => {
+      <HeaderProfileMenu
+        onClick={onClick}
+        onRetryProfile={() => {
           setState({ status: 'loading' });
           setAttempt((value) => value + 1);
         }}
-      >
-        프로필 다시 불러오기
-      </Button>
+      />
     );
   }
 
-  return <HeaderProfileButton fullName={state.name} onClick={onClick} />;
+  return <HeaderProfileMenu fullName={state.name} onClick={onClick} />;
 }

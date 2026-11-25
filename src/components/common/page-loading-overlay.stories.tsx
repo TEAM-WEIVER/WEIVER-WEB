@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router';
 import { expect } from 'storybook/test';
 
 import { GlobalHeader } from './global-header';
-import { HeaderProfileButton } from './header-profile-button';
+import { HeaderProfileMenu } from './header-profile-menu';
 import { MemberHeaderNavigation } from './member-header-navigation';
 import { PageLoadingOverlay } from './page-loading-overlay';
 
@@ -43,7 +43,7 @@ export const HomeLoading: Story = {
     <MemoryRouter initialEntries={['/home']}>
       <GlobalHeader
         navigation={<MemberHeaderNavigation />}
-        profile={<HeaderProfileButton fullName="김민수" />}
+        profile={<HeaderProfileMenu fullName="김민수" />}
       />
       <PageLoadingOverlay {...args} />
     </MemoryRouter>
