@@ -149,13 +149,24 @@ for (const viewport of [
 
     await page.getByRole('button', { name: '가이드 닫기' }).click();
     await expect(page).toHaveURL('/preparation/guide-posting');
-    expect(
-      await page.evaluate(() =>
-        window.guideMedia.streams.every((stream) =>
-          stream.getTracks().every((track) => track.readyState === 'ended'),
-        ),
-      ),
-    ).toBe(true);
+    // URL 갱신은 React의 unmount effect 정리보다 먼저 관찰될 수 있다.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() =>
+            window.guideMedia.streams.flatMap((stream) =>
+              stream.getTracks().map((track) => ({
+                kind: track.kind,
+                readyState: track.readyState,
+              })),
+            ),
+          ),
+        { message: '가이드 종료 후 카메라와 마이크 트랙이 모두 해제되어야 한다' },
+      )
+      .toEqual([
+        { kind: 'video', readyState: 'ended' },
+        { kind: 'audio', readyState: 'ended' },
+      ]);
   });
 }
 
