@@ -37,7 +37,7 @@ Chromatic은 **Storybook 배포 전용**으로 사용한다. [Manage → Automat
 
 배포할 때마다 전체 스토리를 빌드·업로드하므로 위 고정 링크에서 최신 컴포넌트와 상호작용을 계속 확인할 수 있다. 자동 스크린샷 촬영·이전 버전과의 비교는 실행하지 않아 새 billed snapshots가 발생하지 않는다. 기존에 사용한 스냅샷 수는 초기화되지 않는다. [Chromatic 집계 기준](https://www.chromatic.com/docs/billing/).
 
-`--exit-once-uploaded`는 업로드 후 CLI를 종료하는 옵션일 뿐 테스트를 끄지 않는다. 촬영 중단은 위 프로젝트 설정으로 제어한다. 배포 자체를 생략하는 `--skip`은 사용하지 않는다. 기존 CI의 Vitest·Storybook 상호작용/접근성 검사·Playwright 테스트는 유지한다.
+`--exit-once-uploaded`는 업로드 후 CLI를 종료하는 옵션일 뿐 테스트를 끄지 않는다. 촬영 중단은 위 프로젝트 설정으로 제어한다. 배포 자체를 생략하는 `--skip`은 사용하지 않는다. 기존 CI의 Vitest 단위 테스트·Playwright E2E는 유지하고, Storybook 상호작용/접근성 검사는 계속 `pnpm test:storybook --run`으로 실행할 수 있다.
 
 수동 재배포는 GitHub Actions → Chromatic → Run workflow에서 develop을 선택한다. 다른 브랜치를 선택하면 해당 브랜치의 Storybook을 배포하며 develop 고정 링크를 갱신하지 않는다. 동일 브랜치의 배포는 업로드 순서가 뒤집히지 않도록 직렬 실행한다.
 
