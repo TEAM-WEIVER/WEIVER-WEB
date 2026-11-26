@@ -1,0 +1,344 @@
+.shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100dvh;
+  overflow: hidden;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 16px 40px;
+}
+
+.progress {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+.progress li {
+  height: 4px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--bg-tertiary);
+}
+.progress span[aria-hidden='true'] {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: left;
+  transform: scaleX(0);
+  background: var(--primary);
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.progress li[data-filled='true'] span[aria-hidden='true'] {
+  transform: scaleX(1);
+}
+.counter {
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.viewport {
+  min-height: 0;
+  overflow: auto;
+  overflow-x: hidden;
+  padding: 24px 40px;
+  scrollbar-gutter: stable both-edges;
+}
+.pages {
+  display: grid;
+  min-height: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+.page {
+  display: flex;
+  grid-area: 1 / 1;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+/* All steps reserve the same intrinsic space, including on narrow displays. */
+.page[hidden] {
+  display: flex;
+  visibility: hidden;
+  pointer-events: none;
+}
+.pages[data-direction='next'] {
+  --direction: 1;
+}
+.pages[data-direction='previous'] {
+  --direction: -1;
+}
+.pages[data-phase='out'] {
+  animation: leave 100ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+.pages[data-phase='in'] {
+  animation: enter 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes leave {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(calc(-20px * var(--direction)));
+  }
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateX(calc(20px * var(--direction)));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.center {
+  width: 100%;
+  text-align: center;
+}
+.heading {
+  outline: none;
+}
+.subtitle {
+  margin-top: 16px;
+  color: var(--text-tertiary);
+}
+.follow {
+  margin-top: 4px;
+}
+.intro [data-reveal] {
+  animation: rise 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.intro [data-reveal='1'] {
+  animation-delay: 160ms;
+}
+.intro [data-reveal='2'] {
+  animation-delay: 320ms;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 0;
+  margin: 30px 0 0;
+  list-style: none;
+}
+.pills li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 30px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 18px;
+}
+.pills span {
+  display: flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  color: var(--primary);
+}
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  align-items: center;
+  gap: 48px;
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
+}
+.tips {
+  margin-top: 20px;
+  padding-left: 18px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 23px;
+  list-style: disc;
+}
+.panel {
+  min-width: 0;
+  padding: 24px;
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--bg-secondary);
+}
+.cameraPreview {
+  position: relative;
+  display: flex;
+  aspect-ratio: 16 / 10;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+.video {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+.meterRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 22px;
+}
+.meter {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+  min-width: 110px;
+  height: 30px;
+}
+.meter span {
+  flex: 1;
+  max-width: 10px;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--success);
+  opacity: 0.15;
+}
+.lesson {
+  width: 100%;
+  max-width: 640px;
+  margin: 30px auto 0;
+  text-align: left;
+}
+.question {
+  padding: 24px 28px;
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--bg-secondary);
+}
+.final {
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+}
+.notice {
+  margin-top: 22px;
+  padding: 24px;
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.footer {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 18px 40px 16px;
+}
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.controls[data-welcome='true'] {
+  justify-content: center;
+}
+.hint {
+  margin-top: 10px;
+  min-height: 36px;
+  line-height: 18px;
+  text-align: right;
+  color: var(--text-tertiary);
+}
+.hint[data-welcome='true'] {
+  text-align: center;
+}
+
+@media (width <= 660px) {
+  .top {
+    gap: 10px;
+    padding: 12px 16px;
+  }
+  .progress {
+    gap: 4px;
+  }
+  .viewport {
+    padding: 20px 16px;
+  }
+  .heading {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 600;
+  }
+  .subtitle {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .tips {
+    margin-top: 12px;
+  }
+  .panel,
+  .question {
+    padding: 20px;
+  }
+  .pills {
+    gap: 7px;
+  }
+  .pills li {
+    gap: 6px;
+    padding: 7px 10px 7px 7px;
+    font-size: 12px;
+  }
+  .footer {
+    padding: 12px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pages[data-phase],
+  .intro [data-reveal] {
+    animation: none;
+  }
+  .progress span {
+    transition: none;
+  }
+}

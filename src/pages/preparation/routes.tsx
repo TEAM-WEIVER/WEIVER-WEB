@@ -5,6 +5,7 @@ import { BackButton } from '@/components/common/back-button';
 import type { EditorDocument } from '@/components/common/DocumentEditorLayout';
 import {
   PREPARATION_PATH,
+  interviewPreparationPath,
   masterResumePath,
   postingDocumentPath,
   postingPath,
@@ -95,8 +96,7 @@ export function PreparationDetailRoute() {
               posting,
               documents,
               interviews: [],
-              canStartInterview: false,
-              interviewUnavailableReason: 'AI 면접 연결을 준비 중이에요.',
+              canStartInterview: true,
             }
           : { status: 'notFound' }
       }
@@ -108,6 +108,7 @@ export function PreparationDetailRoute() {
         navigate(PREPARATION_PATH, { replace: true });
       }}
       onOpenDocument={(id, kind) => navigate(postingDocumentPath(id, documentId[kind]))}
+      onStartInterview={(id) => navigate(interviewPreparationPath(id))}
     />
   );
 }

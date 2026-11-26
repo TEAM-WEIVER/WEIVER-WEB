@@ -362,6 +362,7 @@ test('등록한 동적 경로만 앱을 제공하고 알 수 없는 하위 경�
     '/preparation/id/resume',
     '/preparation/id/cover-letter',
     '/preparation/id/portfolio',
+    '/preparation/id/interview/prepare',
     '/resume/master',
   ]) {
     expect((await request.get(path)).status(), path).toBe(200);
