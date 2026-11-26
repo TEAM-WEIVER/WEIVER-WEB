@@ -11,6 +11,7 @@ import {
 } from '@/lib/auth-paths';
 import KakaoReturnPage from '@/pages/auth/kakao/return/page';
 import MemberHomePage from '@/pages/home/page';
+import InterviewPreparationPage from '@/pages/interview/preparation/page';
 import LoginPage from '@/pages/login/page';
 import PasswordResetPage from '@/pages/login/password-reset/page';
 import NotFound from '@/pages/not-found';
@@ -50,6 +51,10 @@ async function bootstrap() {
           <Route path="agreements" element={<SignupAgreementsPage />} />
         </Route>
         <Route path="/home" element={<MemberHomePage />} />
+        <Route
+          path="/preparation/:postingId/interview/prepare"
+          element={<InterviewPreparationPage />}
+        />
         <Route element={<PreparationLayout />}>
           <Route path="/resume/master" element={<MasterResumeRoute />} />
           <Route path="/preparation" element={<PreparationListRoute />} />
