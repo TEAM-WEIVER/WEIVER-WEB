@@ -61,6 +61,10 @@
       "destination": "/app.html"
     },
     {
+      "source": "/preparation/:postingId/interview/prepare",
+      "destination": "/app.html"
+    },
+    {
       "source": "/preparation/:postingId/resume",
       "destination": "/app.html"
     },
