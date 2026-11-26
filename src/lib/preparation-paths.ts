@@ -7,6 +7,10 @@ export function postingPath(postingId: string) {
   return `${PREPARATION_PATH}/${encodeURIComponent(postingId)}`;
 }
 
+export function interviewPreparationPath(postingId: string) {
+  return `${postingPath(postingId)}/interview/prepare`;
+}
+
 export function postingDocumentPath(postingId: string, document: EditorDocument = 'resume') {
   return `${postingPath(postingId)}/${document}`;
 }
