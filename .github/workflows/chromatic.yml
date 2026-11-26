@@ -41,7 +41,9 @@ jobs:
       - name: Build Storybook
         run: pnpm build-storybook
 
-      - name: Publish Storybook
+      # UI Review / Visual tests are disabled in Chromatic Manage → Automate.
+      # Keep publishing every story; --skip would also skip the deployment.
+      - name: Publish Storybook (hosting only)
         env:
           CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
         run: |
@@ -49,7 +51,6 @@ jobs:
             --storybook-build-dir storybook-static \
             --branch-name "$GITHUB_REF_NAME" \
             --exit-once-uploaded \
-            --auto-accept-changes develop \
             --diagnostics-file "$RUNNER_TEMP/chromatic-diagnostics.json" \
             --no-interactive
 
@@ -63,6 +64,7 @@ jobs:
           if (!storybookUrl) throw new Error('Chromatic did not return a Storybook URL');
           const lines = [
             '## Storybook 배포 완료',
+            '- 용도: 최신 Storybook 공유 (Chromatic 시각 비교 비활성화)',
             `- 커밋: \`${process.env.GITHUB_SHA}\``,
             `- [배포된 Storybook](${storybookUrl})`,
           ];
